@@ -46,7 +46,7 @@ repos:
     hooks:
       - id: golangci-lint
         name: golangci-lint
-        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && command -v golangci-lint >/dev/null && golangci-lint run ./apps/backend/... 2>/dev/null || echo "  (kein Backend-Code, übersprungen)"'
+        entry: bash -c 'command -v golangci-lint >/dev/null || { echo "  (golangci-lint nicht im PATH, übersprungen)"; exit 0; }; cd "$(git rev-parse --show-toplevel)/apps/backend" && golangci-lint run ./...'
         language: system
         files: ^apps/backend/.*\.go$
         pass_filenames: false
@@ -101,5 +101,6 @@ repos:
             .*/build/|
             .*/dist/|
             pnpm-lock\.yaml|
-            apps/pyworkers/uv\.lock
+            apps/pyworkers/uv\.lock|
+            .*\.gen\.(go|ts)
           )$

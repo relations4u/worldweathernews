@@ -80,7 +80,15 @@ Compose nutzt python:3.12-slim + pip install uv beim Start.
 
 ## Session 7 — OpenAPI-Schema und Type-Generation
 
-Status: ⏸ Pending
+Status: ✅ Done
+Datum: 2026-05-03
+Commit: <SHA>
+Notizen: OpenAPI 3.1 als SoT in packages/api-schema/.
+oapi-codegen v2.4.1 (warnt bei 3.1, funktioniert), openapi-typescript 7.10.
+pnpm-workspace ergänzt um packages/api-schema; allowBuilds true für
+core-js/protobufjs; .npmrc mit verify-deps-before-run=false (pnpm-11-Quirks).
+/api/v1/locations validiert required-q automatisch (400).
+ADR-0001, scripts/check-generated.sh für CI.
 
 ## Session 8 — GitHub Actions CI-Workflows
 
