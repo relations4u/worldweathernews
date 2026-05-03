@@ -34,7 +34,7 @@ Sessions wird hier "fertig gemacht".
 
 Komplett neuschreiben oder strukturieren:
 
-```markdown
+````markdown
 # worldweathernews.com
 
 Globale Wetter- und Klima-Plattform mit Community-Features.
@@ -47,6 +47,7 @@ Globale Wetter- und Klima-Plattform mit Community-Features.
 ## Was ist das?
 
 Eine self-hosted Plattform für Wetter- und Klima-Beobachtungen, die:
+
 - Daten aus nationalen Wetterdiensten weltweit aggregiert
 - Klimadaten visualisiert (Anomalien, Trends, historische Vergleiche)
 - Eine Community von Beobachtern, Citizen Scientists und Wetter-Interessierten verbindet
@@ -67,26 +68,28 @@ make bootstrap
 cp .env.example .env
 make dev
 ```
+````
 
 Dann öffnen:
+
 - App: http://app.localhost
 - API: http://api.localhost
 - Mailhog: http://mail.localhost
 
 ## Tech-Stack
 
-| Schicht       | Technologie                                  |
-|---------------|----------------------------------------------|
-| Backend       | Go 1.23, Chi, sqlc, pgx                      |
-| Workers       | Python 3.12, asyncio, asyncpg, structlog     |
-| Frontend      | SvelteKit, TypeScript, Tailwind, shadcn      |
-| Datenbank     | PostgreSQL 16 + PostGIS + TimescaleDB        |
-| Cache         | Redis 7                                      |
-| Reverse Proxy | Caddy                                        |
-| Container     | Docker + Docker Compose (lokal & prod)       |
-| Monitoring    | Prometheus, Grafana, Loki, Tempo             |
-| CI/CD         | GitHub Actions, ghcr.io                      |
-| Deployment    | Ansible, SOPS+age, Terraform                 |
+| Schicht       | Technologie                              |
+| ------------- | ---------------------------------------- |
+| Backend       | Go 1.23, Chi, sqlc, pgx                  |
+| Workers       | Python 3.12, asyncio, asyncpg, structlog |
+| Frontend      | SvelteKit, TypeScript, Tailwind, shadcn  |
+| Datenbank     | PostgreSQL 16 + PostGIS + TimescaleDB    |
+| Cache         | Redis 7                                  |
+| Reverse Proxy | Caddy                                    |
+| Container     | Docker + Docker Compose (lokal & prod)   |
+| Monitoring    | Prometheus, Grafana, Loki, Tempo         |
+| CI/CD         | GitHub Actions, ghcr.io                  |
+| Deployment    | Ansible, SOPS+age, Terraform             |
 
 ## Repo-Struktur
 
@@ -124,7 +127,8 @@ docs/             Architektur, Runbook, ADRs
 ## Lizenz
 
 <LICENSE_TEXT_OR_LINK>
-```
+
+`````
 
 ### 2. `docs/architecture.md`
 
@@ -183,11 +187,12 @@ graph TB
     Grafana --> Prometheus
     Grafana --> Loki
     Grafana --> Tempo
-```
+`````
 
 ## Service-Verantwortlichkeiten
 
 ### Backend (Go)
+
 - HTTP-API für Frontend und ggf. mobile Apps / Drittsysteme
 - Authentifizierung und Autorisierung
 - Geschäftslogik (Locations, User-Profile, Alerts, ...)
@@ -195,6 +200,7 @@ graph TB
 - Wird **nicht** für ETL/Batch-Jobs genutzt
 
 ### Pyworkers (Python)
+
 - Pull von externen Wetterdaten (DWD, NOAA, Open-Meteo, ...)
 - GRIB- und NetCDF-Parsing
 - Normalisierung und Persistierung in TimescaleDB
@@ -202,6 +208,7 @@ graph TB
 - Sentinel-Jobs (Health, Heartbeat)
 
 ### Frontend (SvelteKit)
+
 - Server-Side-Rendering für SEO und schnellen First-Paint
 - Hydration für Interaktivität
 - Karten-Komponente (MapLibre, später)
@@ -210,16 +217,19 @@ graph TB
 ## Datenfluss
 
 ### Read-Pfad (User schaut Wetter an)
+
 ```
 User → Caddy → Frontend (SSR) → Backend → Redis (Cache) → Postgres (Miss) → Backend → Frontend → User
 ```
 
 ### Write-Pfad (User postet Beobachtung)
+
 ```
 User → Caddy → Frontend → Backend (Auth) → Postgres
 ```
 
 ### Ingest-Pfad (Wetterdaten holen)
+
 ```
 Cron → Workers → External API (HTTP/GRIB) → Normalize → Postgres (TimescaleDB Hypertable)
 ```
@@ -243,15 +253,16 @@ Cron → Workers → External API (HTTP/GRIB) → Normalize → Postgres (Timesc
 
 ## Externe Abhängigkeiten (Plan)
 
-| Service                   | Zweck                          | Kritikalität     |
-|---------------------------|--------------------------------|------------------|
-| Hetzner Cloud             | Hosting                        | Kritisch         |
-| ghcr.io                   | Container-Images               | Kritisch         |
-| GitHub                    | Source-Hosting, CI             | Kritisch         |
-| Open-Meteo                | Wetterdaten Phase 1            | Hoch (ersetzbar) |
-| DWD OpenData              | Deutschland-Daten              | Hoch (ersetzbar) |
-| Sentry                    | Error-Tracking                 | Mittel           |
-| (Email-Provider TBD)      | Transaktionale Mails           | Mittel           |
+| Service              | Zweck                | Kritikalität     |
+| -------------------- | -------------------- | ---------------- |
+| Hetzner Cloud        | Hosting              | Kritisch         |
+| ghcr.io              | Container-Images     | Kritisch         |
+| GitHub               | Source-Hosting, CI   | Kritisch         |
+| Open-Meteo           | Wetterdaten Phase 1  | Hoch (ersetzbar) |
+| DWD OpenData         | Deutschland-Daten    | Hoch (ersetzbar) |
+| Sentry               | Error-Tracking       | Mittel           |
+| (Email-Provider TBD) | Transaktionale Mails | Mittel           |
+
 ````
 
 ### 3. `docs/development.md`
@@ -567,3 +578,4 @@ bauen wir auf, wenn du da angekommen bist.
 Bis dahin: respect für die Disziplin, ein solides Fundament zu legen, bevor
 das eigentliche Bauen beginnt. Genau dieser Schritt entscheidet später,
 ob das Projekt skaliert oder am eigenen technischen Schulden ersticken.
+````

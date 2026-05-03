@@ -7,6 +7,7 @@
 ## Ziel
 
 Das Go-Backend hat ein produktionstaugliches Skelett:
+
 - Chi-Router mit Standard-Middleware
 - Viper-basierte Config (ENV + Datei + Defaults)
 - Strukturiertes Logging mit slog
@@ -21,6 +22,7 @@ Am Ende: `curl http://api.localhost/health` antwortet mit JSON.
 ## Vor-Klärung
 
 Frag den Maintainer, falls noch nicht klar:
+
 - **Go-Modul-Pfad**: `github.com/<org>/worldweathernews/apps/backend` — welcher `<org>`?
 - **Validation-Library**: `github.com/go-playground/validator/v10` (verbreitet, aber Tags-Magic)
   oder manuelle Validation in der Config-Struct? Default-Empfehlung: manuell, weniger Magic.
@@ -30,6 +32,7 @@ Frag den Maintainer, falls noch nicht klar:
 ### 1. Go-Modul initialisieren
 
 `apps/backend/`:
+
 ```bash
 cd apps/backend
 go mod init github.com/<org>/worldweathernews/apps/backend
@@ -230,6 +233,7 @@ ENV-Mapping: `WWN_HTTP_PORT`, `WWN_DATABASE_URL`, `WWN_REDIS_URL`, `WWN_LOGGING_
 ### 6. `internal/observability/logging.go`
 
 slog-Setup:
+
 - Format aus Config
 - Trace-ID als Default-Attribut wenn vorhanden (über Context)
 - Helper `FromContext(ctx)` und `WithLogger(ctx, log)`
@@ -237,6 +241,7 @@ slog-Setup:
 ### 7. `internal/observability/metrics.go`
 
 Prometheus-Registry mit:
+
 - `wwn_http_requests_total{method, path, status}` Counter
 - `wwn_http_request_duration_seconds{method, path}` Histogram
 - `wwn_db_pool_connections{state}` Gauge (von pgxpool gespeist)
@@ -260,12 +265,14 @@ Helfer-Funktion zum Registrieren der Standard-Go-Collectors.
 ### 10. `internal/http/middleware/logging.go`
 
 Middleware die jede Request loggt:
+
 - Method, Path, Status, Duration, RemoteAddr, UserAgent, RequestID
 - Slog-Output via Context-Logger
 
 ### 11. `internal/http/router.go`
 
 Router-Setup:
+
 ```go
 func NewRouter(cfg *config.Config, deps Deps) http.Handler {
     r := chi.NewRouter()
@@ -298,23 +305,31 @@ func NewRouter(cfg *config.Config, deps Deps) http.Handler {
 ### 12. Handler
 
 **`/health`** → Liveness:
+
 ```json
-{"status": "ok", "version": {"version": "...", "commit": "..."}, "uptime": "..."}
+{
+  "status": "ok",
+  "version": { "version": "...", "commit": "..." },
+  "uptime": "..."
+}
 ```
 
 **`/ready`** → Readiness:
+
 - Pingt DB und Redis
 - 200 wenn beide ok, 503 sonst
 - Body listet Status pro Komponente
 
 **`/api/v1/ping`** →
+
 ```json
-{"message": "pong", "traceId": "<request-id>"}
+{ "message": "pong", "traceId": "<request-id>" }
 ```
 
 ### 13. `cmd/api/main.go`
 
 Reihenfolge:
+
 1. Config laden (Fehler → exit 1)
 2. Logger initialisieren
 3. Pool zu Postgres aufmachen — wenn dev: graceful (warnen, weiterlaufen),
@@ -417,7 +432,7 @@ backend:
   build:
     context: ../../apps/backend
     dockerfile: Dockerfile
-    target: builder  # für dev mit air
+    target: builder # für dev mit air
   container_name: wwn-backend
   command: air
   volumes:
@@ -441,11 +456,13 @@ backend:
 ```
 
 `volumes`-Section ergänzen:
+
 ```yaml
 go_mod_cache:
 ```
 
 `Caddyfile` updaten:
+
 ```caddy
 api.localhost {
     reverse_proxy backend:8080
@@ -455,6 +472,7 @@ api.localhost {
 ### 18. Tests
 
 Mindestens ein Handler-Test in `internal/http/handler/handler_test.go`:
+
 - `/health` returns 200 with JSON containing version
 - Ping returns 200 with traceId
 
@@ -477,6 +495,7 @@ sauber einbinden.
 ### 20. README
 
 `apps/backend/README.md`:
+
 - Wie lokal starten (`make dev` oder im Container `docker compose up backend`)
 - Endpunkte mit Beispiel-curl
 - Komplette ENV-Variablen-Tabelle

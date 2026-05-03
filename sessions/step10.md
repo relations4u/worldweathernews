@@ -28,9 +28,9 @@ prometheus:
   container_name: wwn-prometheus
   profiles: [monitoring]
   command:
-    - '--config.file=/etc/prometheus/prometheus.yml'
-    - '--storage.tsdb.retention.time=7d'
-    - '--web.enable-lifecycle'
+    - "--config.file=/etc/prometheus/prometheus.yml"
+    - "--storage.tsdb.retention.time=7d"
+    - "--web.enable-lifecycle"
   volumes:
     - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     - prometheus_data:/prometheus
@@ -87,12 +87,13 @@ tempo:
     - ../monitoring/tempo/tempo.yaml:/etc/tempo.yaml:ro
     - tempo_data:/var/tempo
   ports:
-    - "127.0.0.1:3200:3200"   # Tempo HTTP
-    - "127.0.0.1:4317:4317"   # OTLP gRPC
-    - "127.0.0.1:4318:4318"   # OTLP HTTP
+    - "127.0.0.1:3200:3200" # Tempo HTTP
+    - "127.0.0.1:4317:4317" # OTLP gRPC
+    - "127.0.0.1:4318:4318" # OTLP HTTP
 ```
 
 Volumes ergänzen:
+
 ```yaml
 prometheus_data:
 grafana_data:
@@ -115,24 +116,24 @@ global:
 scrape_configs:
   - job_name: prometheus
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ["localhost:9090"]
 
   - job_name: backend
     metrics_path: /metrics
     static_configs:
-      - targets: ['backend:8080']
+      - targets: ["backend:8080"]
         labels:
           service: backend
 
   - job_name: pyworkers
     static_configs:
-      - targets: ['pyworkers:9100']
+      - targets: ["pyworkers:9100"]
         labels:
           service: pyworkers
 
   - job_name: caddy
     static_configs:
-      - targets: ['caddy:2019']
+      - targets: ["caddy:2019"]
         labels:
           service: caddy
     # Caddy-Admin liefert /metrics, falls aktiviert
@@ -174,7 +175,7 @@ schema_config:
         period: 24h
 
 limits_config:
-  retention_period: 168h   # 7 Tage
+  retention_period: 168h # 7 Tage
   allow_structured_metadata: true
 ```
 
@@ -199,12 +200,13 @@ scrape_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
     relabel_configs:
-      - source_labels: ['__meta_docker_container_name']
-        regex: '/(wwn-.*)'
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(wwn-.*)"
         target_label: container
-      - source_labels: ['__meta_docker_container_log_stream']
+      - source_labels: ["__meta_docker_container_log_stream"]
         target_label: stream
-      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+      - source_labels:
+          ["__meta_docker_container_label_com_docker_compose_service"]
         target_label: service
     pipeline_stages:
       - docker: {}
@@ -244,7 +246,7 @@ ingester:
 
 compactor:
   compaction:
-    block_retention: 168h   # 7 Tage
+    block_retention: 168h # 7 Tage
 
 storage:
   trace:
@@ -279,7 +281,7 @@ datasources:
       derivedFields:
         - name: TraceID
           matcherRegex: 'trace_id="([a-f0-9]+)"'
-          url: '$${__value.raw}'
+          url: "$${__value.raw}"
           datasourceUid: tempo
 
   - name: Tempo
@@ -292,7 +294,7 @@ datasources:
         datasourceUid: loki
         spanStartTimeShift: -1m
         spanEndTimeShift: 1m
-        tags: ['service']
+        tags: ["service"]
         filterByTraceID: true
       serviceMap:
         datasourceUid: prometheus
@@ -320,6 +322,7 @@ providers:
 Drei Dashboards in `infra/monitoring/grafana/dashboards/`:
 
 **`backend-overview.json`** — Panels:
+
 - HTTP Request Rate (`rate(wwn_http_requests_total[1m])` by status)
 - HTTP Latency p50/p95/p99 (`histogram_quantile(...)`)
 - Error Rate (5xx / total)
@@ -328,12 +331,14 @@ Drei Dashboards in `infra/monitoring/grafana/dashboards/`:
 - DB Pool Stats (`wwn_db_pool_connections`)
 
 **`pyworkers-overview.json`** — Panels:
+
 - Heartbeat Rate (`rate(wwn_heartbeat_total[5m])`)
 - Job Run Rate by Status (`rate(wwn_job_runs_total[1m]) by (status)`)
 - Job Duration p50/p95 (`histogram_quantile(...)`)
 - Process CPU + Memory (Standard-Python-Metriken)
 
 **`infra-overview.json`** — Panels:
+
 - Container CPU (cAdvisor wird hier nicht installiert; nutze stattdessen
   Docker-Stats via `docker_container_*` falls verfügbar, sonst Panel mit
   TODO-Hinweis)
@@ -352,6 +357,7 @@ Hand bauen, dann JSON exportieren und committen.
 `apps/backend/`:
 
 Dependencies:
+
 ```bash
 go get go.opentelemetry.io/otel
 go get go.opentelemetry.io/otel/sdk
@@ -447,6 +453,7 @@ if spanCtx.IsValid() {
 ```
 
 Config-Erweiterung in `internal/config`:
+
 ```go
 type ObservabilityConfig struct {
     TracingEnabled  bool
@@ -457,6 +464,7 @@ type ObservabilityConfig struct {
 ### 9. Pyworkers-Instrumentierung
 
 Dependencies:
+
 ```toml
 "opentelemetry-api>=1.25",
 "opentelemetry-sdk>=1.25",
@@ -562,16 +570,19 @@ dev-monitoring: ## Nur Monitoring-Services
 ### Häufige Aufgaben
 
 **Backend hat hohe Latency**
+
 1. Grafana → Backend Overview → p99-Panel anschauen
 2. Wenn auffällig: Tempo öffnen, nach langsamen Traces suchen
 3. Trace-ID notieren, in Loki nach passenden Logs filtern
 
 **Worker-Job ist fehlgeschlagen**
+
 1. Grafana → Pyworkers Overview → Job Run Rate by Status
 2. Loki: `{service="pyworkers"} |= "error"`
 3. Trace verfolgen, Auto-Instrumentation zeigt DB-/HTTP-Calls
 
 **Errors über mehrere Services hinweg verfolgen**
+
 - Trace-ID kopieren, in Tempo Search-Eingabe einfügen
 - Service-Map zeigt Aufruf-Zusammenhang
 ```

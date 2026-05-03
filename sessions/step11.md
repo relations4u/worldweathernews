@@ -92,6 +92,7 @@ WWN_ENVIRONMENT=staging
 ```
 
 Verschlüsseln:
+
 ```bash
 sops --encrypt --in-place infra/secrets/staging/backend.env
 ```
@@ -136,7 +137,7 @@ Ausführbar machen.
 
 #### 1.5 `docs/secrets.md`
 
-```markdown
+````markdown
 # Secret-Management mit SOPS
 
 Secrets werden mit [SOPS](https://getsops.io/) und age-Keys verschlüsselt im
@@ -150,6 +151,8 @@ entschlüsselt und als `.env`-Files abgelegt.
    age-keygen -o ~/.config/sops/age/keys.txt
    chmod 600 ~/.config/sops/age/keys.txt
    ```
+````
+
 2. Public-Key kopieren (beginnt mit `age1...`)
 3. Public-Key zu `.sops.yaml` hinzufügen lassen (PR an bestehenden Maintainer)
 4. **Backup**: Private-Key in einen Passwort-Manager kopieren. Ohne Private-Key
@@ -165,6 +168,7 @@ entschlüsselt und als `.env`-Files abgelegt.
 ```bash
 sops infra/secrets/staging/backend.env
 ```
+
 Öffnet das File entschlüsselt im `$EDITOR`, verschlüsselt beim Speichern wieder.
 
 ## Neues Secret anlegen
@@ -179,6 +183,7 @@ git add infra/secrets/staging/new-secret.env
 ## Recovery
 
 Wenn der Private-Key verloren ist:
+
 1. Bestehende Maintainer haben weiter Zugriff
 2. Aus Backup wiederherstellen, falls vorhanden
 3. Wenn kein Backup: alle Secrets rotieren und neu verschlüsseln
@@ -189,7 +194,8 @@ Wenn der Private-Key verloren ist:
 - Keine Secrets in CI-Logs ausgeben
 - Keine Secrets in Container-Image-Layers
 - Keine Secrets als Build-Args (sind in History sichtbar)
-```
+
+````
 
 ### 2. Ansible-Struktur
 
@@ -210,7 +216,7 @@ gather_timeout = 30
 pipelining = True
 control_master = auto
 control_persist = 10m
-```
+````
 
 #### 2.2 `inventories/staging/hosts.yml`
 
@@ -257,6 +263,7 @@ ufw_allowed_ports:
 #### 2.5 Rollen
 
 **`roles/common/`**:
+
 - Tasks:
   - User `deploy` anlegen mit SSH-Public-Key
   - sudo-Rechte (NOPASSWD für `docker compose`-Wrapper-Script, nicht generell)
@@ -270,6 +277,7 @@ ufw_allowed_ports:
 - Templates: `sshd_config.j2`, `unattended-upgrades.j2`
 
 **`roles/docker/`**:
+
 - Docker-Engine via offiziellem Repo
 - docker-compose-Plugin
 - User `deploy` zur `docker`-Group hinzufügen
@@ -279,6 +287,7 @@ ufw_allowed_ports:
   (mit korrekten Permissions)
 
 **`roles/app/`**:
+
 - `/opt/wwn/`-Struktur erzeugen mit korrekten Owner/Permissions
 - SOPS-Decrypt der relevanten Secret-Files nach `/opt/wwn/.env.*`
   (root-only readable, mode 0600)
@@ -294,6 +303,7 @@ dem Host läuft. Empfehlung: Caddy IM Compose lassen. Diese Rolle dann nicht
 nötig — entscheide nach Hosting-Setup.)
 
 **`roles/monitoring-agent/`**:
+
 - node_exporter Container starten
 - promtail Container starten, sendet an Loki (zentraler Loki im Compose oder
   externe Instanz — frag bei Setup)
@@ -400,6 +410,7 @@ terraform {
 #### 3.2 `infra/terraform/modules/server/`
 
 `main.tf`:
+
 ```hcl
 variable "name" {
   type = string
@@ -485,6 +496,7 @@ output "staging_ip" {
 ```
 
 `cloud-init.yaml`:
+
 ```yaml
 #cloud-config
 users:
@@ -535,6 +547,7 @@ S3-kompatiblem Backend (Hetzner Object Storage) für Team-Setup:
 #### 3.7 Terraform-README
 
 `infra/terraform/README.md`:
+
 - Voraussetzungen (Token, SSH-Key)
 - Erstmaliger Apply für staging
 - Output → Ansible-Inventory mappen
@@ -582,6 +595,7 @@ Ausführbar machen.
 ### 5. `infra/ansible/README.md`
 
 Kurz-Anleitung:
+
 - Voraussetzungen (Ansible installieren, age-Key, Access)
 - Erstmaliges Setup eines Hosts: Terraform → Inventory ergänzen → site.yml
 - Deploy: `bash scripts/deploy.sh staging 0.1.0`
@@ -590,6 +604,7 @@ Kurz-Anleitung:
 ### 6. ENV-Substitution für `compose.prod.yml`
 
 `compose.prod.yml` braucht `${VERSION}` und `${IMAGE_NAMESPACE}`. Variante:
+
 - Ansible-Template-Modul mit Vars: schreibt fertige Datei nach Server
 - ODER: das File wird as-is rüberkopiert, ENV-Vars kommen aus
   `/opt/wwn/.env.compose`

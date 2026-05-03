@@ -14,6 +14,7 @@ Hot-Reload funktioniert im Container, Caddy routet `app.localhost` korrekt.
 ## Vor-Klärung
 
 Falls noch nicht klar:
+
 - **i18n-Library**: svelte-i18n vs. Paraglide (Inlang). Default-Empfehlung:
   TODO im Code lassen, Entscheidung in Session 12 oder erste Feature-Session.
   Jetzt nur DE und EN als statische Strings vorbereiten.
@@ -38,6 +39,7 @@ pnpm dlx sv create . \
 Falls das CLI interaktiv hängt: **abbrechen, fragen**, manuell aufsetzen.
 
 Alternative manuelle Aufsetzung:
+
 - `package.json` mit den richtigen Dependencies
 - `svelte.config.js` mit `@sveltejs/adapter-node`
 - `vite.config.ts`
@@ -54,19 +56,20 @@ pnpm add -D @sveltejs/adapter-node
 ```
 
 `svelte.config.js`:
+
 ```js
-import adapter from '@sveltejs/adapter-node';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import adapter from "@sveltejs/adapter-node";
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 export default {
-    preprocess: vitePreprocess(),
-    kit: {
-        adapter: adapter({
-            out: 'build',
-            precompress: true,
-            envPrefix: 'WWN_FRONTEND_'
-        })
-    }
+  preprocess: vitePreprocess(),
+  kit: {
+    adapter: adapter({
+      out: "build",
+      precompress: true,
+      envPrefix: "WWN_FRONTEND_",
+    }),
+  },
 };
 ```
 
@@ -77,6 +80,7 @@ pnpm dlx svelte-add@latest tailwindcss
 ```
 
 oder manuell:
+
 ```bash
 pnpm add -D tailwindcss postcss autoprefixer
 pnpm dlx tailwindcss init -p
@@ -93,6 +97,7 @@ pnpm dlx shadcn-svelte@latest init
 ```
 
 Optionen:
+
 - TypeScript: yes
 - Style: default
 - Base color: neutral (oder slate, frag mich)
@@ -101,6 +106,7 @@ Optionen:
 - Utils-Alias: `$lib/utils`
 
 Erste paar Komponenten installieren, die wir gleich brauchen:
+
 ```bash
 pnpm dlx shadcn-svelte@latest add button card badge
 ```
@@ -114,19 +120,21 @@ pnpm add -D eslint eslint-plugin-svelte @typescript-eslint/parser \
 ```
 
 ESLint-Config (`eslint.config.js` für ESLint v9 flat-config):
+
 - Svelte-Plugin
 - TypeScript-Plugin
 - Prettier-Compat
 
 Prettier-Config (`.prettierrc.json`):
+
 ```json
 {
-    "useTabs": false,
-    "tabWidth": 2,
-    "singleQuote": true,
-    "trailingComma": "none",
-    "printWidth": 100,
-    "plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"]
+  "useTabs": false,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "trailingComma": "none",
+  "printWidth": 100,
+  "plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"]
 }
 ```
 
@@ -137,23 +145,24 @@ pnpm add -D vitest @vitest/ui jsdom @testing-library/svelte @testing-library/jes
 ```
 
 `vite.config.ts` erweitern für Test-Setup:
+
 ```ts
-import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vitest/config';
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-    plugins: [sveltekit()],
-    test: {
-        include: ['src/**/*.{test,spec}.{js,ts}'],
-        environment: 'jsdom',
-        setupFiles: ['./src/test-setup.ts']
-    },
-    server: {
-        host: '0.0.0.0',
-        port: 5173,
-        strictPort: true,
-        watch: { usePolling: true }   // wichtig für Container-Filesystem
-    }
+  plugins: [sveltekit()],
+  test: {
+    include: ["src/**/*.{test,spec}.{js,ts}"],
+    environment: "jsdom",
+    setupFiles: ["./src/test-setup.ts"],
+  },
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+    strictPort: true,
+    watch: { usePolling: true }, // wichtig für Container-Filesystem
+  },
 });
 ```
 
@@ -204,55 +213,60 @@ apps/frontend/
 Dünner Fetch-Wrapper:
 
 ```ts
-import { PUBLIC_API_BASE_URL } from '$env/static/public';
+import { PUBLIC_API_BASE_URL } from "$env/static/public";
 
 export class ApiError extends Error {
-    constructor(
-        public status: number,
-        public detail: string,
-        public traceId?: string
-    ) {
-        super(`API ${status}: ${detail}`);
-    }
+  constructor(
+    public status: number,
+    public detail: string,
+    public traceId?: string,
+  ) {
+    super(`API ${status}: ${detail}`);
+  }
 }
 
 interface ApiOptions extends RequestInit {
-    timeout?: number;
+  timeout?: number;
 }
 
-export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
-    const { timeout = 10_000, ...rest } = options;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
+export async function apiFetch<T>(
+  path: string,
+  options: ApiOptions = {},
+): Promise<T> {
+  const { timeout = 10_000, ...rest } = options;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
 
-    try {
-        const response = await fetch(`${PUBLIC_API_BASE_URL}${path}`, {
-            ...rest,
-            signal: controller.signal,
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                ...rest.headers
-            }
-        });
+  try {
+    const response = await fetch(`${PUBLIC_API_BASE_URL}${path}`, {
+      ...rest,
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...rest.headers,
+      },
+    });
 
-        if (!response.ok) {
-            let detail = response.statusText;
-            try {
-                const body = await response.json();
-                detail = body.detail || body.title || detail;
-            } catch { /* nicht-JSON-Body, ignorieren */ }
-            throw new ApiError(response.status, detail);
-        }
-
-        return await response.json() as T;
-    } finally {
-        clearTimeout(timer);
+    if (!response.ok) {
+      let detail = response.statusText;
+      try {
+        const body = await response.json();
+        detail = body.detail || body.title || detail;
+      } catch {
+        /* nicht-JSON-Body, ignorieren */
+      }
+      throw new ApiError(response.status, detail);
     }
+
+    return (await response.json()) as T;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function ping(): Promise<{ message: string; traceId: string }> {
-    return apiFetch('/api/v1/ping');
+  return apiFetch("/api/v1/ping");
 }
 ```
 
@@ -350,6 +364,7 @@ Hero mit Backend-Status:
 ### 11. ENV-Setup
 
 `.env.example` in `apps/frontend/`:
+
 ```bash
 PUBLIC_API_BASE_URL=http://api.localhost
 ```
@@ -437,11 +452,13 @@ frontend:
 ```
 
 `volumes`-Section:
+
 ```yaml
 frontend_node_modules:
 ```
 
 `Caddyfile`:
+
 ```caddy
 app.localhost, localhost:80 {
     reverse_proxy frontend:5173 {
@@ -497,6 +514,7 @@ frontend-lint: ## Frontend-Lint
 ### 17. README
 
 `apps/frontend/README.md`:
+
 - Stack-Übersicht (SvelteKit + TS + Tailwind + shadcn-svelte)
 - Lokale Befehle
 - ENV-Variablen

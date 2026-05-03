@@ -8,12 +8,12 @@ Komplett zurücksetzen (löscht Volumes): `make dev-reset`.
 
 ## Services
 
-| Service  | Image                              | Zweck                                | Host-Ports          |
-|----------|------------------------------------|--------------------------------------|---------------------|
-| postgres | `timescale/timescaledb-ha:pg16`    | Hauptdatenbank (mit PostGIS + TS)    | `127.0.0.1:5432`    |
-| redis    | `redis:7-alpine`                   | Cache, Queue                         | `127.0.0.1:6379`    |
-| caddy    | `caddy:2-alpine`                   | Reverse-Proxy auf `*.localhost`      | `80`, `443`         |
-| mailhog  | `mailhog/mailhog`                  | SMTP-Catcher + Web-UI für Mail-Tests | `127.0.0.1:1025/8025` |
+| Service  | Image                           | Zweck                                | Host-Ports            |
+| -------- | ------------------------------- | ------------------------------------ | --------------------- |
+| postgres | `timescale/timescaledb-ha:pg16` | Hauptdatenbank (mit PostGIS + TS)    | `127.0.0.1:5432`      |
+| redis    | `redis:7-alpine`                | Cache, Queue                         | `127.0.0.1:6379`      |
+| caddy    | `caddy:2-alpine`                | Reverse-Proxy auf `*.localhost`      | `80`, `443`           |
+| mailhog  | `mailhog/mailhog`               | SMTP-Catcher + Web-UI für Mail-Tests | `127.0.0.1:1025/8025` |
 
 ## Sicherheits-Konventionen
 
@@ -51,6 +51,7 @@ allerersten Start** aus, wenn `/var/lib/postgresql/data/` leer ist. Bei
 späteren Starts werden Änderungen an den Scripts ignoriert.
 
 Wenn du eine neue Extension oder ein neues Init-SQL brauchst:
+
 1. Datei in `postgres-init/` ergänzen (Lexikographische Reihenfolge: `02-…`).
 2. `make dev-reset && make dev`.
 

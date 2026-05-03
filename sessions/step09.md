@@ -7,6 +7,7 @@
 ## Ziel
 
 Ein Tag im Format `v*` (z.B. `v0.1.0`) löst eine Release-Pipeline aus:
+
 - Container-Images für alle drei Services werden gebaut (multi-arch)
 - Mit cosign signiert (keyless via Sigstore)
 - SBOM mit Syft erzeugt
@@ -69,18 +70,18 @@ tag_pattern = "v[0-9]*"
 
 ### 2. `.github/workflows/release.yml`
 
-```yaml
+````yaml
 name: Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
   packages: write
-  id-token: write     # für cosign keyless
+  id-token: write # für cosign keyless
   attestations: write
 
 env:
@@ -109,9 +110,9 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - { name: backend,    context: apps/backend }
-          - { name: frontend,   context: apps/frontend }
-          - { name: pyworkers,  context: apps/pyworkers }
+          - { name: backend, context: apps/backend }
+          - { name: frontend, context: apps/frontend }
+          - { name: pyworkers, context: apps/pyworkers }
     steps:
       - uses: actions/checkout@v4
 
@@ -241,7 +242,7 @@ jobs:
             sboms/*.spdx.json
           generate_release_notes: false
           prerelease: ${{ contains(needs.meta.outputs.version, '-') }}
-```
+````
 
 ### 3. `scripts/release.sh`
 
@@ -482,7 +483,7 @@ weglassen oder via Build-Plugin ergänzen — TODO-Kommentar.)
 
 `docs/deployment.md` Abschnitt:
 
-```markdown
+````markdown
 ## Container-Registry: ghcr.io
 
 Erstmaliges Setup nach erstem Release:
@@ -494,17 +495,20 @@ Erstmaliges Setup nach erstem Release:
    in `~/.docker/config.json` hinterlegen via `docker login ghcr.io`
 
 Image-Pull lokal testen:
+
 ```bash
 docker pull ghcr.io/<org>/wwn-backend:0.1.0
 ```
-```
+````
+
+````
 
 ### 6. Top-Level Makefile
 
 ```makefile
 release: ## Neuen Release-Tag erstellen (interaktiv)
 	bash scripts/release.sh
-```
+````
 
 ### 7. README-Updates
 

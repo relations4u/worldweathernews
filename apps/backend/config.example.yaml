@@ -22,8 +22,8 @@ redis:
   url: redis://redis:6379/0
 
 logging:
-  level: info     # debug | info | warn | error
-  format: json    # json | text
+  level: info # debug | info | warn | error
+  format: json # json | text
 
-environment: production    # dev | staging | production
+environment: production # dev | staging | production
 metricsEnabled: true

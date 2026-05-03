@@ -1,0 +1,12 @@
+{
+	"hero": {
+		"title": "worldweathernews",
+		"subtitle": "A global community for weather and climate observations.",
+		"comingSoon": "Coming soon. Currently building the platform."
+	},
+	"backend": {
+		"connecting": "Connecting to backend …",
+		"connected": "Backend connected",
+		"offline": "Backend offline"
+	}
+}

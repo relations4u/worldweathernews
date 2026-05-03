@@ -8,6 +8,7 @@
 
 Wir etablieren **OpenAPI 3.1** als Single Source of Truth für die API. Aus dem
 Schema werden generiert:
+
 - Go-Server-Stubs und -Models (oapi-codegen)
 - TypeScript-Client-Types (openapi-typescript)
 
@@ -54,12 +55,12 @@ paths:
       tags: [system]
       summary: Connectivity check
       responses:
-        '200':
+        "200":
           description: pong
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PingResponse'
+                $ref: "#/components/schemas/PingResponse"
 
   /api/v1/locations:
     get:
@@ -83,7 +84,7 @@ paths:
             maximum: 50
             default: 10
       responses:
-        '200':
+        "200":
           description: List of matching locations
           content:
             application/json:
@@ -93,10 +94,10 @@ paths:
                   results:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Location'
+                      $ref: "#/components/schemas/Location"
                 required: [results]
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        "400":
+          $ref: "#/components/responses/BadRequest"
 
 components:
   schemas:
@@ -167,19 +168,19 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: "#/components/schemas/Problem"
     NotFound:
       description: Resource not found
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: "#/components/schemas/Problem"
     InternalServerError:
       description: Server error
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: "#/components/schemas/Problem"
 ```
 
 ### 2. Validierung
@@ -238,6 +239,7 @@ make gen
 ```
 
 Das erzeugt `apps/backend/internal/api/api.gen.go` mit:
+
 - Schema-Types (`PingResponse`, `Location`, `Problem`)
 - Chi-Server-Interface
 - Strict-Server-Wrapper
@@ -326,46 +328,54 @@ laufen und das JSON-Schema prüfen.
 `apps/frontend/src/lib/api/client.ts` umbauen:
 
 ```ts
-import type { paths, components } from './types.gen';
-import { PUBLIC_API_BASE_URL } from '$env/static/public';
+import type { paths, components } from "./types.gen";
+import { PUBLIC_API_BASE_URL } from "$env/static/public";
 
-export type PingResponse = components['schemas']['PingResponse'];
-export type Location = components['schemas']['Location'];
-export type Problem = components['schemas']['Problem'];
+export type PingResponse = components["schemas"]["PingResponse"];
+export type Location = components["schemas"]["Location"];
+export type Problem = components["schemas"]["Problem"];
 
 export class ApiError extends Error {
-    constructor(
-        public status: number,
-        public problem: Partial<Problem>
-    ) {
-        super(`API ${status}: ${problem.title ?? 'unknown'}`);
-    }
+  constructor(
+    public status: number,
+    public problem: Partial<Problem>,
+  ) {
+    super(`API ${status}: ${problem.title ?? "unknown"}`);
+  }
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const res = await fetch(`${PUBLIC_API_BASE_URL}${path}`, {
-        ...init,
-        headers: { Accept: 'application/json', ...init.headers }
-    });
+  const res = await fetch(`${PUBLIC_API_BASE_URL}${path}`, {
+    ...init,
+    headers: { Accept: "application/json", ...init.headers },
+  });
 
-    if (!res.ok) {
-        let problem: Partial<Problem> = { title: res.statusText, status: res.status };
-        try {
-            problem = await res.json();
-        } catch { /* ignore */ }
-        throw new ApiError(res.status, problem);
+  if (!res.ok) {
+    let problem: Partial<Problem> = {
+      title: res.statusText,
+      status: res.status,
+    };
+    try {
+      problem = await res.json();
+    } catch {
+      /* ignore */
     }
+    throw new ApiError(res.status, problem);
+  }
 
-    return res.json() as Promise<T>;
+  return res.json() as Promise<T>;
 }
 
 export function ping(): Promise<PingResponse> {
-    return request<PingResponse>('/api/v1/ping');
+  return request<PingResponse>("/api/v1/ping");
 }
 
-export function searchLocations(q: string, limit = 10): Promise<{ results: Location[] }> {
-    const params = new URLSearchParams({ q, limit: String(limit) });
-    return request(`/api/v1/locations?${params}`);
+export function searchLocations(
+  q: string,
+  limit = 10,
+): Promise<{ results: Location[] }> {
+  const params = new URLSearchParams({ q, limit: String(limit) });
+  return request(`/api/v1/locations?${params}`);
 }
 ```
 
@@ -407,6 +417,7 @@ Ausführbar machen.
 ### 7. Linguist-Annotations
 
 `.gitattributes` ergänzen:
+
 ```
 apps/backend/internal/api/api.gen.go linguist-generated=true
 apps/frontend/src/lib/api/types.gen.ts linguist-generated=true
@@ -434,6 +445,7 @@ veraltet.
 ## Decision
 
 Wir nutzen OpenAPI 3.1 als Single Source of Truth in `packages/api-schema/openapi.yaml`.
+
 - Go-Server-Stubs werden mit `oapi-codegen` generiert (`internal/api/api.gen.go`)
 - TypeScript-Types werden mit `openapi-typescript` generiert (`src/lib/api/types.gen.ts`)
 - Der `make gen`-Workflow regeneriert beide
@@ -443,12 +455,14 @@ Wir nutzen OpenAPI 3.1 als Single Source of Truth in `packages/api-schema/openap
 ## Consequences
 
 **Positiv**:
+
 - Keine Type-Drift zwischen Server und Client
 - API-Doku immer aktuell (Schema ist die Doku)
 - Externer Konsum der API später trivial (Schema kann veröffentlicht werden)
 - B2B-API-Pläne sind ohne Mehrarbeit machbar
 
 **Negativ**:
+
 - Zusätzlicher Build-Schritt (`make gen`)
 - Lernkurve für OpenAPI 3.1
 - oapi-codegen-Aktualisierungen können generierte Types ändern → Migrations-Aufwand

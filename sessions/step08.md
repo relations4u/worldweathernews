@@ -29,15 +29,15 @@ name: CI Backend
 on:
   pull_request:
     paths:
-      - 'apps/backend/**'
-      - 'packages/api-schema/**'
-      - '.github/workflows/ci-backend.yml'
+      - "apps/backend/**"
+      - "packages/api-schema/**"
+      - ".github/workflows/ci-backend.yml"
   push:
     branches: [main]
     paths:
-      - 'apps/backend/**'
-      - 'packages/api-schema/**'
-      - '.github/workflows/ci-backend.yml'
+      - "apps/backend/**"
+      - "packages/api-schema/**"
+      - ".github/workflows/ci-backend.yml"
 
 concurrency:
   group: ci-backend-${{ github.ref }}
@@ -134,17 +134,17 @@ name: CI Frontend
 on:
   pull_request:
     paths:
-      - 'apps/frontend/**'
-      - 'packages/api-schema/**'
-      - 'packages/shared-types/**'
-      - '.github/workflows/ci-frontend.yml'
+      - "apps/frontend/**"
+      - "packages/api-schema/**"
+      - "packages/shared-types/**"
+      - ".github/workflows/ci-frontend.yml"
   push:
     branches: [main]
     paths:
-      - 'apps/frontend/**'
-      - 'packages/api-schema/**'
-      - 'packages/shared-types/**'
-      - '.github/workflows/ci-frontend.yml'
+      - "apps/frontend/**"
+      - "packages/api-schema/**"
+      - "packages/shared-types/**"
+      - ".github/workflows/ci-frontend.yml"
 
 concurrency:
   group: ci-frontend-${{ github.ref }}
@@ -235,13 +235,13 @@ name: CI PyWorkers
 on:
   pull_request:
     paths:
-      - 'apps/pyworkers/**'
-      - '.github/workflows/ci-pyworkers.yml'
+      - "apps/pyworkers/**"
+      - ".github/workflows/ci-pyworkers.yml"
   push:
     branches: [main]
     paths:
-      - 'apps/pyworkers/**'
-      - '.github/workflows/ci-pyworkers.yml'
+      - "apps/pyworkers/**"
+      - ".github/workflows/ci-pyworkers.yml"
 
 concurrency:
   group: ci-pyworkers-${{ github.ref }}
@@ -368,7 +368,7 @@ jobs:
 
 ```yaml
 extends:
-  - '@commitlint/config-conventional'
+  - "@commitlint/config-conventional"
 rules:
   type-enum:
     - 2
@@ -387,15 +387,15 @@ name: Security Scan
 
 on:
   schedule:
-    - cron: '0 6 * * 1'  # Mo 06:00 UTC
+    - cron: "0 6 * * 1" # Mo 06:00 UTC
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - '**/go.mod'
-      - '**/go.sum'
-      - '**/pnpm-lock.yaml'
-      - '**/uv.lock'
+      - "**/go.mod"
+      - "**/go.sum"
+      - "**/pnpm-lock.yaml"
+      - "**/uv.lock"
 
 permissions:
   contents: read
@@ -485,8 +485,8 @@ updates:
     groups:
       svelte:
         patterns:
-          - 'svelte*'
-          - '@sveltejs/*'
+          - "svelte*"
+          - "@sveltejs/*"
 
   - package-ecosystem: pip
     directory: /apps/pyworkers
@@ -526,6 +526,7 @@ updates:
 ## Branch Protection
 
 In den GitHub-Repo-Settings für `main` einstellen:
+
 - Require pull request before merging
 - Require status checks to pass:
   - CI Backend / lint, test, build
@@ -571,7 +572,7 @@ Top-Level `README.md` Badges einfügen:
 - [ ] Push auf einen Branch triggert die richtigen Workflows
 - [ ] Lokal: `yamllint .github/workflows/` grün
 - [ ] In GitHub Actions: alle Workflows laufen für eine Test-PR mindestens einmal
-  durch und sind grün
+      durch und sind grün
 - [ ] Concurrency-Gruppen funktionieren (alte Runs werden gecanceled)
 - [ ] Path-Filter funktionieren (nur relevante Workflows triggern)
 - [ ] Caching funktioniert (zweiter Run ist deutlich schneller)

@@ -19,6 +19,7 @@ oder zeigen "no services yet" — Service-Dateien kommen erst ab Session 4.
 Hooks für:
 
 **Generic** (jeder Commit):
+
 - `check-merge-conflict`
 - `check-added-large-files` (Limit z.B. 1MB)
 - `end-of-file-fixer`
@@ -28,28 +29,35 @@ Hooks für:
 - `mixed-line-ending`
 
 **Secrets-Scanning**:
+
 - `gitleaks` (über pre-commit-Hook von gitleaks)
 
 **Go**:
+
 - `gofmt`
 - `goimports`
 - `golangci-lint` (system-Hook, nutzt lokales `golangci-lint` aus mise)
 
 **Python**:
+
 - `ruff check`
 - `ruff format`
 
 **JavaScript/TypeScript/Svelte**:
+
 - `prettier` mit Plugins für Svelte und Tailwind
 - (eslint kommt erst, wenn das Frontend existiert — Session 5)
 
 **YAML**:
+
 - `yamllint`
 
 **Dockerfiles**:
+
 - `hadolint` (greift später, wenn Dockerfiles existieren)
 
 **Konfiguration**:
+
 - Hooks die für leere Verzeichnisse fehlschlagen würden: konditional aktivieren
   oder mit `exclude`-Pattern entschärfen
 - `--fail-fast` ausschalten, wir wollen alle Findings sehen
@@ -57,6 +65,7 @@ Hooks für:
 ### 2. `.yamllint`-Config
 
 Pragmatisch:
+
 - `extends: default`
 - Line-length disabled (oder auf 200 hochgesetzt)
 - Indentation: 2
@@ -189,6 +198,7 @@ clean: ## Aufräumen
 ```
 
 Wichtig:
+
 - `.PHONY` korrekt für alle Targets
 - Tabs für Indentation (Make-Anforderung)
 - Graceful: Targets schlagen nicht hart fehl wenn Sub-Verzeichnisse noch leer sind

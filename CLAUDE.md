@@ -13,6 +13,7 @@ nicht raten.
 ## Projekt-Vision
 
 Eine globale Plattform, die:
+
 - Wetterdaten und Vorhersagen aus nationalen Wetterdiensten weltweit aggregiert
 - Klimadaten visualisiert (Anomalien, Trends, historische Vergleiche)
 - Eine Community von Beobachtern, Citizen Scientists und Wetter-Interessierten aufbaut
@@ -24,31 +25,31 @@ Eine globale Plattform, die:
 
 ## Tech-Stack (verbindlich)
 
-| Schicht | Technologie | Begründung |
-|---|---|---|
-| Backend-API | Go 1.23 | Performance, Concurrency für API-Aggregation, Self-Hosting-freundlich |
-| HTTP-Framework | Chi | Idiomatisch, nah an net/http, kein Magic |
-| DB-Access | sqlc + pgx/v5 | Typsicher ohne ORM-Overhead |
-| Config (Go) | Viper | ENV + Datei + Defaults |
-| Workers | Python 3.12 | Reife GRIB/NetCDF-Bibliotheken (xarray, cfgrib) |
-| Python-Pkg-Manager | uv | Schneller als pip/poetry, deterministisch |
-| Config (Python) | pydantic-settings | Typsicher, Validation beim Start |
-| Frontend | SvelteKit + TypeScript | Schlanker als Next.js, exzellente DX |
-| Styling | Tailwind CSS + shadcn-svelte | Schnelles, konsistentes UI |
-| Frontend-Adapter | @sveltejs/adapter-node | Self-Hosting im Container |
-| Datenbank | PostgreSQL 16 | Mit PostGIS (Geo) und TimescaleDB (Zeitreihen) |
-| Cache/Queue | Redis 7 | Standard, vielseitig |
-| Reverse Proxy | Caddy | Auto-SSL, einfache Config |
-| Container-Runtime | Docker + Docker Compose | Wachstumspfad zu K3s offen, aber nicht jetzt |
-| CI | GitHub Actions | Schnell, kostenlos, sehr verbreitet |
-| Container-Registry | ghcr.io | Integriert mit GitHub |
-| Deployment | Ansible | Klassisch, durchschaubar, idempotent |
-| Infrastruktur | Terraform | Provider-Abstraktion, deklarativ |
-| Secrets | SOPS + age | In Git verschlüsselt, kein externer Vault nötig |
-| Monitoring | Prometheus + Grafana + Loki + Tempo | Self-hostbar, ein UI |
-| Errors | Sentry | Quasi-Standard |
-| Uptime | Uptime Kuma | Simpel, schön, self-hosted |
-| Migrations | goose | Sprach-agnostisch (Go-Tool, aber File-basiert) |
+| Schicht            | Technologie                         | Begründung                                                            |
+| ------------------ | ----------------------------------- | --------------------------------------------------------------------- |
+| Backend-API        | Go 1.23                             | Performance, Concurrency für API-Aggregation, Self-Hosting-freundlich |
+| HTTP-Framework     | Chi                                 | Idiomatisch, nah an net/http, kein Magic                              |
+| DB-Access          | sqlc + pgx/v5                       | Typsicher ohne ORM-Overhead                                           |
+| Config (Go)        | Viper                               | ENV + Datei + Defaults                                                |
+| Workers            | Python 3.12                         | Reife GRIB/NetCDF-Bibliotheken (xarray, cfgrib)                       |
+| Python-Pkg-Manager | uv                                  | Schneller als pip/poetry, deterministisch                             |
+| Config (Python)    | pydantic-settings                   | Typsicher, Validation beim Start                                      |
+| Frontend           | SvelteKit + TypeScript              | Schlanker als Next.js, exzellente DX                                  |
+| Styling            | Tailwind CSS + shadcn-svelte        | Schnelles, konsistentes UI                                            |
+| Frontend-Adapter   | @sveltejs/adapter-node              | Self-Hosting im Container                                             |
+| Datenbank          | PostgreSQL 16                       | Mit PostGIS (Geo) und TimescaleDB (Zeitreihen)                        |
+| Cache/Queue        | Redis 7                             | Standard, vielseitig                                                  |
+| Reverse Proxy      | Caddy                               | Auto-SSL, einfache Config                                             |
+| Container-Runtime  | Docker + Docker Compose             | Wachstumspfad zu K3s offen, aber nicht jetzt                          |
+| CI                 | GitHub Actions                      | Schnell, kostenlos, sehr verbreitet                                   |
+| Container-Registry | ghcr.io                             | Integriert mit GitHub                                                 |
+| Deployment         | Ansible                             | Klassisch, durchschaubar, idempotent                                  |
+| Infrastruktur      | Terraform                           | Provider-Abstraktion, deklarativ                                      |
+| Secrets            | SOPS + age                          | In Git verschlüsselt, kein externer Vault nötig                       |
+| Monitoring         | Prometheus + Grafana + Loki + Tempo | Self-hostbar, ein UI                                                  |
+| Errors             | Sentry                              | Quasi-Standard                                                        |
+| Uptime             | Uptime Kuma                         | Simpel, schön, self-hosted                                            |
+| Migrations         | goose                               | Sprach-agnostisch (Go-Tool, aber File-basiert)                        |
 
 ---
 
@@ -84,6 +85,7 @@ worldweathernews/
 ## Conventions
 
 ### Git
+
 - **Trunk-based Development**: kurze Feature-Branches, Merge in `main`
 - **Conventional Commits**: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `perf:`, `ci:`
 - Scope optional: `feat(backend):`, `fix(frontend):`
@@ -92,6 +94,7 @@ worldweathernews/
 - **Semver** für Releases, Tags `v*`
 
 ### Code-Style
+
 - Go: `gofmt`, `goimports`, `golangci-lint` müssen grün sein
 - Python: `ruff` (Lint + Format), `mypy` strict
 - TypeScript: `eslint`, `prettier`, `svelte-check`
@@ -99,12 +102,14 @@ worldweathernews/
 - Trace-IDs in jedem Log-Eintrag
 
 ### Naming-Konventionen
+
 - ENV-Variablen: `WWN_*` (Backend Go), `WWN_PY_*` (Python), `PUBLIC_*` (Frontend client-side)
 - Container-Images: `ghcr.io/relations4u/wwn-backend`, `wwn-frontend`, `wwn-pyworkers`
 - Verzeichnisse: kebab-case
 - Go-Module: `github.com/relations4u/worldweathernews/apps/backend`
 
 ### API-Design
+
 - **OpenAPI ist Single Source of Truth** in `packages/api-schema/openapi.yaml`
 - Server-Stubs (Go) und Client-Types (TS) werden generiert
 - API-Versionierung im Pfad: `/api/v1/...`
@@ -112,12 +117,14 @@ worldweathernews/
 - Pagination: cursor-basiert, nicht offset
 
 ### Datenbank
+
 - Migrations in `infra/migrations/` (sprachunabhängig)
 - Jede Migration muss ein `down`-Script haben (Reversibilität)
 - Keine direkten Schema-Änderungen ohne Migration
 - Foreign Keys explizit, ON DELETE CASCADE bewusst
 
 ### Tests
+
 - Go: Tests neben Code (`foo.go` + `foo_test.go`), `_race`-Flag im CI
 - Python: `tests/`-Verzeichnis, pytest mit `asyncio_mode = "auto"`
 - Frontend: Unit-Tests via Vitest, E2E später mit Playwright
@@ -130,37 +137,44 @@ worldweathernews/
 Diese Regeln gelten **immer** und überschreiben alle Default-Verhaltensweisen.
 
 ### Plan vor Ausführung
+
 - Bei jeder Änderung, die mehr als 3 Dateien betrifft: **erst Plan zeigen**
 - Plan beinhaltet: Welche Dateien, welche Änderungen, welche Risiken
 - Auf explizite Freigabe warten
 - Plan-Mode nutzen wenn verfügbar (Shift+Tab in Claude Code)
 
 ### Commits
+
 - **Nie eigenständig committen.** Der Maintainer committet selbst.
 - Am Ende jeder Session: `git status` + Commit-Vorschlag formulieren
 - Commit-Messages folgen Conventional Commits
 
 ### Bei Unklarheit
+
 - **Fragen statt annehmen.** Lieber eine Frage zu viel als eine falsche Annahme.
 - Wenn mehrere sinnvolle Optionen existieren: alle nennen, Empfehlung aussprechen, fragen.
 
 ### Qualität
+
 - Vor Fertig-Meldung: Linter und Tests laufen lassen
 - Bei roten Tests: erst grün machen, dann melden
 - Bei Lint-Findings: fixen, nicht ignorieren
 - Wenn etwas nicht funktioniert: ehrlich sagen, nicht überspielen
 
 ### Dependency-Auswahl
+
 - **Bevor** du eine neue Dependency hinzufügst: prüfen ob sie in der Tech-Stack-Tabelle steht
 - Wenn nicht: fragen, mit Begründung
 - Bevorzugung: bekannte, gut gepflegte Libraries; Stdlib wo möglich
 
 ### Generated Code
+
 - Generierter Code (sqlc, oapi-codegen, openapi-typescript) wird committed
 - CI prüft via `git diff --exit-code` ob aktuell
 - Generated Files mit `// Code generated by ...; DO NOT EDIT.` markieren
 
 ### Sicherheit
+
 - Keine Secrets in Code, Logs, Tests, Konfigurationen
 - Keine `.env`-Files committen, nur `.env.example`
 - SQL via parametrisierte Queries, niemals String-Konkatenation
@@ -174,6 +188,7 @@ Diese werden im Verlauf der Setup-Sessions implementiert. Ist ein Kommando noch
 nicht da, ist das ein Hinweis, dass es noch fehlt.
 
 ### Top-Level
+
 - `make bootstrap` — Erst-Setup nach Repo-Clone
 - `make dev` — Lokale Entwicklung starten
 - `make dev-full` — Inkl. Monitoring-Stack
@@ -188,6 +203,7 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 - `make clean` — Aufräumen
 
 ### Per Service
+
 - `make backend-dev`, `make backend-test`, `make backend-lint`
 - `make frontend-dev`, `make frontend-test`, `make frontend-lint`
 - `make pyworkers-dev`, `make pyworkers-test`, `make pyworkers-lint`
@@ -212,16 +228,16 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 
 ## Wo finde ich was
 
-| Anliegen | Ort |
-|---|---|
-| Architektur-Diagramme | `docs/architecture.md` |
-| Was tun wenn X kaputt? | `docs/runbook.md` |
-| Wie deploye ich? | `docs/deployment.md` |
-| Wie entwickle ich Feature X? | `docs/development.md` |
-| Warum diese Tech-Entscheidung? | `docs/adr/` |
-| Config-Reference | `docs/config-reference.md` (generiert) |
-| Secrets-Workflow | `docs/secrets.md` |
-| Service-spezifische Doku | `apps/<service>/README.md` |
+| Anliegen                       | Ort                                    |
+| ------------------------------ | -------------------------------------- |
+| Architektur-Diagramme          | `docs/architecture.md`                 |
+| Was tun wenn X kaputt?         | `docs/runbook.md`                      |
+| Wie deploye ich?               | `docs/deployment.md`                   |
+| Wie entwickle ich Feature X?   | `docs/development.md`                  |
+| Warum diese Tech-Entscheidung? | `docs/adr/`                            |
+| Config-Reference               | `docs/config-reference.md` (generiert) |
+| Secrets-Workflow               | `docs/secrets.md`                      |
+| Service-spezifische Doku       | `apps/<service>/README.md`             |
 
 ---
 
@@ -264,6 +280,29 @@ definierten Aufgaben. Bei Abweichung: zurück zur Datei, fragen.
 
 Stand der Sessions wird in `sessions/STATUS.md` gepflegt — am Ende jeder Session
 ein kurzer Eintrag.
+
+---
+
+## Dockerfile-Konventionen
+
+- Alle `go install`-Befehle MÜSSEN eine `@vX.Y.Z`-Version haben (DL3062)
+- Aktuelle Air-Adresse: github.com/air-verse/air (nicht mehr cosmtrek/air)
+- Base-Images mit konkretem Tag, nicht `:latest` (DL3007)
+- `apt-get install` immer mit `--no-install-recommends` und `rm -rf /var/lib/apt/lists/*`
+
+---
+
+## Pre-commit-Konventionen
+
+- Sprach-spezifische Formatter (prettier, ruff) als `repo: local` Hooks
+  einbinden, die das jeweilige Workspace-Tool aufrufen
+  (`pnpm --filter ... exec prettier`, `uv run ruff`)
+- Keine `additional_dependencies` für Sprach-Tools — nutzt sonst zwei
+  Versionen parallel (Hook vs. App)
+- `check-json`-Hook schließt JSONC-Files aus (tsconfig.json, .vscode/\*.json,
+  .code-workspace)
+- `pre-commit clean && pre-commit install --install-hooks` nach jeder
+  Änderung an `.pre-commit-config.yaml`
 
 ---
 

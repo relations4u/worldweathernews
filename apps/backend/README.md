@@ -21,12 +21,12 @@ make dev          # Hot-Reload via air
 
 ## Endpunkte
 
-| Pfad             | Beschreibung                                    |
-|------------------|-------------------------------------------------|
-| `GET /health`    | Liveness — JSON mit `status`, `version`, `uptime` |
-| `GET /ready`     | Readiness — pingt DB+Redis, 200 oder 503        |
-| `GET /metrics`   | Prometheus-Exposition (deaktivierbar)           |
-| `GET /api/v1/ping` | Demo-Endpoint mit Trace-ID                    |
+| Pfad               | Beschreibung                                      |
+| ------------------ | ------------------------------------------------- |
+| `GET /health`      | Liveness — JSON mit `status`, `version`, `uptime` |
+| `GET /ready`       | Readiness — pingt DB+Redis, 200 oder 503          |
+| `GET /metrics`     | Prometheus-Exposition (deaktivierbar)             |
+| `GET /api/v1/ping` | Demo-Endpoint mit Trace-ID                        |
 
 Beispiele:
 
@@ -41,24 +41,24 @@ curl -s http://api.localhost/metrics | head
 
 Prefix `WWN_`, geschachtelt mit Unterstrich. Beispiele:
 
-| Variable                       | Default                               | Beschreibung                  |
-|--------------------------------|---------------------------------------|-------------------------------|
-| `WWN_HTTP_PORT`                | `8080`                                | HTTP-Port                     |
-| `WWN_HTTP_READTIMEOUT`         | `10s`                                 | Read-Timeout                  |
-| `WWN_HTTP_WRITETIMEOUT`        | `30s`                                 | Write-Timeout                 |
-| `WWN_HTTP_IDLETIMEOUT`         | `120s`                                | Idle-Timeout                  |
-| `WWN_HTTP_SHUTDOWNTIMEOUT`     | `15s`                                 | Graceful-Shutdown-Timeout     |
-| `WWN_HTTP_CORSORIGINS`         | `http://app.localhost`                | Erlaubte CORS-Origins         |
-| `WWN_DATABASE_URL`             | —                                     | **Pflicht.** Postgres-URL     |
-| `WWN_DATABASE_MAXOPENCONNS`    | `25`                                  | Pool max-conns                |
-| `WWN_DATABASE_MAXIDLECONNS`    | `5`                                   | Pool min-conns                |
-| `WWN_DATABASE_CONNMAXLIFETIME` | `1h`                                  | Conn-Lifetime                 |
-| `WWN_REDIS_URL`                | —                                     | **Pflicht.** Redis-URL        |
-| `WWN_LOGGING_LEVEL`            | `info`                                | `debug`/`info`/`warn`/`error` |
-| `WWN_LOGGING_FORMAT`           | `json`                                | `json` oder `text`            |
-| `WWN_ENVIRONMENT`              | `production`                          | `dev`/`staging`/`production`  |
-| `WWN_METRICSENABLED`           | `true`                                | `/metrics` an/aus             |
-| `WWN_CONFIG_FILE`              | _(leer)_                              | Optional: YAML-Config-Pfad    |
+| Variable                       | Default                | Beschreibung                  |
+| ------------------------------ | ---------------------- | ----------------------------- |
+| `WWN_HTTP_PORT`                | `8080`                 | HTTP-Port                     |
+| `WWN_HTTP_READTIMEOUT`         | `10s`                  | Read-Timeout                  |
+| `WWN_HTTP_WRITETIMEOUT`        | `30s`                  | Write-Timeout                 |
+| `WWN_HTTP_IDLETIMEOUT`         | `120s`                 | Idle-Timeout                  |
+| `WWN_HTTP_SHUTDOWNTIMEOUT`     | `15s`                  | Graceful-Shutdown-Timeout     |
+| `WWN_HTTP_CORSORIGINS`         | `http://app.localhost` | Erlaubte CORS-Origins         |
+| `WWN_DATABASE_URL`             | —                      | **Pflicht.** Postgres-URL     |
+| `WWN_DATABASE_MAXOPENCONNS`    | `25`                   | Pool max-conns                |
+| `WWN_DATABASE_MAXIDLECONNS`    | `5`                    | Pool min-conns                |
+| `WWN_DATABASE_CONNMAXLIFETIME` | `1h`                   | Conn-Lifetime                 |
+| `WWN_REDIS_URL`                | —                      | **Pflicht.** Redis-URL        |
+| `WWN_LOGGING_LEVEL`            | `info`                 | `debug`/`info`/`warn`/`error` |
+| `WWN_LOGGING_FORMAT`           | `json`                 | `json` oder `text`            |
+| `WWN_ENVIRONMENT`              | `production`           | `dev`/`staging`/`production`  |
+| `WWN_METRICSENABLED`           | `true`                 | `/metrics` an/aus             |
+| `WWN_CONFIG_FILE`              | _(leer)_               | Optional: YAML-Config-Pfad    |
 
 In `dev` läuft das Backend auch ohne erreichbare DB/Redis weiter (mit Warnung);
 in `staging`/`production` schlägt Boot hart fehl.

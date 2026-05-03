@@ -1,4 +1,4 @@
-.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen migrate clean backend-dev backend-test backend-lint
+.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen migrate clean backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check
 
 .DEFAULT_GOAL := help
 
@@ -40,7 +40,7 @@ dev-redis: ## redis-cli auf dem Cache
 
 test: ## Alle Tests ausführen
 	$(MAKE) -C apps/backend test
-	@$(MAKE) -C apps/frontend test 2>/dev/null || echo "  frontend: noch nicht da"
+	$(MAKE) -C apps/frontend test
 	@$(MAKE) -C apps/pyworkers test 2>/dev/null || echo "  pyworkers: noch nicht da"
 
 backend-dev: ## Backend lokal mit Hot-Reload (air)
@@ -51,6 +51,18 @@ backend-test: ## Backend-Tests
 
 backend-lint: ## Backend-Lint (golangci-lint)
 	$(MAKE) -C apps/backend lint
+
+frontend-dev: ## Frontend lokal mit Hot-Reload (vite)
+	$(MAKE) -C apps/frontend dev
+
+frontend-test: ## Frontend-Tests (vitest)
+	$(MAKE) -C apps/frontend test
+
+frontend-lint: ## Frontend-Lint (eslint + prettier --check)
+	$(MAKE) -C apps/frontend lint
+
+frontend-check: ## Frontend Type-Check (svelte-check)
+	$(MAKE) -C apps/frontend check
 
 lint: ## Alle Linter (via pre-commit)
 	pre-commit run --all-files

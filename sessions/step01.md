@@ -72,6 +72,7 @@ zu installieren sind (z.B. `go install ...` Hinweis in der README).
 ### 3. `.editorconfig` anlegen
 
 Sinnvolle Defaults für:
+
 - Go: Tabs für Einrückung
 - Python: 4 Leerzeichen
 - JavaScript/TypeScript/Svelte: 2 Leerzeichen
@@ -87,6 +88,7 @@ Sinnvolle Defaults für:
 ### 5. Initiale `README.md` im Root
 
 Inhalt minimal, aber strukturiert:
+
 - Eine Zeile Beschreibung
 - Status-Hinweis "WIP — initial setup phase"
 - Quickstart-Block (Platzhalter, Befehle existieren noch nicht):
@@ -128,7 +130,7 @@ Inhalt minimal, aber strukturiert:
 - [ ] `git status` zeigt nur die geplanten neuen Files
 - [ ] Keine Platzhalter-Files mit "Lorem ipsum" oder erfundenen Inhalten
 - [ ] README enthält keine Anleitungen für Befehle, die noch nicht existieren
-  (außer als Quickstart-Vorschau mit Hinweis)
+      (außer als Quickstart-Vorschau mit Hinweis)
 
 ## Mögliche Stolpersteine
 
@@ -157,6 +159,7 @@ Notizen: <Auffälligkeiten, offene Lizenz-Frage etc.>
 ```
 
 Suggested Commit-Message:
+
 ```
 chore: initial repo skeleton with mise tooling
 ```

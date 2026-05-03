@@ -7,6 +7,7 @@
 ## Ziel
 
 Ein Python-Worker-Service ist aufgesetzt mit:
+
 - uv als Paketmanager
 - pydantic-settings für Config
 - structlog für strukturierte Logs
@@ -21,6 +22,7 @@ In späteren Sessions kommen GRIB-Parser, Wetterdienst-Aggregatoren etc. hinzu.
 ## Vor-Klärung
 
 Falls noch nicht klar:
+
 - **Scheduler-Bibliothek**: apscheduler ist solide aber nicht mehr aktiv weiterentwickelt
   in der gleichen Form wie früher. Alternative: `arq` (Redis-basiert, async-first) oder
   `taskiq`. Default-Empfehlung: apscheduler 4.x, weil es für simple Cron-Tasks gut
@@ -587,6 +589,7 @@ Dependencies via uv beim Start (langsamer, aber einfacher).
 Alternative: separater Dev-Dockerfile-Stage. Frag mich falls unklar.
 
 Volumes-Section:
+
 ```yaml
 pyworkers_venv:
 ```
@@ -607,6 +610,7 @@ pyworkers-lint: ## Python-Workers Lint
 ### 17. README
 
 `apps/pyworkers/README.md`:
+
 - Stack-Übersicht
 - Lokale Befehle
 - ENV-Variablen
@@ -673,6 +677,7 @@ feat(pyworkers): add Python worker skeleton with scheduler and metrics
 ## Zwischenstand nach Session 6
 
 Du hast jetzt einen kompletten lokalen Stack:
+
 - PostgreSQL + Redis + Caddy + Mailhog (Session 3)
 - Go-Backend mit Health/Ping/Metrics (Session 4)
 - SvelteKit-Frontend mit Backend-Connectivity (Session 5)

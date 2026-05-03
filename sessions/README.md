@@ -16,20 +16,20 @@ Jede Datei ist eine in sich abgeschlossene Aufgabenbeschreibung für eine Claude
 
 ## Reihenfolge
 
-| # | Datei | Phase | Inhalt |
-|---|---|---|---|
-| 1 | step01.md | Fundament | Repo-Skelett, Tooling, mise |
-| 2 | step02.md | Fundament | Pre-commit, Makefile, lokale Workflows |
-| 3 | step03.md | Services | Compose-Stack mit DB/Redis/Caddy |
-| 4 | step04.md | Services | Go-Backend-Skelett |
-| 5 | step05.md | Services | SvelteKit-Frontend-Skelett |
-| 6 | step06.md | Services | Python-Workers-Skelett |
-| 7 | step07.md | CI/CD | OpenAPI-Schema + Type-Generation |
-| 8 | step08.md | CI/CD | GitHub Actions CI-Workflows |
-| 9 | step09.md | CI/CD | Release-Workflow + Container-Registry |
-| 10 | step10.md | Ops | Observability-Stack lokal |
-| 11 | step11.md | Ops | Ansible + SOPS + Terraform-Skelett |
-| 12 | step12.md | Ops | Dokumentation finalisieren |
+| #   | Datei     | Phase     | Inhalt                                 |
+| --- | --------- | --------- | -------------------------------------- |
+| 1   | step01.md | Fundament | Repo-Skelett, Tooling, mise            |
+| 2   | step02.md | Fundament | Pre-commit, Makefile, lokale Workflows |
+| 3   | step03.md | Services  | Compose-Stack mit DB/Redis/Caddy       |
+| 4   | step04.md | Services  | Go-Backend-Skelett                     |
+| 5   | step05.md | Services  | SvelteKit-Frontend-Skelett             |
+| 6   | step06.md | Services  | Python-Workers-Skelett                 |
+| 7   | step07.md | CI/CD     | OpenAPI-Schema + Type-Generation       |
+| 8   | step08.md | CI/CD     | GitHub Actions CI-Workflows            |
+| 9   | step09.md | CI/CD     | Release-Workflow + Container-Registry  |
+| 10  | step10.md | Ops       | Observability-Stack lokal              |
+| 11  | step11.md | Ops       | Ansible + SOPS + Terraform-Skelett     |
+| 12  | step12.md | Ops       | Dokumentation finalisieren             |
 
 ## Vor Session 1
 

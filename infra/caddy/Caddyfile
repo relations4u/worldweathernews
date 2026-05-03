@@ -17,9 +17,9 @@
 	}
 }
 
-# Frontend (echtes Reverse-Proxy-Target kommt in Session 5)
+# Frontend (Vite-Dev-Server, WebSocket für HMR)
 http://app.localhost, http://localhost {
-	respond "503 — frontend not yet running (kommt in Session 5)" 503
+	reverse_proxy frontend:5173
 }
 
 # Backend-API

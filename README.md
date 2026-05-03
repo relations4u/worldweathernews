@@ -18,6 +18,7 @@ make dev            # Lokale Entwicklung starten
 ```
 
 `mise` ist Voraussetzung. Installation:
+
 - macOS: `brew install mise`
 - Linux: `curl https://mise.run | sh`
 

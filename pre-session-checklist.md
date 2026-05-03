@@ -10,11 +10,11 @@ hakst du ab und gehst zum nächsten Punkt.
 Nicht alle Punkte sind streng sequenziell. Die kritische Abhängigkeitskette ist:
 
 1. **Punkte 1–2** (System, Git, SSH, Signing) — alles auf deinem Rechner,
-  ohne dass GitHub-Repos existieren müssen
+   ohne dass GitHub-Repos existieren müssen
 2. **Punkt 3.1** (Org anlegen) — bevor du dem Repo einen Owner geben kannst
 3. **Punkt 12** (Repo erzeugen und initialisieren) — der eigentliche Startschuss
 4. **Erst danach** sinnvoll: Punkt 3.2 (PAT mit Repo-Auswahl), 3.3
-  (Branch-Protection-Rules)
+   (Branch-Protection-Rules)
 
 Punkte 4–11 sind parallel zu allem anderen erledigbar — sie betreffen
 externe Dienste (DNS, Hosting, Editor, age, Notifications) und brauchen
@@ -39,10 +39,10 @@ Path-Längen, Symlinks.
 ### 1.2 Mindest-Hardware
 
 - 16 GB RAM (8 GB reicht zur Not, dann wird's eng wenn der Monitoring-Stack
-mitläuft)
+  mitläuft)
 - 30 GB freier Plattenplatz (Container-Images, Postgres-Daten, Logs)
 - Internet-Verbindung mit halbwegs Bandbreite (initiale Image-Pulls
-sind ~5–8 GB)
+  sind ~5–8 GB)
 
 ### 1.3 Basis-Tools
 
@@ -94,7 +94,7 @@ ssh-keygen -t ed25519 -C "deine@email.tld" -f ~/.ssh/id_ed25519
 
 - SSH-Key existiert
 - Public Key (`~/.ssh/id_ed25519.pub`) bei GitHub hinzugefügt
-(Settings → SSH and GPG keys → New SSH key)
+  (Settings → SSH and GPG keys → New SSH key)
 - Test: `ssh -T git@github.com` → "Hi !"-Meldung
 
 ### 2.3 Commit-Signing (GPG **oder** SSH)
@@ -117,9 +117,9 @@ git config --global gpg.ssh.allowedSignersFile ~/.config/git/allowed_signers
 
 - Signing aktiv
 - Bei GitHub: Public Key zusätzlich als **Signing Key** hinterlegen
-(Settings → SSH and GPG keys → New SSH key → Type: "Signing Key")
+  (Settings → SSH and GPG keys → New SSH key → Type: "Signing Key")
 - Test: `git commit --allow-empty -m "test: verify signing"` und dann
-`git log --show-signature -1` zeigt "Good signature"
+  `git log --show-signature -1` zeigt "Good signature"
 
 **Warum überhaupt signieren:** Branch-Protection in Session 8 erfordert
 "verified" Commits. Ohne Signing scheitert dein erster PR an dieser Regel.
@@ -151,10 +151,10 @@ und Release-Trigger.
 
 - Trennt private von projekt-bezogenen Repos sauber
 - Ermöglicht später Mitarbeit ohne Repo-Transfer (verliert Stars, Issues
-bleiben aber erhalten — Transfer ist ärgerlich)
+  bleiben aber erhalten — Transfer ist ärgerlich)
 - ghcr.io-Container landen unter `ghcr.io/relations4u/wwn-backend` statt
-`ghcr.io/<dein-name>/...` — fühlt sich professioneller an, falls die
-Plattform mal öffentlich wird
+  `ghcr.io/<dein-name>/...` — fühlt sich professioneller an, falls die
+  Plattform mal öffentlich wird
 
 ```bash
 # Organisation anlegen (im Browser):
@@ -175,12 +175,12 @@ Package automatisch. Du musst hier vor Session 1 **nichts** anlegen.
 ersten Release-Build):
 
 - Default-Visibility neuer Packages auf "Private" stellen — geht erst,
-wenn die Org existiert. Pfad: Org-Profil → **Settings** → in der linken
-Sidebar **Packages** → "Default package visibility" auf Private.
+  wenn die Org existiert. Pfad: Org-Profil → **Settings** → in der linken
+  Sidebar **Packages** → "Default package visibility" auf Private.
 - Personal Access Token (PAT) für lokale `docker pull` von ghcr.io —
-brauchst du nur, wenn du Container-Images vom Laptop ziehen willst.
-GitHub Actions selbst braucht keinen, das nutzt `GITHUB_TOKEN` automatisch.
-Server in Session 11 bekommen einen Deploy-Token per SOPS-Secret.
+  brauchst du nur, wenn du Container-Images vom Laptop ziehen willst.
+  GitHub Actions selbst braucht keinen, das nutzt `GITHUB_TOKEN` automatisch.
+  Server in Session 11 bekommen einen Deploy-Token per SOPS-Secret.
 
 **Wenn du den PAT später wirklich brauchst:**
 
@@ -223,15 +223,15 @@ nach Session 8 griffbereit:
 - `main`-Branch:
   - Require a pull request before merging
   - Require approvals: 1 (bei Solo-Repo: Self-Approval erlauben oder
-  auf 0 setzen — beides legitim)
+    auf 0 setzen — beides legitim)
   - Require status checks: `ci-backend`, `ci-frontend`, `ci-pyworkers`,
-  `ci-shared`
+    `ci-shared`
   - Require signed commits
   - Require linear history (kein Merge-Commit-Wahn)
   - Block force-pushes
 - Regeln gelesen, Aktivierung später
 - Setting-Pfad merken: Repo → Settings → Branches → Add branch
-protection rule (geht erst nach Repo-Erzeugung in Punkt 12)
+  protection rule (geht erst nach Repo-Erzeugung in Punkt 12)
 
 ---
 
@@ -241,7 +241,7 @@ protection rule (geht erst nach Repo-Erzeugung in Punkt 12)
 
 - `worldweathernews.com` ist registriert
 - Du hast Zugang zum DNS-Provider (Registrar oder externer DNS-Anbieter
-wie Cloudflare, Hetzner DNS, deSEC)
+  wie Cloudflare, Hetzner DNS, deSEC)
 
 ### 4.2 DNS-Strategie entscheiden
 
@@ -256,7 +256,7 @@ Propagation, kostenloses DNSSEC, später optional Proxy/CDN aktivierbar.
   - `staging.worldweathernews.com` → Staging-Frontend
   - `api.staging.worldweathernews.com` → Staging-Backend
 - Optional jetzt schon: `status.worldweathernews.com` für Uptime-Kuma
-später
+  später
 
 **Noch nichts in DNS eintragen** — die IPs gibt es erst nach Terraform-Apply
 in Session 11. Nur strukturell entscheiden.
@@ -266,7 +266,7 @@ in Session 11. Nur strukturell entscheiden.
 Für Domain-Validierung (Let's Encrypt), Abuse-Kontakt, Maintainer-Mail:
 
 - `admin@worldweathernews.com` oder `hostmaster@...` als Forward
-eingerichtet (oder echtes Postfach beim Provider)
+  eingerichtet (oder echtes Postfach beim Provider)
 - Diese Adresse wird Caddy als ACME-Account-Mail verwenden
 
 ---
@@ -292,7 +292,7 @@ Alternativen, falls relevant:
 
 - **Strato/IONOS:** Wenn schon Bestandskunde
 - **Eigene Hardware** (Homeserver, Hetzner-Dedicated): bei Datenmengen
-die Cloud-Preise sprengen
+  die Cloud-Preise sprengen
 - **Scaleway/OVHcloud:** EU-basiert, ähnlich wie Hetzner
 - Entscheidung: `__________________`
 
@@ -302,13 +302,13 @@ die Cloud-Preise sprengen
 - Zahlungsmethode hinterlegt (Hetzner: SEPA möglich)
 - **Zwei-Faktor-Auth aktiviert** (Pflicht aus Sicherheitsgründen)
 - API-Token erzeugt mit Read+Write-Scope, sicher abgelegt
-(z. B. in Passwort-Manager, **nicht** in einer Textdatei im Klartext)
+  (z. B. in Passwort-Manager, **nicht** in einer Textdatei im Klartext)
 
 ### 5.3 SSH-Key beim Provider hinterlegen
 
 - Selbst-erzeugter SSH-Key (`~/.ssh/id_ed25519.pub`) im Provider-Webinterface
-als "Default Key" hinterlegt — Terraform/Cloud-Init nutzt den, damit du
-direkt auf neue VMs kommst
+  als "Default Key" hinterlegt — Terraform/Cloud-Init nutzt den, damit du
+  direkt auf neue VMs kommst
 
 ---
 
@@ -346,7 +346,7 @@ aber Secret-Rotation und neue Deployments sind blockiert.
 - **Mindestens zwei** age-Keys in `.sops.yaml` (in Session 11):
   - Dein Haupt-Key
   - Ein Recovery-Key, der offline und sicher gelagert ist
-  (z. B. ausgedruckt im Tresor, oder zweiter Stick beim Vertrauen)
+    (z. B. ausgedruckt im Tresor, oder zweiter Stick beim Vertrauen)
 - Optional: ein dritter Key, falls jemand mitarbeitet später
 
 ---
@@ -379,13 +379,13 @@ Sprachen. Wenn du das schon hast, lass es so wie es ist.
 
 - Shell mit anständigem Prompt (zsh + starship, oder fish, oder oh-my-bash)
 - `bat`, `eza`/`exa`, `ripgrep`, `fzf`, `jq`, `yq`, `httpie` (oder curl)
-installiert — keine Pflicht, aber spart Zeit
+  installiert — keine Pflicht, aber spart Zeit
 
 ### 7.3 Browser
 
 - Chrome/Firefox/Safari, alles fein
 - Browser-DevTools können `app.localhost`-Domain auflösen
-(siehe nächster Punkt)
+  (siehe nächster Punkt)
 
 ### 7.4 `.localhost`-Resolution prüfen
 
@@ -414,7 +414,7 @@ sqlc, goose, …) auf den richtigen Versionen installieren.
 ausführen — das produziert Versions-Konflikte mit dem späteren mise-Setup.
 
 - mise selbst installiert: `curl https://mise.run | sh` und in der Shell
-aktiviert (Eintrag in `~/.bashrc` / `~/.zshrc`)
+  aktiviert (Eintrag in `~/.bashrc` / `~/.zshrc`)
 - Test: `mise --version`
 
 Ausnahme: Wenn du bereits ein etabliertes Setup mit pyenv/nvm/asdf hast
@@ -444,7 +444,7 @@ aber spart später Friktion.
 - Channels: `#deploys`, `#alerts`, `#security`, `#general`
 - Webhook-URL pro Channel notiert (Server-Settings → Integrations → Webhooks)
 - **Webhook-URLs als Secret behandeln** — nicht in Repos, nicht in
-Screenshots
+  Screenshots
 
 **Slack-Alternative:** kostenloser Plan reicht für Solo, aber 90-Tage-Message-
 History ist schmerzhaft, wenn du Alerts retrospektiv anschauen willst.
@@ -452,8 +452,8 @@ History ist schmerzhaft, wenn du Alerts retrospektiv anschauen willst.
 ### 9.2 Email für Status-Mails
 
 - Eine Adresse, die du wirklich liest, für GitHub-Notifications,
-Hetzner-Monitoring-Mails, Domain-Renewal-Reminder. Kein Catch-All
-"geht in Spam"-Postfach.
+  Hetzner-Monitoring-Mails, Domain-Renewal-Reminder. Kein Catch-All
+  "geht in Spam"-Postfach.
 
 ---
 
@@ -466,14 +466,14 @@ Wartezeit später. Alles optional bis zur jeweiligen Session.
 
 - Account auf sentry.io (Free-Plan reicht für Anfang)
 - **Alternative:** GlitchTip selbst hosten (in Session 10 ergänzbar);
-dann hier nichts vorbereiten
+  dann hier nichts vorbereiten
 
 ### 10.2 Cloudflare (Session 11 / 12)
 
 - Account angelegt (kostenloser Plan)
 - Domain `worldweathernews.com` als Site hinzufügen, Nameserver am
-Registrar umstellen — **erst tun**, wenn DNS-Records klar sind,
-sonst ist die Site offline während der Propagation
+  Registrar umstellen — **erst tun**, wenn DNS-Records klar sind,
+  sonst ist die Site offline während der Propagation
 
 ### 10.3 Plausible Analytics (irgendwann später)
 
@@ -505,8 +505,8 @@ nur Optionen kennen:
 Pflicht erst nach Production-Deploy, aber:
 
 - Plan im Kopf: Was wird gebackuppt (Postgres-Dumps, User-Uploads, Configs),
-wohin (S3-kompatibel: Hetzner Storage Box, Backblaze B2, BorgBase),
-wie oft, wie lange retainen
+  wohin (S3-kompatibel: Hetzner Storage Box, Backblaze B2, BorgBase),
+  wie oft, wie lange retainen
 - Wird in Session 12 (Runbook) explizit gemacht — jetzt nur Bewusstsein
 
 ### 11.3 Zeitbudget realistisch einplanen
@@ -516,9 +516,9 @@ Wartezeit). Plus Pausen zwischen Sessions, plus deinen normalen Job, plus
 Lernkurve bei Tools, die du noch nie genutzt hast.
 
 - Nicht „in einer Woche mache ich die DevOps-Pipeline" planen.
-Realistisch: 2–4 Wochen, mit Pausen für Sacken-Lassen
+  Realistisch: 2–4 Wochen, mit Pausen für Sacken-Lassen
 - Nach Phase A (Sessions 1–2) und Phase B (3–6) je 1–2 Tage Pause
-einplanen — zum Reflektieren, was du eigentlich gebaut hast
+  einplanen — zum Reflektieren, was du eigentlich gebaut hast
 
 ---
 
@@ -588,8 +588,8 @@ git push -u origin main
 - `<org>` in CLAUDE.md ersetzt
 - Erster Push erfolgreich
 - Branch-Protection für `main` **noch nicht** aktivieren — sonst kommst
-du bei Session 1 nicht mehr weiter ohne PR-Workflow. Aktivieren in
-Session 8 nach CI-Setup.
+  du bei Session 1 nicht mehr weiter ohne PR-Workflow. Aktivieren in
+  Session 8 nach CI-Setup.
 
 ---
 
@@ -617,7 +617,7 @@ In `~/.claude/settings.json` (wird beim ersten Start angelegt):
 ```
 
 - `autoAcceptEdits: false` — kritisch, sonst editiert Claude Code Files
-ohne dass du sie siehst
+  ohne dass du sie siehst
 - Plan-Mode-Shortcut bekannt: **Shift+Tab** im Prompt-Eingabefeld
 - Slash-Commands bekannt:
   - `/clear` — Context leeren (zwischen Sessions)
@@ -638,7 +638,7 @@ Vor Session 1, einfach um zu prüfen dass alles läuft:
 
 - Claude Code antwortet sinnvoll → alles bereit
 - Claude Code antwortet komisch / liest CLAUDE.md nicht → prüfen
-ob du im richtigen Verzeichnis bist (`pwd`)
+  ob du im richtigen Verzeichnis bist (`pwd`)
 
 ---
 
@@ -658,7 +658,7 @@ Bevor du Session 1 startest, einmal durchgehen:
 - Hetzner-Account (oder andere Provider-Wahl) angelegt für Session 11
 - Discord/Slack-Webhooks angelegt für spätere Alerts
 - Du hast mindestens 2 Stunden zusammenhängende Zeit für Session 1
-eingeplant (1–2h Aufgabe + Puffer)
+  eingeplant (1–2h Aufgabe + Puffer)
 
 ---
 
@@ -669,8 +669,8 @@ Punkte aus Erfahrung mit ähnlichen Projekten. Nicht Pflicht, aber gut:
 ### 15.1 Domain-Privacy aktivieren
 
 - Beim Registrar: WHOIS-Privacy aktiv. Sonst steht deine Privatadresse
-öffentlich im WHOIS und du bekommst Spam und Cold-Mails von SEO-Agenturen
-bis ans Lebensende.
+  öffentlich im WHOIS und du bekommst Spam und Cold-Mails von SEO-Agenturen
+  bis ans Lebensende.
 
 ### 15.2 GitHub-Account härten
 
@@ -681,9 +681,9 @@ bis ans Lebensende.
 ### 15.3 Lokales Repo-Verzeichnis hat Backup
 
 - `~/projects/` ist im Backup-Cycle deines Systems
-(Time Machine, BorgBackup, restic, Snapshots, …)
+  (Time Machine, BorgBackup, restic, Snapshots, …)
 - Vor allem: `~/.config/sops/age/keys.txt` und `~/.ssh/id_ed25519` sind
-gesichert (verschlüsselt) — wenn die weg sind, ist viel Arbeit weg
+  gesichert (verschlüsselt) — wenn die weg sind, ist viel Arbeit weg
 
 ### 15.4 Read-Liste anlegen
 

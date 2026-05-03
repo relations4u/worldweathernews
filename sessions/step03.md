@@ -19,6 +19,7 @@ Sessions 4-6 dazu.
 #### Services:
 
 **postgres**:
+
 - Image: `timescale/timescaledb-ha:pg16` (enthält PostGIS und TimescaleDB).
   **Verifiziere das.** Falls dieses Image PostGIS nicht enthält, nutze stattdessen
   `postgis/postgis:16-3.4` und installiere TimescaleDB als Extension via init-Script.
@@ -33,6 +34,7 @@ Sessions 4-6 dazu.
 - Healthcheck: `pg_isready -U wwn -d wwn`, interval 5s, retries 10, start_period 10s
 
 **redis**:
+
 - Image: `redis:7-alpine`
 - Container-Name: `wwn-redis`
 - Command: `redis-server --save "" --appendonly no` (keine Persistenz lokal)
@@ -40,6 +42,7 @@ Sessions 4-6 dazu.
 - Healthcheck: `redis-cli ping | grep PONG`, interval 5s
 
 **caddy**:
+
 - Image: `caddy:2-alpine`
 - Container-Name: `wwn-caddy`
 - Volume:
@@ -53,6 +56,7 @@ Sessions 4-6 dazu.
 - Restart: `unless-stopped`
 
 **mailhog**:
+
 - Image: `mailhog/mailhog`
 - Container-Name: `wwn-mailhog`
 - Ports:
@@ -60,9 +64,11 @@ Sessions 4-6 dazu.
   - `127.0.0.1:8025:8025` (Web-UI)
 
 #### Networks:
+
 - Ein Default-Network `wwn-net`, alle Services darauf
 
 #### Volumes:
+
 - `postgres_data`
 - `caddy_data`
 - `caddy_config`
@@ -162,6 +168,7 @@ echt. Verifiziere dass:
 - `make dev-reset` → stoppt + löscht Volumes
 
 Optional ergänzen:
+
 - `make dev-logs SERVICE=postgres` → tailt nur einen Service
 - `make dev-shell SERVICE=postgres` → öffnet psql/redis-cli/sh
 
@@ -179,6 +186,7 @@ dev-redis: ## redis-cli auf dem Cache
 ### 7. `infra/compose/README.md`
 
 Erkläre:
+
 - Welche Services laufen, mit welchem Zweck
 - Welche Ports gemappt sind
 - Warum `127.0.0.1`-Binding (Sicherheit, kein versehentlicher LAN-Zugriff)
@@ -218,7 +226,7 @@ Outputs zeigen.
 - [ ] `make dev` startet alle vier Services
 - [ ] Alle Healthchecks werden grün innerhalb von 30s
 - [ ] PostgreSQL hat PostGIS und TimescaleDB als Extensions geladen
-  (verifiziere mit `SELECT extname FROM pg_extension;`)
+      (verifiziere mit `SELECT extname FROM pg_extension;`)
 - [ ] Redis antwortet auf PING
 - [ ] Caddy routet `mail.localhost` korrekt zu Mailhog
 - [ ] Caddy gibt für `api.localhost` und `app.localhost` die Platzhalter-503 zurück
