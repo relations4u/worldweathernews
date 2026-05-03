@@ -1,0 +1,29 @@
+# Optional. Standardmäßig läuft das Backend ohne Config-File und liest alles
+# aus ENV (Prefix WWN_, Punkt → Unterstrich).
+#
+# Aufruf mit Datei: WWN_CONFIG_FILE=./config.yaml ./api  (siehe cmd/api/main.go).
+
+http:
+  port: 8080
+  readTimeout: 10s
+  writeTimeout: 30s
+  idleTimeout: 120s
+  shutdownTimeout: 15s
+  corsOrigins:
+    - http://app.localhost
+
+database:
+  url: postgres://wwn:changeme_in_dev_only@postgres:5432/wwn?sslmode=disable
+  maxOpenConns: 25
+  maxIdleConns: 5
+  connMaxLifetime: 1h
+
+redis:
+  url: redis://redis:6379/0
+
+logging:
+  level: info     # debug | info | warn | error
+  format: json    # json | text
+
+environment: production    # dev | staging | production
+metricsEnabled: true

@@ -1,10 +1,19 @@
-.PHONY: test lint dev
+.PHONY: run dev test lint build tidy
 
-test:
-	@echo "backend tests: not yet implemented (Session 4)"
-
-lint:
-	@echo "backend lint: not yet implemented (Session 4)"
+run:
+	go run ./cmd/api
 
 dev:
-	@echo "backend dev: not yet implemented (Session 4)"
+	air
+
+test:
+	go test -race -cover ./...
+
+lint:
+	golangci-lint run ./...
+
+build:
+	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/api ./cmd/api
+
+tidy:
+	go mod tidy

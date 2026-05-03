@@ -1,4 +1,4 @@
-.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen migrate clean
+.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen migrate clean backend-dev backend-test backend-lint
 
 .DEFAULT_GOAL := help
 
@@ -39,9 +39,18 @@ dev-redis: ## redis-cli auf dem Cache
 	docker compose exec redis redis-cli
 
 test: ## Alle Tests ausführen
-	@$(MAKE) -C apps/backend test 2>/dev/null || echo "  backend: noch nicht da"
+	$(MAKE) -C apps/backend test
 	@$(MAKE) -C apps/frontend test 2>/dev/null || echo "  frontend: noch nicht da"
 	@$(MAKE) -C apps/pyworkers test 2>/dev/null || echo "  pyworkers: noch nicht da"
+
+backend-dev: ## Backend lokal mit Hot-Reload (air)
+	$(MAKE) -C apps/backend dev
+
+backend-test: ## Backend-Tests
+	$(MAKE) -C apps/backend test
+
+backend-lint: ## Backend-Lint (golangci-lint)
+	$(MAKE) -C apps/backend lint
 
 lint: ## Alle Linter (via pre-commit)
 	pre-commit run --all-files

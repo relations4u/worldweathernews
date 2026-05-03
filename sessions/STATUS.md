@@ -40,7 +40,15 @@ Notizen: <was lief gut, was offen blieb, blockierende Fragen>
            Stack-Smoke-Tests alle grün.
 
 ## Session 4 — Go-Backend-Skelett
-Status: ⏸ Pending
+  Status: ✅ Done
+  Datum: 2026-05-03
+  Commit: <SHA>
+  Notizen: Modul github.com/relations4u/worldweathernews/apps/backend.
+           go.mod auto-bumped auf 1.25 (Viper transitive). Dockerfile-Builder
+           entsprechend angepasst.
+           golangci-lint v2 — .golangci.yml migriert.
+           Viper AutomaticEnv brauchte leere Defaults für DB/Redis-URL.
+           distroless-final-Image: 26.2 MB. Alle Endpunkte grün.
 
 ## Session 5 — SvelteKit-Frontend-Skelett
 Status: ⏸ Pending

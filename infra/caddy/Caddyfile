@@ -22,9 +22,9 @@ http://app.localhost, http://localhost {
 	respond "503 — frontend not yet running (kommt in Session 5)" 503
 }
 
-# Backend-API (echtes Reverse-Proxy-Target kommt in Session 4)
+# Backend-API
 http://api.localhost {
-	respond "503 — backend not yet running (kommt in Session 4)" 503
+	reverse_proxy backend:8080
 }
 
 # Mailhog Web-UI (Convenience für lokale Entwicklung)

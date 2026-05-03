@@ -61,6 +61,7 @@ services:
       - caddy_config:/config
     depends_on:
       - mailhog
+      - backend
     networks:
       - wwn-net
 
@@ -71,6 +72,35 @@ services:
     ports:
       - "127.0.0.1:1025:1025"
       - "127.0.0.1:8025:8025"
+    networks:
+      - wwn-net
+
+  backend:
+    build:
+      context: ../../apps/backend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: wwn-backend
+    restart: unless-stopped
+    command: ["air"]
+    working_dir: /src
+    volumes:
+      - ../../apps/backend:/src
+      - go_mod_cache:/go/pkg/mod
+    environment:
+      WWN_DATABASE_URL: ${WWN_DATABASE_URL}
+      WWN_REDIS_URL: ${WWN_REDIS_URL}
+      WWN_LOGGING_LEVEL: ${WWN_LOG_LEVEL:-debug}
+      WWN_LOGGING_FORMAT: ${WWN_LOG_FORMAT:-text}
+      WWN_ENVIRONMENT: dev
+      WWN_HTTP_PORT: "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8080"
     networks:
       - wwn-net
 
@@ -86,3 +116,5 @@ volumes:
     name: wwn_caddy_data
   caddy_config:
     name: wwn_caddy_config
+  go_mod_cache:
+    name: wwn_go_mod_cache
