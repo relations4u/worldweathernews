@@ -1,0 +1,17 @@
+.env
+.env.local
+*.sops.decrypted
+node_modules/
+.svelte-kit/
+build/
+dist/
+__pycache__/
+*.pyc
+.venv/
+bin/
+tmp/
+.DS_Store
+*.swp
+.idea/
+.vscode/
+!.vscode/settings.json
