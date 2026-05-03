@@ -1,0 +1,49 @@
+# Default: alle Text-Files mit LF, Auto-Erkennung aktiv.
+* text=auto eol=lf
+
+# Explizit Text
+*.go        text eol=lf
+*.py        text eol=lf
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.svelte    text eol=lf
+*.json      text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.toml      text eol=lf
+*.md        text eol=lf
+*.sql       text eol=lf
+*.sh        text eol=lf
+Makefile    text eol=lf
+Dockerfile  text eol=lf
+
+# Generated Code (Linguist ignoriert diese in Repo-Statistiken)
+*.gen.go                              linguist-generated=true
+**/queries.sql.go                     linguist-generated=true
+packages/shared-types/**              linguist-generated=true
+packages/api-schema/openapi.gen.*     linguist-generated=true
+
+# Binary-Assets
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp4   binary
+*.mp3   binary
+
+# Verschlüsselte Secrets
+*.sops.yaml  text eol=lf
+*.sops.json  text eol=lf
+*.sops.env   text eol=lf

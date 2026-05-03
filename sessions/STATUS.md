@@ -13,10 +13,12 @@ Notizen: <was lief gut, was offen blieb, blockierende Fragen>
 ---
 
 ## Session 1 — Repo-Skelett und Tooling
-Status: ⏸ Pending
-Datum: -
-Commit: -
-Notizen: -
+  Status: ✅ Done
+  Datum: 2026-05-03
+  Commit: <SHA>
+  Notizen: README.md und STATUS.md von Root nach sessions/ verschoben.
+           sqlc + goose über mise ubi:-Backend (experimental aktiv).
+           Lizenz weiterhin offen (Session 12).
 
 ## Session 2 — Pre-commit, Makefile, lokale Workflows
 Status: ⏸ Pending

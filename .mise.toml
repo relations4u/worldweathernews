@@ -1,0 +1,25 @@
+# Tool-Versionen für worldweathernews.com
+#
+# Installation: `mise install` (siehe README.md).
+#
+# Hinweis zu nicht-direkt-unterstützten Tools:
+# - `sqlc` und `goose` werden über das `ubi:`-Backend installiert (universelles
+#   Binary-Install via mise, plattform-übergreifend von GitHub-Releases).
+# - Falls `ubi:` auf einem System nicht greift, Fallback per `go install`:
+#     go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+#     go install github.com/pressly/goose/v3/cmd/goose@latest
+# - `task` (go-task) wird unter dem mise-Plugin-Namen `task` geführt.
+
+[tools]
+go             = "1.23"
+node           = "22"
+python         = "3.12"
+pnpm           = "latest"
+uv             = "latest"
+golangci-lint  = "latest"
+task           = "latest"
+"ubi:sqlc-dev/sqlc"   = { version = "latest", exe = "sqlc" }
+"ubi:pressly/goose"   = { version = "latest", exe = "goose" }
+
+[settings]
+experimental = true

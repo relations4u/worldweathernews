@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git mv *)",
+      "Bash(mkdir -p apps/backend apps/frontend apps/pyworkers packages/api-schema packages/shared-types infra/compose infra/caddy infra/migrations infra/monitoring/prometheus infra/monitoring/grafana infra/monitoring/loki infra/ansible/inventories infra/ansible/playbooks infra/ansible/roles infra/terraform/modules infra/terraform/environments infra/secrets/staging infra/secrets/production scripts docs/adr .github/workflows)",
+      "Bash(touch __TRACKED_VAR__/.gitkeep)"
+    ]
+  }
+}
