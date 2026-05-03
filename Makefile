@@ -1,4 +1,4 @@
-.PHONY: help bootstrap dev dev-down dev-reset test lint fmt build gen migrate clean
+.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen migrate clean
 
 .DEFAULT_GOAL := help
 
@@ -6,17 +6,20 @@ help: ## Zeige diese Hilfe
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-bootstrap: ## Erst-Setup nach Repo-Clone
+bootstrap: env ## Erst-Setup nach Repo-Clone
 	@echo "==> Installing tools via mise..."
 	mise install
 	@echo "==> Installing pre-commit hooks..."
 	pre-commit install --install-hooks
-	@echo "==> Bootstrap done. Run 'make dev' to start (ab Session 3)."
+	@echo "==> Bootstrap done. Run 'make dev' to start the local stack."
 
-dev: ## Lokalen Stack starten (Compose)
-	@if [ ! -f compose.yml ] && [ ! -f infra/compose/compose.dev.yml ]; then \
-		echo "Compose-File fehlt. Wird in Session 3 erstellt."; exit 1; \
+env: ## .env aus .env.example anlegen, falls fehlt
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "  .env aus .env.example erstellt — bei Bedarf anpassen."; \
 	fi
+
+dev: env ## Lokalen Stack starten (Compose)
 	docker compose up -d
 	docker compose logs -f --tail=20
 
@@ -25,6 +28,15 @@ dev-down: ## Stack stoppen
 
 dev-reset: ## Stack stoppen + Volumes löschen
 	docker compose down -v
+
+dev-logs: ## Logs eines Services tailen (SERVICE=name)
+	docker compose logs -f $(SERVICE)
+
+dev-psql: ## psql-Shell auf der DB
+	docker compose exec postgres psql -U wwn -d wwn
+
+dev-redis: ## redis-cli auf dem Cache
+	docker compose exec redis redis-cli
 
 test: ## Alle Tests ausführen
 	@$(MAKE) -C apps/backend test 2>/dev/null || echo "  backend: noch nicht da"

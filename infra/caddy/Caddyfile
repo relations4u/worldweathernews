@@ -1,0 +1,33 @@
+# Caddy-Konfiguration für die lokale Dev-Umgebung.
+#
+# - auto_https off: keine ACME-Anfragen für *.localhost (würden scheitern).
+# - admin off: kein Admin-API-Endpoint (lokal nicht nötig).
+# - JSON-Logs auf stdout (kompatibel zu Docker-Log-Drivern).
+#
+# Wichtig: Alle Site-Adressen mit `http://`-Schema. Ohne Schema und ohne
+# expliziten Port würde Caddy mit `auto_https off` auf :443 binden — und
+# Port 80 ginge ins Leere.
+
+{
+	auto_https off
+	admin off
+	log {
+		output stdout
+		format json
+	}
+}
+
+# Frontend (echtes Reverse-Proxy-Target kommt in Session 5)
+http://app.localhost, http://localhost {
+	respond "503 — frontend not yet running (kommt in Session 5)" 503
+}
+
+# Backend-API (echtes Reverse-Proxy-Target kommt in Session 4)
+http://api.localhost {
+	respond "503 — backend not yet running (kommt in Session 4)" 503
+}
+
+# Mailhog Web-UI (Convenience für lokale Entwicklung)
+http://mail.localhost {
+	reverse_proxy mailhog:8025
+}

@@ -1,0 +1,8 @@
+# Default-Entrypoint für `docker compose`.
+# Includiert das eigentliche Dev-Compose unter infra/compose/.
+#
+# Falls `include:` auf einer alten Compose-Version Probleme macht:
+# direkt mit `docker compose -f infra/compose/compose.dev.yml ...` arbeiten.
+
+include:
+  - infra/compose/compose.dev.yml

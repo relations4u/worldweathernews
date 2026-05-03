@@ -15,3 +15,6 @@ tmp/
 .idea/
 .vscode/
 !.vscode/settings.json
+
+# Claude Code lokale Settings
+.claude/
