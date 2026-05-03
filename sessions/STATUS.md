@@ -69,7 +69,14 @@ Lokal alle Checks grün, Container liefert Hero unter app.localhost.
 
 ## Session 6 — Python-Workers-Skelett
 
-Status: ⏸ Pending
+Status: ✅ Done
+Datum: 2026-05-03
+Commit: <SHA>
+Notizen: apscheduler 3.x (AsyncIOScheduler) statt 4.x-Alpha.
+mypy strict — Overrides für asyncpg + apscheduler (kein py.typed).
+Heartbeat alle 30s im Container, Metriken auf :9100.
+Production-Image 250 MB (über 200 MB-Soft-Target; Optimierung später).
+Compose nutzt python:3.12-slim + pip install uv beim Start.
 
 ## Session 7 — OpenAPI-Schema und Type-Generation
 

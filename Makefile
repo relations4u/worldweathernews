@@ -1,4 +1,4 @@
-.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen migrate clean backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check
+.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen migrate clean backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck
 
 .DEFAULT_GOAL := help
 
@@ -41,7 +41,7 @@ dev-redis: ## redis-cli auf dem Cache
 test: ## Alle Tests ausführen
 	$(MAKE) -C apps/backend test
 	$(MAKE) -C apps/frontend test
-	@$(MAKE) -C apps/pyworkers test 2>/dev/null || echo "  pyworkers: noch nicht da"
+	$(MAKE) -C apps/pyworkers test
 
 backend-dev: ## Backend lokal mit Hot-Reload (air)
 	$(MAKE) -C apps/backend dev
@@ -63,6 +63,18 @@ frontend-lint: ## Frontend-Lint (eslint + prettier --check)
 
 frontend-check: ## Frontend Type-Check (svelte-check)
 	$(MAKE) -C apps/frontend check
+
+pyworkers-dev: ## Python-Workers lokal mit Hot-Reload (watchfiles)
+	$(MAKE) -C apps/pyworkers dev
+
+pyworkers-test: ## Python-Workers Tests (pytest)
+	$(MAKE) -C apps/pyworkers test
+
+pyworkers-lint: ## Python-Workers Lint (ruff check + format --check)
+	$(MAKE) -C apps/pyworkers lint
+
+pyworkers-typecheck: ## Python-Workers Type-Check (mypy strict)
+	$(MAKE) -C apps/pyworkers typecheck
 
 lint: ## Alle Linter (via pre-commit)
 	pre-commit run --all-files

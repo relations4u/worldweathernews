@@ -141,6 +141,45 @@ services:
     networks:
       - wwn-net
 
+  pyworkers:
+    image: python:3.12-slim
+    container_name: wwn-pyworkers
+    restart: unless-stopped
+    # uv ist nicht im python:3.12-slim-Image. Beim Start via pip installieren
+    # (einmalig in den .venv-Pfad, dann persistent über das Volume) und
+    # den Worker mit watchfiles für Hot-Reload starten.
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        if ! command -v uv >/dev/null; then
+          pip install --no-cache-dir --root-user-action=ignore uv
+        fi
+        uv sync
+        exec uv run watchfiles --filter python "python -m pyworkers" pyworkers
+    working_dir: /app
+    volumes:
+      - ../../apps/pyworkers:/app
+      - pyworkers_venv:/app/.venv
+    environment:
+      WWN_PY_DATABASE_URL: ${WWN_PY_DATABASE_URL}
+      WWN_PY_REDIS_URL: ${WWN_PY_REDIS_URL}
+      WWN_PY_LOG_LEVEL: ${WWN_PY_LOG_LEVEL:-DEBUG}
+      WWN_PY_LOG_FORMAT: ${WWN_PY_LOG_FORMAT:-text}
+      WWN_PY_ENVIRONMENT: dev
+      WWN_PY_HEARTBEAT_INTERVAL_SECONDS: "30"
+      WWN_PY_METRICS_PORT: "9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "9100"
+    networks:
+      - wwn-net
+
 networks:
   wwn-net:
     name: wwn-net
@@ -157,3 +196,5 @@ volumes:
     name: wwn_go_mod_cache
   frontend_node_modules:
     name: wwn_frontend_node_modules
+  pyworkers_venv:
+    name: wwn_pyworkers_venv

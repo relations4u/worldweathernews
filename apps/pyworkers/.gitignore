@@ -1,0 +1,17 @@
+# Virtuelle Umgebungen
+.venv/
+
+# Caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Coverage-Artefakte
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Editor / OS
+*.pyc
+__pycache__/

@@ -1,10 +1,27 @@
-.PHONY: test lint dev
+.PHONY: install dev run test lint typecheck fmt clean
 
-test:
-	@echo "pyworkers tests: not yet implemented (Session 6)"
-
-lint:
-	@echo "pyworkers lint: not yet implemented (Session 6)"
+install:
+	uv sync
 
 dev:
-	@echo "pyworkers dev: not yet implemented (Session 6)"
+	uv run watchfiles --filter python "python -m pyworkers" pyworkers
+
+run:
+	uv run python -m pyworkers
+
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check
+	uv run ruff format --check
+
+typecheck:
+	uv run mypy pyworkers
+
+fmt:
+	uv run ruff format
+	uv run ruff check --fix
+
+clean:
+	rm -rf .venv .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov
