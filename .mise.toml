@@ -9,6 +9,8 @@
 #     go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 #     go install github.com/pressly/goose/v3/cmd/goose@latest
 # - `task` (go-task) wird unter dem mise-Plugin-Namen `task` geführt.
+# - `pre-commit` kommt über das `pipx:`-Backend (Python-Tool, isolierte venv pro Tool).
+#   Fallback: `uv tool install pre-commit` oder `pipx install pre-commit`.
 
 [tools]
 go             = "1.23"
@@ -20,6 +22,7 @@ golangci-lint  = "latest"
 task           = "latest"
 "ubi:sqlc-dev/sqlc"   = { version = "latest", exe = "sqlc" }
 "ubi:pressly/goose"   = { version = "latest", exe = "goose" }
+"pipx:pre-commit"     = "latest"
 
 [settings]
 experimental = true

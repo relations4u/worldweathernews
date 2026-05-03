@@ -1,0 +1,54 @@
+.PHONY: help bootstrap dev dev-down dev-reset test lint fmt build gen migrate clean
+
+.DEFAULT_GOAL := help
+
+help: ## Zeige diese Hilfe
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+bootstrap: ## Erst-Setup nach Repo-Clone
+	@echo "==> Installing tools via mise..."
+	mise install
+	@echo "==> Installing pre-commit hooks..."
+	pre-commit install --install-hooks
+	@echo "==> Bootstrap done. Run 'make dev' to start (ab Session 3)."
+
+dev: ## Lokalen Stack starten (Compose)
+	@if [ ! -f compose.yml ] && [ ! -f infra/compose/compose.dev.yml ]; then \
+		echo "Compose-File fehlt. Wird in Session 3 erstellt."; exit 1; \
+	fi
+	docker compose up -d
+	docker compose logs -f --tail=20
+
+dev-down: ## Stack stoppen
+	docker compose down
+
+dev-reset: ## Stack stoppen + Volumes löschen
+	docker compose down -v
+
+test: ## Alle Tests ausführen
+	@$(MAKE) -C apps/backend test 2>/dev/null || echo "  backend: noch nicht da"
+	@$(MAKE) -C apps/frontend test 2>/dev/null || echo "  frontend: noch nicht da"
+	@$(MAKE) -C apps/pyworkers test 2>/dev/null || echo "  pyworkers: noch nicht da"
+
+lint: ## Alle Linter (via pre-commit)
+	pre-commit run --all-files
+
+fmt: ## Auto-Format (gofmt, ruff, prettier wo verfügbar)
+	@command -v gofmt >/dev/null && find apps/backend -name '*.go' 2>/dev/null | xargs -r gofmt -w || true
+	@command -v ruff >/dev/null && ruff format apps/pyworkers 2>/dev/null || true
+	@command -v prettier >/dev/null && prettier --write 'apps/frontend/**/*.{js,ts,svelte,html,css,json}' 2>/dev/null || true
+
+build: ## Container bauen
+	@echo "Wird ab Session 4 sinnvoll. Aktuell nichts zu bauen."
+
+gen: ## Generierten Code aktualisieren
+	@echo "Wird in Session 7 implementiert."
+
+migrate: ## DB-Migrations anwenden
+	@echo "Wird in Session 4/9 implementiert."
+
+clean: ## Aufräumen
+	rm -rf bin tmp dist build .turbo
+	@find . -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
+	@find . -name '*.pyc' -delete 2>/dev/null || true

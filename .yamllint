@@ -1,0 +1,26 @@
+# yamllint-Konfiguration für worldweathernews.com
+# Pragmatik: Wir wollen YAML-Validität und konsistente Indentation,
+# aber keinen Streit über Zeilenlängen oder Document-Start-Marker.
+
+extends: default
+
+rules:
+  line-length: disable
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  document-start: disable
+  truthy:
+    allowed-values: ["true", "false"]
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+
+ignore: |
+  node_modules/
+  .svelte-kit/
+  build/
+  dist/
+  .venv/
+  infra/secrets/

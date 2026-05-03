@@ -1,0 +1,36 @@
+# golangci-lint Konfiguration
+#
+# Pragmatik:
+# - Standard-Korrektheit: errcheck, govet, staticcheck, ineffassign, unused
+# - Resource-Leaks: bodyclose, sqlclosecheck
+# - Style: revive, misspell, gofmt, goimports
+# - Sicherheit: gosec
+# - Modern Error-Handling: errorlint
+#
+# Tests dürfen pragmatisch sein (Test-Setups verwenden manchmal nicht-konstante
+# Strings für SQL oder dynamische Pfade — gosec würde da false positives produzieren).
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - revive
+    - gosec
+    - misspell
+    - gofmt
+    - goimports
+    - ineffassign
+    - unused
+    - bodyclose
+    - sqlclosecheck
+    - errorlint
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
