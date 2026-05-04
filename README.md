@@ -1,5 +1,9 @@
 # worldweathernews.com
 
+![CI Backend](https://github.com/relations4u/worldweathernews/actions/workflows/ci-backend.yml/badge.svg)
+![CI Frontend](https://github.com/relations4u/worldweathernews/actions/workflows/ci-frontend.yml/badge.svg)
+![CI PyWorkers](https://github.com/relations4u/worldweathernews/actions/workflows/ci-pyworkers.yml/badge.svg)
+
 Wetter- und Klima-Plattform mit Community-Features. Self-hosted Monorepo.
 
 > **Status: WIP — initial setup phase.**
