@@ -1,0 +1,59 @@
+name: CI PyWorkers
+
+on:
+  pull_request:
+    paths:
+      - "apps/pyworkers/**"
+      - ".github/workflows/ci-pyworkers.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/pyworkers/**"
+      - ".github/workflows/ci-pyworkers.yml"
+
+concurrency:
+  group: ci-pyworkers-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: apps/pyworkers
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+
+  typecheck:
+    name: mypy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run mypy pyworkers
+
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run pytest --cov=pyworkers --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pyworkers-coverage
+          path: apps/pyworkers/coverage.xml
