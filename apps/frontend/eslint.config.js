@@ -37,7 +37,9 @@ export default [
 			'node_modules/',
 			'package/',
 			'coverage/',
-			'pnpm-lock.yaml'
+			'pnpm-lock.yaml',
+			// Generated von packages/api-schema (openapi-typescript).
+			'src/lib/api/types.gen.ts'
 		]
 	}
 ];

@@ -40,6 +40,9 @@ linters:
         - Verbindungs
         - Standardmäßig
   exclusions:
+    paths:
+      # Generierte Files aus packages/api-schema (oapi-codegen).
+      - 'apps/backend/internal/api/.*\.gen\.go$'
     rules:
       - path: '_test\.go'
         linters:
@@ -49,3 +52,6 @@ formatters:
   enable:
     - gofmt
     - goimports
+  exclusions:
+    paths:
+      - 'apps/backend/internal/api/.*\.gen\.go$'

@@ -57,6 +57,18 @@ pnpm dlx shadcn-svelte@latest add button card
 # Variants — siehe Badge als Vorlage.
 ```
 
+## API-Types
+
+`src/lib/api/types.gen.ts` wird aus
+[`packages/api-schema/openapi.yaml`](../../packages/api-schema/openapi.yaml)
+generiert (`openapi-typescript`, siehe
+[ADR-0001](../../docs/adr/0001-openapi-as-source-of-truth.md)). Schema-
+Änderungen → vom Repo-Root `make gen`. `client.ts` re-exportiert die
+relevanten Typen (`PingResponse`, `Location`, `Problem`).
+
+Die generierte Datei ist als `linguist-generated=true` markiert und aus
+ESLint/Prettier ausgeschlossen — nicht von Hand editieren.
+
 ## TODOs
 
 - **i18n-Library** (svelte-i18n vs. Paraglide vs. Inlang) — Entscheidung in
@@ -64,5 +76,3 @@ pnpm dlx shadcn-svelte@latest add button card
   `src/lib/i18n/{de,en}.json`, in Komponenten direkt englische Strings.
 - **Theme-Persist** (light/dark) — bisher nur Tailwind `darkMode: ['class']`
   vorbereitet, kein Persist-Mechanismus.
-- **`src/lib/api/types.ts`** wird in Session 7 aus dem OpenAPI-Schema
-  generiert (openapi-typescript).

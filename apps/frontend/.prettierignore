@@ -4,3 +4,6 @@ dist/
 node_modules/
 coverage/
 pnpm-lock.yaml
+
+# Generierte Files (siehe packages/api-schema/Makefile)
+src/lib/api/types.gen.ts

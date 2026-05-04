@@ -1,4 +1,4 @@
-.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen migrate clean backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck
+.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen gen-check migrate clean backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck
 
 .DEFAULT_GOAL := help
 
@@ -87,8 +87,15 @@ fmt: ## Auto-Format (gofmt, ruff, prettier wo verfügbar)
 build: ## Container bauen
 	@echo "Wird ab Session 4 sinnvoll. Aktuell nichts zu bauen."
 
-gen: ## Generierten Code aktualisieren
-	@echo "Wird in Session 7 implementiert."
+gen: ## Generierten Code aus OpenAPI aktualisieren (Go-Server-Stubs + TS-Types)
+	$(MAKE) -C packages/api-schema gen
+
+gen-check: ## Prüft, ob generierter Code aktuell ist (für CI)
+	$(MAKE) gen
+	@git diff --exit-code -- \
+		apps/backend/internal/api/api.gen.go \
+		apps/frontend/src/lib/api/types.gen.ts \
+		|| (echo "Generated code is out of date. Run 'make gen' and commit." && exit 1)
 
 migrate: ## DB-Migrations anwenden
 	@echo "Wird in Session 4/9 implementiert."

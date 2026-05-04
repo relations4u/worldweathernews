@@ -1,0 +1,14 @@
+{
+  "name": "@wwn/api-schema",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OpenAPI-Schema und Generators für worldweathernews.com",
+  "scripts": {
+    "validate": "redocly lint openapi.yaml",
+    "gen-ts": "openapi-typescript openapi.yaml -o ../../apps/frontend/src/lib/api/types.gen.ts"
+  },
+  "devDependencies": {
+    "@redocly/cli": "1.34.5",
+    "openapi-typescript": "7.10.0"
+  }
+}

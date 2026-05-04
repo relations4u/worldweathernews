@@ -20,10 +20,12 @@ Makefile    text eol=lf
 Dockerfile  text eol=lf
 
 # Generated Code (Linguist ignoriert diese in Repo-Statistiken)
-*.gen.go                              linguist-generated=true
-**/queries.sql.go                     linguist-generated=true
-packages/shared-types/**              linguist-generated=true
-packages/api-schema/openapi.gen.*     linguist-generated=true
+*.gen.go                                              linguist-generated=true
+*.gen.ts                                              linguist-generated=true
+**/queries.sql.go                                     linguist-generated=true
+packages/shared-types/**                              linguist-generated=true
+apps/backend/internal/api/api.gen.go                  linguist-generated=true
+apps/frontend/src/lib/api/types.gen.ts                linguist-generated=true
 
 # Binary-Assets
 *.png   binary

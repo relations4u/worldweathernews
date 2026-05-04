@@ -66,9 +66,20 @@ in `staging`/`production` schlägt Boot hart fehl.
 ## Architektur (Stichworte)
 
 - Chi-Router mit RequestID, RealIP, Recoverer, Timeout, CORS, Metrics-Middleware
+- `/api/v1/*`-Routen: implementieren das `StrictServerInterface` aus
+  `internal/api/api.gen.go` (siehe [ADR-0001](../../docs/adr/0001-openapi-as-source-of-truth.md));
+  Handler in `internal/http/handler/api.go`
+- System-Endpoints (`/health`, `/ready`, `/metrics`) bewusst außerhalb OpenAPI
 - slog-Logger im Context; Request-Logger hängt `request_id` an
 - Prometheus mit eigener Registry (4 Backend-Metriken + Standard-Go-Collectors)
 - pgxpool für Postgres, go-redis für Redis — Health-Pings über `SELECT 1` / `PING`
 - Graceful Shutdown über `signal.NotifyContext`
-- DB-Queries kommen mit erstem Feature über sqlc (Session 7+)
+- DB-Queries kommen mit erstem Feature über sqlc
 - OpenTelemetry-Tracing folgt in Session 10
+
+## Generierter Code
+
+`internal/api/api.gen.go` wird von `oapi-codegen` aus
+`packages/api-schema/openapi.yaml` erzeugt. Schema-Änderungen → vom Repo-Root
+`make gen`. Der File ist als `linguist-generated=true` markiert und aus
+`golangci-lint` ausgeschlossen.

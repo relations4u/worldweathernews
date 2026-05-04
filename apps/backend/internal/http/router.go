@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/relations4u/worldweathernews/apps/backend/internal/api"
 	"github.com/relations4u/worldweathernews/apps/backend/internal/config"
 	"github.com/relations4u/worldweathernews/apps/backend/internal/http/handler"
 	mw "github.com/relations4u/worldweathernews/apps/backend/internal/http/middleware"
@@ -36,15 +37,17 @@ func NewRouter(cfg *config.Config, deps handler.Deps, log *slog.Logger, m *obser
 	}))
 	r.Use(metricsMiddleware(m))
 
+	// System-Endpoints (bewusst außerhalb OpenAPI).
 	r.Get("/health", handler.Health(deps))
 	r.Get("/ready", handler.Ready(deps))
 	if cfg.MetricsEnabled {
 		r.Handle("/metrics", promhttp.HandlerFor(m.Registry, promhttp.HandlerOpts{Registry: m.Registry}))
 	}
 
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/ping", handler.Ping())
-	})
+	// OpenAPI-generierte Routen unter /api/v1/.
+	apiHandler := handler.NewAPIHandler()
+	strictHandler := api.NewStrictHandler(apiHandler, nil)
+	api.HandlerFromMux(strictHandler, r)
 
 	return r
 }

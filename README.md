@@ -24,12 +24,24 @@ make dev            # Lokale Entwicklung starten
 
 Danach `eval "$(mise activate zsh)"` (bzw. `bash`) in die Shell-Init aufnehmen.
 
+## API-Schema
+
+Die HTTP-API ist als OpenAPI 3.1 in [`packages/api-schema/openapi.yaml`](packages/api-schema/openapi.yaml)
+definiert (siehe [ADR-0001](docs/adr/0001-openapi-as-source-of-truth.md)).
+Aus dem Schema werden Go-Server-Stubs und TypeScript-Types generiert:
+
+```bash
+make gen          # regeneriert beide Outputs
+make gen-check    # CI: prüft, dass das Generierte aktuell ist
+```
+
 ## Dokumentation
 
 - [Architektur](docs/architecture.md)
 - [Entwicklung](docs/development.md)
 - [Deployment](docs/deployment.md)
 - [Runbook](docs/runbook.md)
+- [Architecture Decision Records](docs/adr/)
 - [Spielregeln für Claude Code](CLAUDE.md)
 
 ## Lizenz
