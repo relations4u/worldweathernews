@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ─── Stage 1: builder ────────────────────────────────────────────────────────
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 ARG VERSION=dev
 ARG COMMIT=unknown
 
@@ -20,7 +20,7 @@ RUN uv sync --frozen --no-dev
 
 
 # ─── Stage 2: runtime ────────────────────────────────────────────────────────
-FROM python:3.12-slim
+FROM python:3.14-slim
 LABEL org.opencontainers.image.source="https://github.com/relations4u/worldweathernews"
 LABEL org.opencontainers.image.title="wwn-pyworkers"
 LABEL org.opencontainers.image.description="worldweathernews.com Worker-Service"
