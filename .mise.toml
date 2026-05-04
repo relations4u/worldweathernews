@@ -13,16 +13,17 @@
 #   Fallback: `uv tool install pre-commit` oder `pipx install pre-commit`.
 
 [tools]
-go             = "1.23"
-node           = "22"
-python         = "3.12"
-pnpm           = "latest"
-uv             = "latest"
-golangci-lint  = "latest"
-task           = "latest"
-"ubi:sqlc-dev/sqlc"   = { version = "latest", exe = "sqlc" }
-"ubi:pressly/goose"   = { version = "latest", exe = "goose" }
-"pipx:pre-commit"     = "latest"
+go = "1.25"
+node = "22"
+python = "3.12"
+pnpm = "9"
+uv = "latest"
+golangci-lint = "2.12.1"
+"ubi:sqlc-dev/sqlc" = "1.27.0"
+"ubi:pressly/goose" = "3.22.1"
+task = "latest"
+"pipx:pre-commit" = "4.0.1"
+"pipx:yamllint" = "1.35.1"
 
 [settings]
 experimental = true
