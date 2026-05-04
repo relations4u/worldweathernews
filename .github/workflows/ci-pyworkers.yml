@@ -1,0 +1,61 @@
+name: CI Python Workers
+
+on:
+  pull_request:
+    paths:
+      - "apps/pyworkers/**"
+      - ".github/workflows/ci-pyworkers.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/pyworkers/**"
+      - ".github/workflows/ci-pyworkers.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint-and-test:
+    name: Lint, Type-check & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/pyworkers
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "apps/pyworkers/uv.lock"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Mypy
+        run: uv run mypy .
+
+      - name: Pytest
+        run: uv run pytest --cov=pyworkers --cov-report=xml
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyworkers-coverage
+          path: apps/pyworkers/coverage.xml
+          retention-days: 7
