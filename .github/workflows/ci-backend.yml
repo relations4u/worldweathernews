@@ -1,0 +1,101 @@
+name: CI Backend
+
+on:
+  pull_request:
+    paths:
+      - "apps/backend/**"
+      - "packages/api-schema/**"
+      - ".github/workflows/ci-backend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/backend/**"
+      - "packages/api-schema/**"
+      - ".github/workflows/ci-backend.yml"
+
+concurrency:
+  group: ci-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: apps/backend
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/backend/go.mod
+          cache-dependency-path: apps/backend/go.sum
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: apps/backend
+          args: --timeout=5m
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: wwn
+          POSTGRES_PASSWORD: wwn
+          POSTGRES_DB: wwn_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wwn -d wwn_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      WWN_DATABASE_URL: postgres://wwn:wwn@localhost:5432/wwn_test?sslmode=disable
+      WWN_REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/backend/go.mod
+          cache-dependency-path: apps/backend/go.sum
+      - name: Run tests
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: apps/backend/coverage.out
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/backend/go.mod
+          cache-dependency-path: apps/backend/go.sum
+      - name: Build
+        run: |
+          CGO_ENABLED=0 go build \
+            -trimpath \
+            -ldflags="-s -w -X github.com/relations4u/worldweathernews/apps/backend/internal/version.Commit=${{ github.sha }}" \
+            -o /tmp/api ./cmd/api
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-binary
+          path: /tmp/api
+          retention-days: 7
