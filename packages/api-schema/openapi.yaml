@@ -22,6 +22,9 @@ tags:
   - name: locations
     description: Geographische Orte
 
+# Default: all endpoints are public. Override per operation if needed.
+security: []
+
 paths:
   /api/v1/ping:
     get:

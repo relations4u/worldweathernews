@@ -1,5 +1,7 @@
 .env
 .env.local
+# Frontend default env (committed for CI/build)
+!apps/frontend/.env
 *.sops.decrypted
 node_modules/
 .svelte-kit/
