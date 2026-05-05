@@ -11,6 +11,7 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/riandyrn/otelchi"
 
 	"github.com/relations4u/worldweathernews/apps/backend/internal/api"
 	"github.com/relations4u/worldweathernews/apps/backend/internal/config"
@@ -25,6 +26,11 @@ func NewRouter(cfg *config.Config, deps handler.Deps, log *slog.Logger, m *obser
 
 	r.Use(chimw.RequestID)
 	r.Use(chimw.RealIP)
+	// Tracing-Middleware muss vor dem Logger stehen, damit der Request-Logger
+	// die Trace-ID aus dem Span-Context lesen und in jeder Log-Zeile mitführen
+	// kann. otelchi verwendet das Chi-Routing-Pattern als Span-Name (z. B.
+	// "/api/v1/locations/{id}"), damit die Span-Cardinality begrenzt bleibt.
+	r.Use(otelchi.Middleware("wwn-backend", otelchi.WithChiRoutes(r)))
 	r.Use(mw.RequestLogger(log))
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.Timeout(30 * time.Second))

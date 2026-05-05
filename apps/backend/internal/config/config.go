@@ -16,6 +16,7 @@ type Config struct {
 	Database       DatabaseConfig
 	Redis          RedisConfig
 	Logging        LoggingConfig
+	Observability  ObservabilityConfig
 	Environment    string
 	MetricsEnabled bool
 }
@@ -49,6 +50,17 @@ type LoggingConfig struct {
 	Format string
 }
 
+// ObservabilityConfig steuert OpenTelemetry-Tracing.
+type ObservabilityConfig struct {
+	Tracing TracingConfig
+}
+
+// TracingConfig hält Endpoint und Toggle für den OTLP-Exporter.
+type TracingConfig struct {
+	Enabled  bool
+	Endpoint string
+}
+
 // Load liest Defaults, optionale Config-Datei und ENV-Overrides ein und
 // liefert eine validierte Config.
 func Load(configPath string) (*Config, error) {
@@ -71,6 +83,8 @@ func Load(configPath string) (*Config, error) {
 	v.SetDefault("database.connMaxLifetime", "1h")
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.format", "json")
+	v.SetDefault("observability.tracing.enabled", false)
+	v.SetDefault("observability.tracing.endpoint", "tempo:4317")
 	v.SetDefault("environment", "production")
 	v.SetDefault("metricsEnabled", true)
 

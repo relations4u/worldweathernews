@@ -7,6 +7,7 @@ import (
 	"time"
 
 	chimw "github.com/go-chi/chi/v5/middleware"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/relations4u/worldweathernews/apps/backend/internal/observability"
 )
@@ -22,6 +23,17 @@ func RequestLogger(base *slog.Logger) func(http.Handler) http.Handler {
 
 			reqID := chimw.GetReqID(r.Context())
 			log := base.With(slog.String("request_id", reqID))
+
+			// Trace-IDs werden vom otelchi-Middleware (oben in router.go)
+			// in den Context injiziert. Wenn vorhanden, ergänzen wir sie an
+			// jedem Log-Eintrag — Loki zieht das Feld dann als Label und
+			// verlinkt zu Tempo (DerivedField in datasources.yml).
+			if span := trace.SpanContextFromContext(r.Context()); span.IsValid() {
+				log = log.With(
+					slog.String("trace_id", span.TraceID().String()),
+					slog.String("span_id", span.SpanID().String()),
+				)
+			}
 
 			ctx := observability.WithLogger(r.Context(), log)
 			next.ServeHTTP(ww, r.WithContext(ctx))

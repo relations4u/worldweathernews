@@ -1,4 +1,4 @@
-.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen gen-check migrate clean release backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck
+.PHONY: help bootstrap env dev dev-full dev-monitoring dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen gen-check migrate clean release backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck
 
 .DEFAULT_GOAL := help
 
@@ -23,11 +23,18 @@ dev: env ## Lokalen Stack starten (Compose)
 	docker compose up -d
 	docker compose logs -f --tail=20
 
+dev-full: env ## Lokaler Stack inkl. Monitoring (Prometheus, Grafana, Loki, Promtail, Tempo)
+	docker compose --profile monitoring up -d
+	docker compose --profile monitoring logs -f --tail=20
+
+dev-monitoring: env ## Nur Monitoring-Services starten (Apps müssen separat laufen)
+	docker compose --profile monitoring up -d prometheus grafana loki promtail tempo
+
 dev-down: ## Stack stoppen
-	docker compose down
+	docker compose --profile monitoring down
 
 dev-reset: ## Stack stoppen + Volumes löschen
-	docker compose down -v
+	docker compose --profile monitoring down -v
 
 dev-logs: ## Logs eines Services tailen (SERVICE=name)
 	docker compose logs -f $(SERVICE)
