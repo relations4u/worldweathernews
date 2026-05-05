@@ -109,7 +109,21 @@ Live-Verifikation der Workflows erst nach Push einer Test-PR möglich.
 
 ## Session 9 — Release-Workflow und Container-Registry
 
-Status: ⏸ Pending
+Status: ✅ Done
+Datum: 2026-05-05
+Commit: 0c39b83 (initial pipeline) + edb42b8 (SARIF-fix)
+Notizen: Tag-getriggerte Release-Pipeline für alle drei Services. amd64-only
+(arm64 dropped — kein ARM-Hosting geplant). Cosign keyless via Sigstore,
+Syft-SBOM, Trivy-Scan; SBOMs als Release-Asset, Trivy-SARIF als Workflow-
+Artefakt (NICHT zur Code-Scanning-Tab — Repo ist privat ohne GHAS, der
+github/codeql-action/upload-sarif-Endpoint ist gesperrt). git-cliff für
+auto-generierte Release-Notes, softprops/action-gh-release als Publisher.
+Caddy `rate_limit` weggelassen (nicht in caddy:2-alpine, TODO im Caddyfile).
+Live-Test mit v0.0.1-rc1 (rot, SARIF-Upload-Fehler), Fix in PR #19, danach
+v0.0.1-rc2 komplett grün: 3 signierte Images, 3 SBOMs, GitHub-Release als
+prerelease (auto-detected via "-"). cosign verify nicht lokal getestet —
+GHCR-Pakete sind privat, Pull-Time-Verifikation gehört zu Session 11
+(Ansible). Erfahrungswert: kompletter Release-Run dauert ~3 Min.
 
 ## Session 10 — Observability-Stack lokal
 
