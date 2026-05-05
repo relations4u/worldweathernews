@@ -1,0 +1,11 @@
+extends:
+  - "@commitlint/config-conventional"
+rules:
+  type-enum:
+    - 2
+    - always
+    - [feat, fix, chore, docs, refactor, test, perf, ci, style, build, revert]
+  scope-enum:
+    - 1
+    - always
+    - [backend, frontend, pyworkers, infra, api, ci, deps, docs, root]

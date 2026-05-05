@@ -92,7 +92,20 @@ ADR-0001, scripts/check-generated.sh für CI.
 
 ## Session 8 — GitHub Actions CI-Workflows
 
-Status: ⏸ Pending
+Status: ✅ Done
+Datum: 2026-05-04
+Commit: <SHA>
+Notizen: Workflows in zwei Vorab-Commits gelandet (fac75c9, 90c4078); diese
+Session ergänzt das Drumherum (.commitlintrc.yaml, README-Badges) und fixt
+zwei Lücken aus früheren Sessions, die in CI auffliegen würden:
+fehlende lint/test-Scripts in apps/frontend/package.json (Session 5) und
+fehlendes pip-audit-Dev-Dep in apps/pyworkers (Session 6).
+Frontend- und PyWorkers-CI-Jobs fassen Schritte zusammen statt separater
+install/lint/check/test-Jobs aus step08.md — bewusste Optimierung,
+Caching greift trotzdem über setup-node/setup-uv.
+Branch-Protection wird direkt in der GitHub-UI gepflegt, nicht im Repo
+dokumentiert (docs/deployment.md bleibt deshalb beim TODO-Platzhalter).
+Live-Verifikation der Workflows erst nach Push einer Test-PR möglich.
 
 ## Session 9 — Release-Workflow und Container-Registry
 
