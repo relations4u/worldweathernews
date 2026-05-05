@@ -1,0 +1,23 @@
+{
+	email ops@worldweathernews.com
+	log {
+		output stdout
+		format json
+	}
+}
+
+# TODO: rate limiting via xcaddy plugin or backend middleware (Session 11+).
+# The standard caddy:2-alpine image does not include the rate_limit module.
+
+worldweathernews.com, www.worldweathernews.com {
+	encode zstd gzip
+	reverse_proxy frontend:3000
+}
+
+api.worldweathernews.com {
+	encode zstd gzip
+	reverse_proxy backend:8080
+
+	@options method OPTIONS
+	respond @options 204
+}

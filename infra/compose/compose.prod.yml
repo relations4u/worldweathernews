@@ -1,0 +1,124 @@
+# Production-Compose. Wird von Ansible deployed.
+# Image-Tags werden via ENV (VERSION, IMAGE_NAMESPACE) zur Deploy-Zeit gesetzt.
+
+services:
+  postgres:
+    image: timescale/timescaledb-ha:pg16
+    container_name: wwn-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  redis:
+    image: redis:7-alpine
+    container_name: wwn-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  backend:
+    image: ghcr.io/${IMAGE_NAMESPACE}/wwn-backend:${VERSION}
+    container_name: wwn-backend
+    restart: unless-stopped
+    environment:
+      WWN_DATABASE_URL: ${WWN_DATABASE_URL}
+      WWN_REDIS_URL: ${WWN_REDIS_URL}
+      WWN_LOG_LEVEL: info
+      WWN_LOG_FORMAT: json
+      WWN_ENVIRONMENT: production
+      WWN_HTTP_PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  frontend:
+    image: ghcr.io/${IMAGE_NAMESPACE}/wwn-frontend:${VERSION}
+    container_name: wwn-frontend
+    restart: unless-stopped
+    environment:
+      PUBLIC_API_BASE_URL: https://api.worldweathernews.com
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  pyworkers:
+    image: ghcr.io/${IMAGE_NAMESPACE}/wwn-pyworkers:${VERSION}
+    container_name: wwn-pyworkers
+    restart: unless-stopped
+    environment:
+      WWN_PY_DATABASE_URL: ${WWN_PY_DATABASE_URL}
+      WWN_PY_REDIS_URL: ${WWN_PY_REDIS_URL}
+      WWN_PY_LOG_LEVEL: INFO
+      WWN_PY_LOG_FORMAT: json
+      WWN_PY_ENVIRONMENT: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: wwn-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

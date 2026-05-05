@@ -1,4 +1,4 @@
-.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen gen-check migrate clean backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck
+.PHONY: help bootstrap env dev dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen gen-check migrate clean release backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck
 
 .DEFAULT_GOAL := help
 
@@ -99,6 +99,9 @@ gen-check: ## Prüft, ob generierter Code aktuell ist (für CI)
 
 migrate: ## DB-Migrations anwenden
 	@echo "Wird in Session 4/9 implementiert."
+
+release: ## Neuen Release-Tag erstellen (interaktiv) und pushen
+	bash scripts/release.sh
 
 clean: ## Aufräumen
 	rm -rf bin tmp dist build .turbo
