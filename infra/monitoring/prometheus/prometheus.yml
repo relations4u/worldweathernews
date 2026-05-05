@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: wwn-dev
+    env: dev
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["backend:8080"]
+        labels:
+          service: backend
+
+  - job_name: pyworkers
+    static_configs:
+      - targets: ["pyworkers:9100"]
+        labels:
+          service: pyworkers
+
+  # TODO(infra): Caddy-Admin in Caddyfile aktivieren, dann diesen Job
+  # einkommentieren. Aktuell liefert :2019 keine Metriken.
+  # - job_name: caddy
+  #   static_configs:
+  #     - targets: ["caddy:2019"]
+  #       labels:
+  #         service: caddy

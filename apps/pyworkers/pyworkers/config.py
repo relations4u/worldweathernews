@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     # Heartbeat
     heartbeat_interval_seconds: int = Field(default=30, ge=1)
 
+    # Tracing (OTLP gRPC → Tempo). Endpoint ist host:port ohne Schema.
+    tracing_enabled: bool = False
+    tracing_endpoint: str = "tempo:4317"
+
     @field_validator("log_level", mode="before")
     @classmethod
     def _upper_log_level(cls, v: object) -> object:

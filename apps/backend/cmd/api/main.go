@@ -50,6 +50,29 @@ func run() error {
 	rootCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	tracingShutdown, err := observability.InitTracing(rootCtx, observability.TracingConfig{
+		Enabled:     cfg.Observability.Tracing.Enabled,
+		Endpoint:    cfg.Observability.Tracing.Endpoint,
+		ServiceName: "wwn-backend",
+		Environment: cfg.Environment,
+		Version:     version.Version,
+	})
+	if err != nil {
+		// Tracing-Probleme dürfen den Start nicht killen — Tempo könnte
+		// schlicht nicht laufen. Loggen, weiter.
+		log.Warn("tracing init failed, continuing without traces", slog.Any("err", err))
+		tracingShutdown = func(context.Context) error { return nil }
+	} else if cfg.Observability.Tracing.Enabled {
+		log.Info("tracing enabled", slog.String("endpoint", cfg.Observability.Tracing.Endpoint))
+	}
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tracingShutdown(shutdownCtx); err != nil {
+			log.Warn("tracing shutdown failed", slog.Any("err", err))
+		}
+	}()
+
 	pool, err := storage.NewPool(rootCtx, cfg.Database)
 	if err != nil {
 		if cfg.Environment == "dev" {

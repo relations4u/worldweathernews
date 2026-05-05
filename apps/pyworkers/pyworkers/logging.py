@@ -6,6 +6,8 @@ from typing import Any
 
 import structlog
 
+from pyworkers.observability import add_trace_context
+
 
 def configure_logging(level: str, fmt: str) -> None:
     """Initialisiert structlog. `level` z.B. ``DEBUG``, `fmt` ``json`` oder ``text``."""
@@ -28,6 +30,7 @@ def configure_logging(level: str, fmt: str) -> None:
 def _get_processors(fmt: str) -> list[Any]:
     common: list[Any] = [
         structlog.contextvars.merge_contextvars,
+        add_trace_context,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),

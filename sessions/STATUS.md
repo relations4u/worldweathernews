@@ -127,7 +127,26 @@ GHCR-Pakete sind privat, Pull-Time-Verifikation gehört zu Session 11
 
 ## Session 10 — Observability-Stack lokal
 
-Status: ⏸ Pending
+Status: ✅ Done
+Datum: 2026-05-05
+Commit: <SHA>
+Notizen: Compose-Profile `monitoring` mit pinned Images
+(prom/prometheus:v2.55.1, grafana/grafana:11.3.0, grafana/loki:3.3.2,
+grafana/promtail:3.3.2, grafana/tempo:2.6.1) — `make dev-full` startet alles,
+`make dev` lässt Monitoring bewusst aussen vor. OTel mit konkreten Pins:
+Backend otel/sdk@v1.34.0 + otelchi@v0.12.3 + contrib/otelhttp@v0.59.0;
+Pyworkers opentelemetry-{api,sdk,exporter-otlp-proto-grpc}~=1.29.0 +
+instrumentation-{asyncpg,redis,httpx}~=0.50b0. Trace-IDs landen in slog/
+structlog, Loki-DerivedField verlinkt auf Tempo. Tracing graceful-degraded:
+fehlt Tempo, retrydet OTLP still im Hintergrund; App läuft ohne Trace-Sink
+weiter. Heartbeat-Job bekam manuellen Span — sonst keine Traces, weil
+Auto-Instrumentation nur DB/HTTP/Redis-Calls greift. Live-Verifikation:
+Tempo sieht Backend- und Pyworkers-Traces, Loki indexiert JSON-Logs mit
+trace_id-Label, Cross-Lookup Loki→Tempo via Trace-ID erfolgreich. Volle
+3 Dashboards (Backend, Pyworkers, Infra-Stub mit TODO-Roadmap).
+.env-Format auf `json` umgestellt (Default), text-Empfehlung im Comment.
+mypy strict erforderte separaten Override für pyworkers.observability.tracing
+(disallow_untyped_calls=false), weil OTel-Instrumentor-Constructor untyped sind.
 
 ## Session 11 — Ansible, SOPS, Terraform-Skelett
 

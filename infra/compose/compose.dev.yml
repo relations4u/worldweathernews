@@ -92,9 +92,11 @@ services:
       WWN_DATABASE_URL: ${WWN_DATABASE_URL}
       WWN_REDIS_URL: ${WWN_REDIS_URL}
       WWN_LOGGING_LEVEL: ${WWN_LOG_LEVEL:-debug}
-      WWN_LOGGING_FORMAT: ${WWN_LOG_FORMAT:-text}
+      WWN_LOGGING_FORMAT: ${WWN_LOG_FORMAT:-json}
       WWN_ENVIRONMENT: dev
       WWN_HTTP_PORT: "8080"
+      WWN_OBSERVABILITY_TRACING_ENABLED: ${WWN_OBSERVABILITY_TRACING_ENABLED:-true}
+      WWN_OBSERVABILITY_TRACING_ENDPOINT: ${WWN_OBSERVABILITY_TRACING_ENDPOINT:-tempo:4317}
     depends_on:
       postgres:
         condition: service_healthy
@@ -166,10 +168,12 @@ services:
       WWN_PY_DATABASE_URL: ${WWN_PY_DATABASE_URL}
       WWN_PY_REDIS_URL: ${WWN_PY_REDIS_URL}
       WWN_PY_LOG_LEVEL: ${WWN_PY_LOG_LEVEL:-DEBUG}
-      WWN_PY_LOG_FORMAT: ${WWN_PY_LOG_FORMAT:-text}
+      WWN_PY_LOG_FORMAT: ${WWN_PY_LOG_FORMAT:-json}
       WWN_PY_ENVIRONMENT: dev
       WWN_PY_HEARTBEAT_INTERVAL_SECONDS: "30"
       WWN_PY_METRICS_PORT: "9100"
+      WWN_PY_TRACING_ENABLED: ${WWN_PY_TRACING_ENABLED:-true}
+      WWN_PY_TRACING_ENDPOINT: ${WWN_PY_TRACING_ENDPOINT:-tempo:4317}
     depends_on:
       postgres:
         condition: service_healthy
@@ -177,6 +181,102 @@ services:
         condition: service_healthy
     expose:
       - "9100"
+    networks:
+      - wwn-net
+
+  # --- Monitoring-Stack (Profile `monitoring`) -------------------------------
+  # Wird mit `make dev-full` oder `docker compose --profile monitoring up`
+  # gestartet. `make dev` lässt diese Services bewusst aussen vor.
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: wwn-prometheus
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - wwn-net
+
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: wwn-loki
+    profiles: [monitoring]
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ../monitoring/loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    networks:
+      - wwn-net
+
+  promtail:
+    image: grafana/promtail:3.3.2
+    container_name: wwn-promtail
+    profiles: [monitoring]
+    restart: unless-stopped
+    # Promtail braucht Read-Zugriff auf den Docker-Socket (Service-Discovery)
+    # und auf die Container-Logs. user:root ist im Dev-Setup pragmatisch —
+    # in Prod sollte stattdessen die docker-Group gesetzt werden.
+    user: "0:0"
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    volumes:
+      - ../monitoring/promtail/config.yaml:/etc/promtail/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail_data:/tmp
+    depends_on:
+      - loki
+    networks:
+      - wwn-net
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: wwn-tempo
+    profiles: [monitoring]
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ../monitoring/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "127.0.0.1:3200:3200" # Tempo HTTP
+      - "127.0.0.1:4317:4317" # OTLP gRPC
+      - "127.0.0.1:4318:4318" # OTLP HTTP
+    networks:
+      - wwn-net
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: wwn-grafana
+    profiles: [monitoring]
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: dark
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
     networks:
       - wwn-net
 
@@ -198,3 +298,13 @@ volumes:
     name: wwn_frontend_node_modules
   pyworkers_venv:
     name: wwn_pyworkers_venv
+  prometheus_data:
+    name: wwn_prometheus_data
+  grafana_data:
+    name: wwn_grafana_data
+  loki_data:
+    name: wwn_loki_data
+  promtail_data:
+    name: wwn_promtail_data
+  tempo_data:
+    name: wwn_tempo_data

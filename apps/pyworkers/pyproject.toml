@@ -13,6 +13,14 @@ dependencies = [
     "prometheus-client>=0.20",
     "apscheduler>=3.10,<4",
     "click>=8.1",
+    # OpenTelemetry — Pin auf einheitliche Minor-Version, weil das Ökosystem
+    # zwischen Minors häufig Breaking Changes hat.
+    "opentelemetry-api~=1.29.0",
+    "opentelemetry-sdk~=1.29.0",
+    "opentelemetry-exporter-otlp-proto-grpc~=1.29.0",
+    "opentelemetry-instrumentation-asyncpg~=0.50b0",
+    "opentelemetry-instrumentation-redis~=0.50b0",
+    "opentelemetry-instrumentation-httpx~=0.50b0",
 ]
 
 [project.scripts]
@@ -58,8 +66,23 @@ plugins = ["pydantic.mypy"]
 # Bibliotheken ohne py.typed-Marker (asyncpg, apscheduler) — wir akzeptieren
 # Untyped-Imports und vertrauen den Runtime-Verträgen.
 [[tool.mypy.overrides]]
-module = ["asyncpg.*", "apscheduler.*"]
+module = [
+    "asyncpg.*",
+    "apscheduler.*",
+]
 ignore_missing_imports = true
+
+# OTel: opentelemetry-instrumentation-*-Pakete tragen kein py.typed.
+[[tool.mypy.overrides]]
+module = ["opentelemetry.*"]
+ignore_missing_imports = true
+
+# Im Tracing-Modul rufen wir untyped Instrumentor-Constructors auf
+# (AsyncPGInstrumentor, RedisInstrumentor, HTTPXClientInstrumentor) —
+# disallow_untyped_calls auf dem aufrufenden Modul lockern, nicht global.
+[[tool.mypy.overrides]]
+module = ["pyworkers.observability.tracing"]
+disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
