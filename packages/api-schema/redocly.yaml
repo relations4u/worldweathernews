@@ -1,22 +1,12 @@
-# Redocly-Lint-Konfiguration für die wwn-API.
-#
-# Wir nutzen die "minimal"-Regel-Basis und deaktivieren die Lint-Regeln, die
-# in dieser Phase nicht passen:
-# - security-defined: Auth-Schema kommt in einer späteren Session
-# - info-license-strict: License-URL kommt mit der Lizenz-Entscheidung in step12
-# - no-server-example.com: localhost ist für Dev-Server gewollt
-# - no-unused-components: NotFound/InternalServerError sind reusable Stubs
-#   für künftige Endpoints
-# - operation-summary: Stub-Endpoints haben minimale Summaries
-# - tag-description: Tag-Beschreibungen sind heute knapp
-
 extends:
-  - minimal
+  - recommended
 
 rules:
-  security-defined: off
-  info-license-strict: off
-  no-server-example.com: off
-  no-unused-components: off
+  security-defined: error
+  info-license-strict: warn
+  no-server-example.com: warn
+  operation-4xx-response: warn
+  no-unused-components: warn
   operation-summary: warn
-  tag-description: off
+  operation-operationId: error
+  tag-description: warn

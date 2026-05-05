@@ -1,0 +1,13 @@
+# Platzhalter und Defaults
+^https?://example\.com
+^https?://example\.org
+^https?://your-domain\.com
+^https?://localhost
+^https?://127\.0\.0\.1
+^https?://api\.localhost
+^https?://app\.localhost
+
+# Die noch nicht existierende Production-URL
+^https?://worldweathernews\.com
+^https?://www\.worldweathernews\.com
+^https?://api\.worldweathernews\.com

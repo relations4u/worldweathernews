@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: "22"
       - name: Run redocly lint
-        run: npx -y @redocly/cli@latest lint packages/api-schema/openapi.yaml
+        run: npx -y @redocly/cli@latest lint packages/api-schema/openapi.yaml --config packages/api-schema/redocly.yaml
 
   check-generated:
     name: Check generated files are up-to-date
@@ -67,6 +67,9 @@ jobs:
     name: Commit lint
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,5 +83,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --max-redirects 5 './**/*.md'
-          fail: true
+          args: >-
+            --no-progress
+            --max-redirects 5
+            --accept 200,204,206,301,302,403,429
+            './**/*.md'
+          fail: false

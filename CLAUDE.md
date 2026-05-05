@@ -306,6 +306,23 @@ ein kurzer Eintrag.
 
 ---
 
+## Maintainer-Identität
+
+Maintainer commits MUST be made with:
+
+- user.name: Hans-Werner Roitzsch
+- user.email: <echte-adresse>@example.de (eine bei GitHub registrierte Adresse)
+- SSH-Signing aktiv (gpg.format=ssh, user.signingkey=~/.ssh/id_ed25519.pub)
+- SSH-Public-Key bei GitHub als BEIDES registriert: Authentication Key + Signing Key
+
+Falls neuer Maintainer hinzukommt: gleicher Setup-Pfad in pre-session-checklist.md.
+
+History pre-2026-05-04 enthält Commits unter Platzhalter-Mail "deine@email.tld" —
+das ist Setup-Artefakt, kein Sicherheitsproblem. Nicht rewriten, nur ab Punkt X
+neue Commits sauber führen.
+
+---
+
 ## Changelog dieser Datei
 
 Diese Datei wächst mit dem Projekt. Wenn du etwas Strukturelles lernst, das hier
