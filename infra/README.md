@@ -44,6 +44,7 @@ deployed werden.
 | Dev      | `caddy/Caddyfile`      | `auto_https off`, `*.localhost`       |
 | Prod     | `caddy/prod/Caddyfile` | Let's-Encrypt-ACME, 4 echte Hostnames |
 
-Der ältere `caddy/Caddyfile.prod` (App-Stack-integriert, 3 Hostnames ohne
-HSTS) wird abgelöst, sobald der App-Stack in Production deployed wird.
-Bis dahin steht er nur als Vorlage.
+Der Prod-Caddy läuft als eigener Compose-Stack auf wwn-prod
+(`/srv/wwn/caddy`, `network_mode: host`) und wird via
+`infra/deploy/deploy-caddy.sh` gepflegt. Er ist bewusst getrennt vom
+App-Stack in `compose/compose.prod.yml`.
