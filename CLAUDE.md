@@ -139,6 +139,61 @@ Setups massiv Zeit gekostet.
 
 ---
 
+## App-Release-Pinning — abgegrenzt vom Toolchain-Pinning
+
+Der vorige Abschnitt regelt **Toolchain-Pins** (Go, Node, Python, golangci-lint, …) —
+also Versionen, die in den Build-Container eingebrannt werden. Dieser Abschnitt
+regelt **App-Release-Pins** — welche Service-Image-Tag-Version aktuell auf
+wwn-prod produziert.
+
+### Authoritative Quellen
+
+- **Letztes signiertes Tag im Repo**: `git tag --sort=-v:refname | head -1`
+- **Live auf wwn-prod**:
+  `ssh hwr@10.100.100.21 'sudo -u deploy docker ps --format "{{.Image}}" | grep ghcr.io'`
+
+Beide müssen synchron sein. Stand 6. Mai 2026: `v0.0.2` live (alle drei
+Services).
+
+### Pinning-Regeln
+
+- **Keine `latest` als App-Release-Tag** — gilt analog zum Toolchain-Pin-Verbot.
+- **Kein implizites Default in Production**: `infra/ansible/inventories/production/group_vars/all.yml`
+  setzt `default_versions: 0.0.0` als bewussten Fail-fast-Marker. Ohne explizites
+  `-e target_version=X.Y.Z` deployt man auf `0.0.0` → Image existiert nicht in
+  ghcr.io → Container starten nicht. Das ist gewollt.
+- **Eine Version für alle drei Services** — Release-Pipeline taggt alle drei
+  zugleich, Deploy zieht alle drei zugleich. Mismatched Versions zwischen
+  backend/frontend/pyworkers sind ein Bug.
+- **Frontend-Build-Args sind Teil des Release-Pins** — `PUBLIC_API_BASE_URL`
+  wird zur Build-Zeit ins JS-Bundle eingebrannt (siehe `apps/frontend/Dockerfile`
+  und `.github/workflows/release.yml`). Wer das Frontend für eine andere
+  Umgebung baut, MUSS den build-arg setzen, sonst landet der Dockerfile-Default
+  `http://api.localhost` im Bundle.
+
+### Release-Workflow
+
+1. `make release` (oder direkt `git tag -s vX.Y.Z -m "Release vX.Y.Z" && git push origin vX.Y.Z`).
+2. Release-Pipeline (`.github/workflows/release.yml`) baut, signiert
+   (cosign keyless via Sigstore), erstellt SBOMs (Syft), scannt (Trivy)
+   und published 3 Images zu ghcr.io.
+3. CI grün abwarten — Erfahrungswert: ~3 Min, gelegentlich Syft-CDN-502
+   beim SBOM-Step → `gh run rerun <id> --failed` reicht.
+4. `bash scripts/deploy.sh production X.Y.Z` (interaktive Bestätigung).
+5. Smoke-Tests aus `docs/runbook.md` abklappern.
+
+Direkter `docker pull` und `docker run` außerhalb dieses Workflows ist
+nicht der zugelassene Weg in Produktion. cosign-Verify zur Pull-Time auf
+wwn-prod ist offen (siehe `docs/backlog.md` → Sicherheit).
+
+### Wo finde ich was
+
+- Pro-Release-Notes: `gh release list` und `gh release view vX.Y.Z`
+- Tag-History: `git log --tags --simplify-by-decoration --oneline | head`
+- Release-Pipeline-Status: GitHub Actions → "Release"-Workflow
+
+---
+
 ## Maintainer-Identität
 
 Alle Commits MÜSSEN signiert sein mit:
@@ -826,7 +881,7 @@ ein kurzer Eintrag.
 | D     | 10b — Caddy auf wwn-prod, Public-Erreichbarkeit    | ✅ Abgeschlossen (6. Mai 2026, Snapshot `caddy-online`)    |
 | D     | 10c — Observability-Stack auf wwn-mon              | ✅ Abgedeckt durch Session 11a (Rolle `monitoring-stack`)  |
 | D     | 11 — Ansible + SOPS + Terraform-Skelett            | ✅ Code-Skelett gemerged (#22, #23)                        |
-| D     | 11a — Komplettes Deployment auf wwn-prod + wwn-mon | ✅ Abgeschlossen (6. Mai 2026, v0.0.1-rc4 live)            |
+| D     | 11a — Komplettes Deployment auf wwn-prod + wwn-mon | ✅ Abgeschlossen (6. Mai 2026, v0.0.2 live)                |
 | D     | 12 — Dokumentation, ADRs, Runbook                  | ✅ Abgeschlossen (6. Mai 2026, Setup-Phase damit komplett) |
 
 **Session 10a-Ergebnisse** (Basis-Setup beider VMs, Stand 5. Mai 2026):
@@ -873,9 +928,11 @@ Vollständig in Session 11a umgesetzt — neue Ansible-Rolle
 
 ✅ wwn-prod (10.100.100.21):
 
-- App-Stack v0.0.1-rc4 läuft: backend, frontend, pyworkers (alle
+- App-Stack v0.0.2 läuft: backend, frontend, pyworkers (alle
   healthy), postgres (TimescaleDB), redis, plus monitoring-agent
-  (promtail, node-exporter)
+  (promtail, node-exporter). Erstdeploy in 11a war v0.0.1-rc4;
+  noch am 6. Mai über v0.0.1-rc3-Diagnose-Patches auf v0.0.2 gehoben
+  (siehe Changelog).
 - Caddy unverändert (Stand-alone-Stack), aber Caddyfile auf
   `reverse_proxy 127.0.0.1:{3000,8080}` umgestellt; alle vier
   LE-Zertifikate haben unveränderte `notBefore`-Dates seit Session 10b
