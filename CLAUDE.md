@@ -87,7 +87,7 @@ Setups massiv Zeit gekostet.
 3. `.github/workflows/ci-*.yml` → `go-version: 'X.Y'`, `version: 'X.Y.Z'` etc.
 4. `apps/backend/Dockerfile` → `FROM golang:X.Y-alpine` (analog für andere)
 
-### Aktuelle Pflicht-Pins (Stand Mai 2026)
+### Aktuelle Pflicht-Pins (Stand 6. Mai 2026)
 
 | Tool                 | Pin    | Quelle                                |
 | -------------------- | ------ | ------------------------------------- |
@@ -101,6 +101,10 @@ Setups massiv Zeit gekostet.
 | goose                | 3.22.1 | .mise.toml                            |
 | yamllint             | 1.35.1 | .mise.toml                            |
 | pre-commit           | 4.0.1  | .mise.toml                            |
+| Terraform            | 1.15   | .mise.toml, infra/terraform/          |
+| sops                 | 3.12   | .mise.toml, GitHub-Release auf VMs    |
+| ansible-core         | 2.20   | .mise.toml, infra/ansible/            |
+| ansible-lint         | 26.4   | .mise.toml, infra/ansible/            |
 
 ### Verbote
 
@@ -425,7 +429,9 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 | Was tun wenn X kaputt?         | `docs/runbook.md`                                                                            |
 | Wie deploye ich?               | `docs/deployment.md`                                                                         |
 | Wie entwickle ich Feature X?   | `docs/development.md`                                                                        |
-| Warum diese Tech-Entscheidung? | `docs/adr/`                                                                                  |
+| Warum diese Tech-Entscheidung? | `docs/adr/0001-…` bis `docs/adr/0005-…`                                                      |
+| Folge-Tracker (Backlog)        | `docs/backlog.md`                                                                            |
+| Lizenz                         | `LICENSE` (AGPL-3.0)                                                                         |
 | Config-Reference               | `docs/config-reference.md` (generiert)                                                       |
 | Secrets-Workflow               | `docs/secrets.md`                                                                            |
 | Service-spezifische Doku       | `apps/<service>/README.md`                                                                   |
@@ -1065,15 +1071,21 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   Proton-Verification. DMARC verschärft von minimalem `p=quarantine` auf
   vollen Record mit `rua`, `sp`, `aspf=s`, `adkim=s`. Transactional-Mail
   separat für später vorgemerkt.
-- **2026-05-05 (Setup-Phase)** — Sessions 8 und 9 abgeschlossen, Session 10
-  begonnen mit Aufteilung in 10a (wwn-prod + Caddy) und 10b (wwn-mon +
-  Observability-Stack). Entscheidung: wwn-mon als separate VM (4 GB) statt
-  Co-Location mit wwn-prod — bessere Telemetrie-Isolation bei Crashes,
-  saubere Trennung der I/O-Profile. Setup-Anleitungen `vm-prod-setup.md`
-  und `vm-mon-setup.md` erstellt. Caddy-Konfiguration mit HSTS-Header
-  (max-age=31536000; includeSubDomains, ohne preload bis Plattform stabil),
-  HTTP/3 via UDP/443, Security-Headers (X-Frame-Options, Referrer-Policy,
-  Permissions-Policy). HTTP-01-Challenge für Let's Encrypt (Port 80 offen).
+- - **2026-05-05 (Setup-Phase)** — Sessions 8 und 9 abgeschlossen, Session 10
+    begonnen mit Aufteilung in 10a (wwn-prod + Caddy) und 10b (wwn-mon +
+    Observability-Stack). Entscheidung: wwn-mon als separate VM (4 GB) statt
+    Co-Location mit wwn-prod — bessere Telemetrie-Isolation bei Crashes,
+    saubere Trennung der I/O-Profile. Setup-Anleitungen `vm-prod-setup.md`
+    und `vm-mon-setup.md` erstellt. Caddy-Konfiguration mit HSTS-Header
+    (max-age=31536000; includeSubDomains, ohne preload bis Plattform stabil),
+    HTTP/3 via UDP/443, Security-Headers (X-Frame-Options, Referrer-Policy,
+    Permissions-Policy). HTTP-01-Challenge für Let's Encrypt (Port 80 offen).
+
+  **Anmerkung 6. Mai:** `includeSubDomains` wurde am 6. Mai gestrichen
+  (siehe „Beantwortete Entscheidungen ab 2026-05-06"). Begründung:
+  zukünftige interne Subdomains bekommen ggf. lange kein TLS, die
+  HSTS-Vererbung würde sie aussperren.
+
 - **2026-05-05 (Basis-Setup beider VMs)** — wwn-prod und wwn-mon mit
   Ubuntu 24.04 + Hardening + Docker + sops/age installiert. DHCP-Reservations
   greifen (verifiziert: wwn-prod auf 10.100.100.21 mit MAC bc:24:11:00:21:21).
