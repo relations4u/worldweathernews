@@ -49,6 +49,11 @@
       dest: grafana/provisioning/dashboards/dashboards.yml
   loop_control:
     label: "{{ item.dest }}"
+  # Single-File-Bind-Mounts hängen am Inode beim Container-Start. `copy`
+  # macht atomic-rename → neuer Inode, Container liest weiterhin den alten.
+  # Stack-Restart re-resolved die Bind-Mounts; Volumes (TSDB, Grafana-DB)
+  # bleiben unangetastet. Gleiche Falle wie bei Caddy — siehe deploy-caddy.sh.
+  notify: Restart monitoring stack
 
 - name: Copy Grafana dashboards
   ansible.builtin.copy:

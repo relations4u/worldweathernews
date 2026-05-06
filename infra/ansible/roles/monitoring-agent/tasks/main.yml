@@ -1,8 +1,12 @@
 ---
-# Stub-Rolle: deployt node_exporter und promtail, beide pushen Metriken/Logs
-# zum zentralen Stack auf wwn-mon (Prometheus/Loki/Tempo/Grafana).
+# Deployt node_exporter und promtail auf den App-Hosts. node_exporter
+# wird Pull-basiert von Prometheus auf wwn-mon gescraped, promtail pusht
+# Container-Logs zu Loki.
 #
-# wwn-mon selbst betreibt zusätzlich diesen Agent für Self-Monitoring.
+# Wird NICHT auf wwn-mon ausgeführt — der dortige monitoring-stack hat
+# einen eigenen Promtail (für Self-Logging) und würde sonst beim
+# Container-Namen `wwn-promtail` mit dem Agent kollidieren. Siehe
+# `playbooks/site.yml` (`hosts: app`).
 
 - name: Ensure monitoring-agent directory exists
   ansible.builtin.file:

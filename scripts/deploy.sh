@@ -56,7 +56,11 @@ fi
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "${REPO_ROOT}/infra/ansible"
 
+# Der App-Deploy braucht root für Datei/Template-Tasks unter /opt/wwn — der
+# `deploy`-Default-User hat aus Sicherheitsgründen NUR docker-NOPASSWD-sudo,
+# kein generelles. Deshalb läuft der Wrapper zuverlässig nur über `hwr`.
 ansible-playbook \
 	-i "inventories/${ENV}/hosts.yml" \
 	playbooks/deploy.yml \
+	-e "ansible_user=hwr" \
 	-e "target_version=${VERSION}"

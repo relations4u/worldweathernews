@@ -19,12 +19,10 @@ scrape_configs:
           host: wwn-prod
           service: node-exporter
 
-  - job_name: node-exporter-wwn-mon
-    static_configs:
-      - targets: ["10.100.100.22:9101"]
-        labels:
-          host: wwn-mon
-          service: node-exporter
+  # wwn-mon hat (bewusst) keinen monitoring-agent-Run — der dortige
+  # monitoring-stack läuft mit eigenem Promtail. node-exporter für
+  # wwn-mon wäre ein zusätzlicher Service im Stack-compose; bleibt
+  # für Folge-PR offen, wenn wir Host-Metriken für wwn-mon brauchen.
 
   # TODO: Backend- und Pyworkers-Metrics. Aktuell binden die Container ihre
   # Ports nur auf 127.0.0.1 (siehe app-Rolle compose.prod.yml.j2), also nicht
