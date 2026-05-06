@@ -805,22 +805,23 @@ ein kurzer Eintrag.
 
 ### Aktueller Status (5. Mai 2026)
 
-| Phase | Session                                         | Status                                            |
-| ----- | ----------------------------------------------- | ------------------------------------------------- |
-| A     | 1 — Repo-Skelett, mise                          | ✅ Abgeschlossen                                  |
-| A     | 2 — Pre-commit, Makefile                        | ✅ Abgeschlossen                                  |
-| B     | 3 — Compose-Stack                               | ✅ Abgeschlossen                                  |
-| B     | 4 — Go-Backend                                  | ✅ Abgeschlossen                                  |
-| B     | 5 — SvelteKit-Frontend                          | ✅ Abgeschlossen                                  |
-| B     | 6 — Python-Workers                              | ✅ Abgeschlossen                                  |
-| C     | 7 — OpenAPI + Codegen                           | ✅ Abgeschlossen                                  |
-| C     | 8 — CI-Workflows                                | ✅ Abgeschlossen                                  |
-| C     | 9 — Release + ghcr.io                           | ✅ Abgeschlossen                                  |
-| D     | 10a — wwn-prod und wwn-mon Basis-Setup          | ✅ Abgeschlossen (siehe unten)                    |
-| D     | 10b — Caddy auf wwn-prod, Public-Erreichbarkeit | ⏳ Ausstehend                                     |
-| D     | 10c — Observability-Stack auf wwn-mon           | ⏳ Ausstehend                                     |
-| D     | 11 — Ansible + SOPS + Playbooks                 | ⏳ Ausstehend (Code-Skelett da, Deployment fehlt) |
-| D     | 12 — Dokumentation, ADRs, Runbook               | ⏳ Ausstehend                                     |
+| Phase | Session                                            | Status                                                  |
+| ----- | -------------------------------------------------- | ------------------------------------------------------- |
+| A     | 1 — Repo-Skelett, mise                             | ✅ Abgeschlossen                                        |
+| A     | 2 — Pre-commit, Makefile                           | ✅ Abgeschlossen                                        |
+| B     | 3 — Compose-Stack                                  | ✅ Abgeschlossen                                        |
+| B     | 4 — Go-Backend                                     | ✅ Abgeschlossen                                        |
+| B     | 5 — SvelteKit-Frontend                             | ✅ Abgeschlossen                                        |
+| B     | 6 — Python-Workers                                 | ✅ Abgeschlossen                                        |
+| C     | 7 — OpenAPI + Codegen                              | ✅ Abgeschlossen                                        |
+| C     | 8 — CI-Workflows                                   | ✅ Abgeschlossen                                        |
+| C     | 9 — Release + ghcr.io                              | ✅ Abgeschlossen                                        |
+| D     | 10a — wwn-prod und wwn-mon Basis-Setup             | ✅ Abgeschlossen (siehe unten)                          |
+| D     | 10b — Caddy auf wwn-prod, Public-Erreichbarkeit    | ✅ Abgeschlossen (6. Mai 2026, Snapshot `caddy-online`) |
+| D     | 10c — Observability-Stack auf wwn-mon              | ⏳ Ausstehend (wird in 11a abgedeckt)                   |
+| D     | 11 — Ansible + SOPS + Terraform-Skelett            | ✅ Code-Skelett gemerged (#22, #23)                     |
+| D     | 11a — Komplettes Deployment auf wwn-prod + wwn-mon | ⏳ Geplant, siehe `sessions/step11a.md`                 |
+| D     | 12 — Dokumentation, ADRs, Runbook                  | ⏳ Ausstehend                                           |
 
 **Session 10a-Ergebnisse** (Basis-Setup beider VMs, Stand 5. Mai 2026):
 
@@ -846,21 +847,23 @@ ein kurzer Eintrag.
 - DNS-Auflösung über Cloudflare → gate.hw7.eu funktioniert
 - DynDNS-Update auf FritzBox aktiv
 
-⏳ Offene Setup-Schritte für Session 10b:
+**Session 10b-Ergebnisse** (Caddy live auf wwn-prod, Stand 6. Mai 2026):
 
-- Snapshots beider VMs ("fresh-install")
-- FritzBox-Forwards für 80/TCP, 443/TCP, 443/UDP
-- OPNsense-NAT-Forwards mit NAT-Reflection
-- Caddy auf wwn-prod mit HSTS + HTTP/3 + Security-Headers
-- Let's-Encrypt-Cert via HTTP-01-Challenge für 4 Hostnames
-- Snapshot "caddy-online"
+✅ Caddy als eigenständiger Compose-Stack unter `/srv/wwn/caddy` mit
+`network_mode: host`. Vier Let's-Encrypt-Zertifikate ausgestellt für
+worldweathernews.com (Apex), www, research, api.research. HSTS aktiv
+mit `max-age=31536000` ohne `includeSubDomains` (Begründung in
+„Beantwortete Entscheidungen ab 2026-05-06"). Stub-Antworten via
+`respond` 200 — Cutover auf `reverse_proxy` ist Teil von Session 11a.
+Snapshot `caddy-online` gesetzt. Deploy-Pfad: `infra/deploy/deploy-caddy.sh`.
 
 **Session 10c-Inhalte** (Observability-Stack auf wwn-mon):
 
-- Eigene Anleitung folgt: `observability-stack-setup.md`
-- Prometheus, Grafana, Loki, Tempo, Uptime Kuma
-- Promtail-Agent auf wwn-prod
-- Cross-Host-Konnektivität wwn-prod ↔ wwn-mon (SSH-Keys vorbereitet)
+In Session 11a integriert. Teil des „Komplettes Deployment"-Plans:
+zentraler Prometheus/Loki/Tempo/Grafana-Stack auf wwn-mon via neu zu
+schreibender Ansible-Rolle `monitoring-stack`, adaptiert vom dev-Compose-
+Profile. Promtail- und node_exporter-Agents auf wwn-prod via existierender
+`monitoring-agent`-Rolle. Detail-Plan: `sessions/step11a.md`.
 
 ---
 
