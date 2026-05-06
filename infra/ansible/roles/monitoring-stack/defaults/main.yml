@@ -19,7 +19,8 @@ monitoring_prometheus_retention: "30d"
 # - Loki:3100 — Promtail-Agent auf wwn-prod pusht Logs hier rein.
 # - Tempo OTLP:4317/4318 — Backend und Pyworkers exportieren Traces hier hin.
 # UFW-Regeln dafür müssen separat in inventories/production/group_vars/mon.yml
-# bzw. in der common-Rolle pro Hostgruppe gesetzt werden — TODO Folge-PR.
+# bzw. in der common-Rolle pro Hostgruppe gesetzt werden (siehe
+# docs/backlog.md → Operations).
 monitoring_external_loki_port: 3100
 monitoring_external_otlp_grpc_port: 4317
 monitoring_external_otlp_http_port: 4318
