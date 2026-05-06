@@ -46,6 +46,31 @@ EOF
 	exit 1
 fi
 
+# Guard: das compose.yml im Repo nutzt Bind-Mounts (./data, ./config). Wenn die
+# Bind-Mount-Verzeichnisse auf der Remote fehlen oder leer sind, würde dieser
+# Deploy Caddy mit einem leeren Cert-Store starten — gleichbedeutend mit einer
+# erneuten ACME-Issuance, was am Let's-Encrypt-Rate-Limit kratzt.
+if grep -q '\./data:/data' "${LOCAL_PATH}/compose.yml"; then
+	if ! ssh_run "test -d ${REMOTE_PATH}/data && [ -n \"\$(ls -A ${REMOTE_PATH}/data 2>/dev/null)\" ]"; then
+		cat <<EOF >&2
+ERROR: compose.yml erwartet Bind-Mount unter ${REMOTE_PATH}/data, aber das
+Verzeichnis fehlt oder ist leer auf der Remote. Ein Deploy würde den
+laufenden Caddy mit leerem Cert-Store starten und ACME erneut auslösen
+(Rate-Limit-Risiko).
+
+Wenn du gerade von Named-Volumes auf Bind-Mount migrierst, nutze:
+
+    bash infra/deploy/migrate-caddy-bindmount.sh
+
+Wenn das ein Fresh-Install ohne bestehende Certs ist, lege die Verzeichnisse
+einmalig leer an und akzeptiere die initiale ACME-Issuance:
+
+    ssh -t ${REMOTE_TARGET} 'sudo install -d -o ${REMOTE_USER} -g ${REMOTE_USER} -m 0750 ${REMOTE_PATH}/data ${REMOTE_PATH}/config'
+EOF
+		exit 1
+	fi
+fi
+
 echo "==> Syncing Caddy stack"
 rsync -avz --delete \
 	-e "ssh -p ${REMOTE_PORT}" \
