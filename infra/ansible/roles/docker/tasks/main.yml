@@ -42,13 +42,20 @@
     enabled: true
     state: started
 
-- name: Decrypt ghcr.io credentials from SOPS
-  community.sops.load_vars:
-    file: "{{ secrets_dir }}/ghcr.env"
-    name: ghcr
-    expressions: ignore
+- name: Decrypt ghcr.env via sops lookup
+  ansible.builtin.set_fact:
+    _ghcr_env: "{{ lookup('community.sops.sops', secrets_dir + '/ghcr.env') }}"
   delegate_to: localhost
   become: false
+  no_log: true
+
+- name: Parse ghcr credentials from dotenv content
+  # `community.sops.load_vars` würde nur YAML/JSON akzeptieren; unsere
+  # ghcr.env ist im Dotenv-Format. Hier daher manuelles Parsen mit
+  # regex_findall.
+  ansible.builtin.set_fact:
+    _ghcr_username: "{{ _ghcr_env | regex_findall('^GHCR_USERNAME=(.+)$', multiline=True) | first }}"
+    _ghcr_token: "{{ _ghcr_env | regex_findall('^GHCR_TOKEN=(.+)$', multiline=True) | first }}"
   no_log: true
 
 - name: Ensure deploy user docker config dir exists
@@ -62,8 +69,8 @@
 - name: Login to ghcr.io as deploy user
   community.docker.docker_login:
     registry_url: ghcr.io
-    username: "{{ ghcr.GHCR_USERNAME }}"
-    password: "{{ ghcr.GHCR_TOKEN }}"
+    username: "{{ _ghcr_username }}"
+    password: "{{ _ghcr_token }}"
     config_path: "/home/{{ deploy_user }}/.docker/config.json"
   become: true
   become_user: "{{ deploy_user }}"
