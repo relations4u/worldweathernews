@@ -69,7 +69,9 @@ cert_dates | tee "${PRE_DATES_FILE}"
 echo
 
 echo "==> Step 3/6: Tar-Backup des Named-Volumes (sicher gegen alle Folge-Fehler)"
-ssh_run "test -d /var/lib/docker/volumes/wwn_caddy_data/_data" || {
+# /var/lib/docker/volumes ist root-only (mode 0700), deshalb braucht der
+# Existenz-Check sudo. Auf wwn-prod ist NOPASSWD aktiv, läuft non-interactive.
+ssh_run "sudo -n test -d /var/lib/docker/volumes/wwn_caddy_data/_data" || {
 	echo "ERROR: /var/lib/docker/volumes/wwn_caddy_data/_data existiert nicht auf ${REMOTE_HOST}." >&2
 	echo "       Entweder ist das Volume schon entfernt oder die Caddy-Stack lief nie." >&2
 	echo "       Wenn das ein Fresh-Install ist, lege /srv/wwn/caddy/data und /config einfach manuell an:" >&2
