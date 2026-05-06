@@ -1,11 +1,8 @@
-# Production-Stub für worldweathernews.com.
+# Production-Caddyfile für worldweathernews.com.
 #
-# Phase 1 (jetzt): Caddy holt Let's-Encrypt-Zertifikate für die 4 öffentlichen
-# Hostnames und antwortet mit einer Stub-Zeile. Damit lassen sich DNS, NAT,
-# Port-Forwarding und ACME isoliert verifizieren, bevor die App-Stacks da sind.
-#
-# Phase 2 (später): `respond` wird durch `reverse_proxy` auf die jeweiligen
-# Backend/Frontend-Container ersetzt. HSTS-Policy bleibt bestehen.
+# Caddy läuft mit network_mode: host auf wwn-prod und proxied auf
+# 127.0.0.1:{3000,8080} (Frontend / Backend), die der App-Stack unter
+# /opt/wwn lokal an Loopback bindet.
 {
 	email ops@worldweathernews.com
 	log {
@@ -22,7 +19,7 @@
 
 worldweathernews.com {
 	import hsts
-	respond "wwn caddy stub: worldweathernews.com" 200
+	reverse_proxy 127.0.0.1:3000
 }
 
 www.worldweathernews.com {
@@ -32,10 +29,15 @@ www.worldweathernews.com {
 
 research.worldweathernews.com {
 	import hsts
-	respond "wwn caddy stub: research.worldweathernews.com" 200
+	reverse_proxy 127.0.0.1:3000
 }
 
 api.research.worldweathernews.com {
 	import hsts
-	respond "wwn caddy stub: api.research.worldweathernews.com" 200
+	encode zstd gzip
+
+	@options method OPTIONS
+	respond @options 204
+
+	reverse_proxy 127.0.0.1:8080
 }

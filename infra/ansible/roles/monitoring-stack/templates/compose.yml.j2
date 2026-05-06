@@ -2,7 +2,8 @@
 # Zentraler Observability-Stack für wwn-mon.
 #
 # Ports binden bewusst gemischt:
-#   - Grafana, Prometheus, Tempo HTTP — nur 127.0.0.1 (intern via SSH-Tunnel)
+#   - Grafana — 0.0.0.0 (LAN-only via UFW: 10.100.100.0/24 → :3000)
+#   - Prometheus, Tempo HTTP — nur 127.0.0.1 (intern via SSH-Tunnel)
 #   - Loki :3100, Tempo OTLP :4317/:4318 — 0.0.0.0 (von wwn-prod erreichbar
 #     für Log-Push und Trace-Export). UFW-Regeln auf wwn-mon müssen das LAN
 #     ranlassen.
@@ -80,7 +81,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     ports:
-      - "127.0.0.1:3000:3000"
+      - "0.0.0.0:3000:3000"
     depends_on:
       - prometheus
       - loki
