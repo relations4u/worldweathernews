@@ -261,5 +261,44 @@ Bekannte offene Punkte (nicht Session-blockierend, in
 
 ## Session 12 — Dokumentation finalisieren
 
-Status: 🟡 In Progress
+Status: ✅ Done
 Datum: 2026-05-06
+Commits: PR #33 (README polish, CONTRIBUTING, status updates),
+PR #34 (architecture.md mit Mermaid + development.md),
+PR #35 (deployment.md + runbook.md mit 10 Szenarien),
+PR #36 (ADRs 0002–0005, AGPL-3.0 LICENSE, docs/backlog.md, TODO-Triage).
+
+Notizen: Vier Tranchen statt einem Block — README/CONTRIBUTING zuerst,
+dann die zwei Stub-Files (architecture/development), dann die zwei
+Operations-Files (deployment/runbook), zuletzt ADRs+License+Backlog.
+
+Inhaltliche Schwerpunkte: alle Docs reflektieren den **Ist-Zustand
+nach Session 11a**, nicht den theoretischen Endzustand. runbook.md hat
+das 4-Optionen-Diagnose-Pattern für „Backend offline / Failed to
+fetch" als Szenario 2 — exakt die Reihenfolge, die Session 11a
+abgearbeitet hat (CORS-env, Caddy-OPTIONS, Frontend-Bundle-URL,
+Browser-Cache), damit beim nächsten Mal kein Re-Discovery nötig ist.
+deployment.md dokumentiert die Bind-Mount-Inode-Falle und den
+deploy-User-NOPASSWD-Scope expliziert. architecture.md hat ein
+Mermaid-Diagramm mit den drei Caveats (Backend-Metrics 127.0.0.1-only,
+mon-node-exporter-Lücke, SvelteKit-`PUBLIC_*`-Build-Time-Pinning).
+
+ADR-Set komplett auf MADR (matching 0001):
+0002 Go-für-Backend, 0003 Monorepo, 0004 Compose-vor-K3s,
+0005 SOPS+age. Jeweils mit Alternatives-Considered-Block.
+
+LICENSE: kanonischer AGPL-3.0-Text von gnu.org. Begründung im
+README + CONTRIBUTING. Maintainer ist Sole-Author während der
+Setup-Phase, Re-Lizenzierung später möglich.
+
+TODO-Triage: zwei in-context-TODOs auf docs/backlog.md
+umgeschrieben (i18n-Library-Wahl, Monitoring-Stack-UFW-Folge-PR);
+vier Marker behalten, weil der Text die Begründung der Stelle ist
+(tracing.go AlwaysSample, Hetzner-Migrations-Stub, Caddy-Admin-
+Metrics-Stub, Backend-Metrics-Scrape-Lücke). Alle haben einen
+Eintrag in docs/backlog.md als Folge-Tracker.
+
+step12.md-Erfolgs-Kriterien: alle ✅. Damit ist die Initial-
+Setup-Phase formal abgeschlossen — der nächste Schritt ist
+Feature-Arbeit (Open-Meteo, Locations-Suche, Auth, Maps), nicht
+mehr Infrastruktur.
