@@ -805,23 +805,23 @@ ein kurzer Eintrag.
 
 ### Aktueller Status (5. Mai 2026)
 
-| Phase | Session                                            | Status                                                    |
-| ----- | -------------------------------------------------- | --------------------------------------------------------- |
-| A     | 1 — Repo-Skelett, mise                             | ✅ Abgeschlossen                                          |
-| A     | 2 — Pre-commit, Makefile                           | ✅ Abgeschlossen                                          |
-| B     | 3 — Compose-Stack                                  | ✅ Abgeschlossen                                          |
-| B     | 4 — Go-Backend                                     | ✅ Abgeschlossen                                          |
-| B     | 5 — SvelteKit-Frontend                             | ✅ Abgeschlossen                                          |
-| B     | 6 — Python-Workers                                 | ✅ Abgeschlossen                                          |
-| C     | 7 — OpenAPI + Codegen                              | ✅ Abgeschlossen                                          |
-| C     | 8 — CI-Workflows                                   | ✅ Abgeschlossen                                          |
-| C     | 9 — Release + ghcr.io                              | ✅ Abgeschlossen                                          |
-| D     | 10a — wwn-prod und wwn-mon Basis-Setup             | ✅ Abgeschlossen (siehe unten)                            |
-| D     | 10b — Caddy auf wwn-prod, Public-Erreichbarkeit    | ✅ Abgeschlossen (6. Mai 2026, Snapshot `caddy-online`)   |
-| D     | 10c — Observability-Stack auf wwn-mon              | ✅ Abgedeckt durch Session 11a (Rolle `monitoring-stack`) |
-| D     | 11 — Ansible + SOPS + Terraform-Skelett            | ✅ Code-Skelett gemerged (#22, #23)                       |
-| D     | 11a — Komplettes Deployment auf wwn-prod + wwn-mon | ✅ Abgeschlossen (6. Mai 2026, v0.0.1-rc4 live)           |
-| D     | 12 — Dokumentation, ADRs, Runbook                  | 🟡 In Arbeit                                              |
+| Phase | Session                                            | Status                                                     |
+| ----- | -------------------------------------------------- | ---------------------------------------------------------- |
+| A     | 1 — Repo-Skelett, mise                             | ✅ Abgeschlossen                                           |
+| A     | 2 — Pre-commit, Makefile                           | ✅ Abgeschlossen                                           |
+| B     | 3 — Compose-Stack                                  | ✅ Abgeschlossen                                           |
+| B     | 4 — Go-Backend                                     | ✅ Abgeschlossen                                           |
+| B     | 5 — SvelteKit-Frontend                             | ✅ Abgeschlossen                                           |
+| B     | 6 — Python-Workers                                 | ✅ Abgeschlossen                                           |
+| C     | 7 — OpenAPI + Codegen                              | ✅ Abgeschlossen                                           |
+| C     | 8 — CI-Workflows                                   | ✅ Abgeschlossen                                           |
+| C     | 9 — Release + ghcr.io                              | ✅ Abgeschlossen                                           |
+| D     | 10a — wwn-prod und wwn-mon Basis-Setup             | ✅ Abgeschlossen (siehe unten)                             |
+| D     | 10b — Caddy auf wwn-prod, Public-Erreichbarkeit    | ✅ Abgeschlossen (6. Mai 2026, Snapshot `caddy-online`)    |
+| D     | 10c — Observability-Stack auf wwn-mon              | ✅ Abgedeckt durch Session 11a (Rolle `monitoring-stack`)  |
+| D     | 11 — Ansible + SOPS + Terraform-Skelett            | ✅ Code-Skelett gemerged (#22, #23)                        |
+| D     | 11a — Komplettes Deployment auf wwn-prod + wwn-mon | ✅ Abgeschlossen (6. Mai 2026, v0.0.1-rc4 live)            |
+| D     | 12 — Dokumentation, ADRs, Runbook                  | ✅ Abgeschlossen (6. Mai 2026, Setup-Phase damit komplett) |
 
 **Session 10a-Ergebnisse** (Basis-Setup beider VMs, Stand 5. Mai 2026):
 
@@ -903,6 +903,39 @@ Vollständig in Session 11a umgesetzt — neue Ansible-Rolle
 - node-exporter für wwn-mon nicht im Stack (nur node-exporter auf
   wwn-prod ist UP) — als Folge-PR, falls Host-Metriken für wwn-mon
   benötigt werden.
+
+**Session 12-Ergebnisse** (Doku-Finalisierung, Stand 6. Mai 2026):
+
+✅ Vier Tranchen, alle gemerged:
+
+- **PR #33** — `README.md` rewrite, `CONTRIBUTING.md`,
+  STATUS+CLAUDE-Status-Updates
+- **PR #34** — `docs/architecture.md` (Mermaid-Diagramm), `docs/development.md`
+- **PR #35** — `docs/deployment.md` (full), `docs/runbook.md`
+  (10 konkrete Szenarien)
+- **PR #36** — ADRs 0002 (Go-für-Backend), 0003 (Monorepo),
+  0004 (Compose-vor-K3s), 0005 (SOPS+age) im MADR-Format,
+  `LICENSE` (AGPL-3.0), `docs/backlog.md` als Folge-Tracker,
+  In-Context-TODO-Triage
+
+✅ Alle Docs reflektieren den Ist-Zustand nach Session 11a, nicht
+den theoretischen Endzustand. `runbook.md` Szenario 2 ist exakt das
+4-Optionen-Diagnose-Pattern für „Backend offline / Failed to fetch",
+das die 11a-Pipeline durchgemacht hat. `deployment.md` dokumentiert
+Bind-Mount-Inode-Falle und deploy-User-NOPASSWD-Scope explizit.
+
+✅ `docs/backlog.md` ist die low-ceremony Vorstufe für GitHub-Issues:
+Operations-Punkte (Backend-Metriken-Scrape-Lücke, mon-node-exporter,
+Caddy-Admin, Tracing-Sampler, Tempo-S3, automatische Postgres-Backups,
+Container-Resource-Exporters), Tooling-Punkte (Mailpit-Migration,
+i18n-Library-Wahl, default_versions-Tagging-Strategie),
+Sicherheits-Punkte (DMARC `p=reject`, HSTS `includeSubDomains`,
+cosign-verify im Deploy).
+
+✅ Damit ist die initiale Setup-Phase formal abgeschlossen.
+Nächster Schritt ist Feature-Arbeit (Open-Meteo, Locations-Suche,
+Auth, Karten), nicht mehr Infrastruktur. Eigene Session-Struktur
+für Feature-Sessions wird aufgebaut, sobald wir dort ankommen.
 
 ---
 
@@ -1053,6 +1086,17 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   10b verschoben auf Caddy-Online und 10c auf Observability — Sessionplan
   entsprechend angepasst, Phase 11 (Ansible) bleibt ausstehend bis Caddy
   manuell läuft, dann als Referenz für Playbook-Verifikation.
+- **2026-05-06 (Session 12 — Doku-Finalisierung, Setup-Phase abgeschlossen)** —
+  Vier Doku-Tranchen gemerged (#33..#36): README rewrite + CONTRIBUTING,
+  architecture.md mit Mermaid-Diagramm, development.md mit How-Tos,
+  deployment.md (Bootstrap, Folge-Deploys, Rollback) und runbook.md mit
+  10 Szenarien (Szenario 2 ist exakt das „Backend offline / Failed to
+  fetch"-Diagnose-Pattern aus der 11a-Pipeline), ADRs 0002–0005 im
+  MADR-Format, AGPL-3.0 LICENSE, docs/backlog.md als low-ceremony
+  Folge-Tracker, In-Context-TODO-Triage. Damit alle step12.md-Erfolgs-
+  Kriterien ✅ und die initiale Setup-Phase (Sessions 1–12) formal
+  abgeschlossen.
+
 - **2026-05-06 (Session 11a — Komplettes Deployment live)** — wwn-prod
   und wwn-mon vollständig via Ansible bootstrapped, App-Stack v0.0.1-rc4
   läuft auf wwn-prod (backend/frontend/pyworkers alle healthy), zentraler
