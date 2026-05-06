@@ -32,6 +32,22 @@ ufw_allowed_ports:
     proto: tcp
     comment: "HTTPS (Caddy)"
 
+# LAN-only Ports — erreichbar nur aus dem Manager-LAN, nicht öffentlich.
+# Scrape-Ports (Prometheus → node_exporter / App-Metriken) und Grafana-UI.
+monitoring_scrape_ports:
+  - port: 9101
+    proto: tcp
+    comment: "node_exporter (LAN-only)"
+  - port: 9100
+    proto: tcp
+    comment: "pyworkers metrics (LAN-only)"
+  - port: 9090
+    proto: tcp
+    comment: "backend metrics (LAN-only)"
+  - port: 3000
+    proto: tcp
+    comment: "Grafana UI (LAN-only)"
+
 # SOPS-File-Pfade (im Repo, nicht auf dem Server).
 secrets_dir: "{{ playbook_dir }}/../../secrets/production"
 

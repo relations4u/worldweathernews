@@ -85,7 +85,12 @@ rsync -avz --delete \
 	"${LOCAL_PATH}/" "${REMOTE_TARGET}:${REMOTE_PATH}/"
 
 echo "==> Pulling image and (re)starting stack"
-ssh_run "cd ${REMOTE_PATH} && docker compose pull && docker compose up -d"
+# `docker compose up -d` allein reicht NICHT, wenn nur der Caddyfile-Inhalt
+# geändert wurde: Bind-Mount-Files hängen am Inode des Originals beim
+# Container-Start, und rsync macht atomic-rename → neuer Inode auf dem Host,
+# Container sieht weiterhin den alten. `restart` re-resolved den Bind-Mount.
+# Das `data`-Volume mit den TLS-Certs bleibt davon unangetastet.
+ssh_run "cd ${REMOTE_PATH} && docker compose pull && docker compose up -d && docker compose restart caddy"
 
 echo "==> Recent Caddy logs (last 40 lines)"
 ssh_run "cd ${REMOTE_PATH} && docker compose logs --tail=40 caddy"
