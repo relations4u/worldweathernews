@@ -72,9 +72,16 @@ EOF
 fi
 
 echo "==> Syncing Caddy stack"
+# data/ und config/ liegen als Bind-Mount auf der Remote, sind dort
+# root-owned und niemals lokal versioniert. Tar-Backups (caddy-data-backup-*)
+# werden bewusst NICHT mitgesynct, sonst zerstört --delete sie beim nächsten
+# Lauf. .terraform-Artefakte gleicher Logik.
 rsync -avz --delete \
 	-e "ssh -p ${REMOTE_PORT}" \
 	--exclude='.DS_Store' \
+	--exclude='data/' \
+	--exclude='config/' \
+	--exclude='caddy-data-backup-*.tar.gz' \
 	"${LOCAL_PATH}/" "${REMOTE_TARGET}:${REMOTE_PATH}/"
 
 echo "==> Pulling image and (re)starting stack"
