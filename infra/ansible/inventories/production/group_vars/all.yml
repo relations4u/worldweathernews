@@ -41,9 +41,9 @@ monitoring_scrape_ports:
   - port: 9100
     proto: tcp
     comment: "pyworkers metrics (LAN-only)"
-  - port: 9090
+  - port: 8080
     proto: tcp
-    comment: "backend metrics (LAN-only)"
+    comment: "backend /metrics (LAN scrape; public via Caddy/TLS)"
   - port: 3000
     proto: tcp
     comment: "Grafana UI (LAN-only)"

@@ -38,7 +38,12 @@ services:
     env_file:
       - {{ app_dir }}/.env.backend
     ports:
-      - "127.0.0.1:8080:8080"
+      # 0.0.0.0:8080 → Caddy (via 127.0.0.1) UND Prometheus auf wwn-mon
+      # (via 10.100.100.21) erreichen denselben Endpunkt. UFW erlaubt
+      # 8080/tcp NUR aus 10.100.100.0/24 (siehe common-Rolle,
+      # monitoring_scrape_ports), externe Zugriffe gehen ohnehin über
+      # Caddy mit TLS. Caddy reverse_proxy bleibt auf 127.0.0.1:8080.
+      - "0.0.0.0:8080:8080"
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -60,6 +65,10 @@ services:
     restart: unless-stopped
     env_file:
       - {{ app_dir }}/.env.pyworkers
+    ports:
+      # Prometheus-Scrape von wwn-mon. UFW erlaubt 9100/tcp aus
+      # 10.100.100.0/24 (siehe common-Rolle, monitoring_scrape_ports).
+      - "0.0.0.0:9100:9100"
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
