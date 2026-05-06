@@ -36,8 +36,10 @@ api.research.worldweathernews.com {
 	import hsts
 	encode zstd gzip
 
-	@options method OPTIONS
-	respond @options 204
-
+	# OPTIONS-Preflights gehen DURCH zum Backend — chi-cors auf Backend-Seite
+	# kennt die erlaubten Origins (WWN_HTTP_CORSORIGINS) und antwortet mit den
+	# korrekten Access-Control-Allow-* Headern. Caddy hat die Allow-Liste
+	# nicht und würde sonst ein 204 ohne CORS-Header zurückgeben → Preflight
+	# scheitert, Browser refused die echte Anfrage.
 	reverse_proxy 127.0.0.1:8080
 }
