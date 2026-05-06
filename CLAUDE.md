@@ -450,7 +450,7 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 | DNS-Records                    | Cloudflare-Dashboard für `worldweathernews.com`, Joker.com für `hw7.eu`                      |
 | ProtonMail-DNS-Konfiguration   | Proton-Webclient → Settings → All settings → Domain names → worldweathernews.com → Configure |
 | DynDNS-Konfiguration           | Firewall-Hardware vor dem Proxmox-Host                                                       |
-| Production-Caddyfile           | `infra/caddy/Caddyfile.prod`                                                                 |
+| Production-Caddyfile           | `infra/caddy/prod/Caddyfile` (eigener Compose-Stack auf wwn-prod)                            |
 | Public Status-Page             | https://status.worldweathernews.com (ab Session 10)                                          |
 
 ---
