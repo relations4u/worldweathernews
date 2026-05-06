@@ -39,10 +39,17 @@ jobs:
         service:
           - name: backend
             context: apps/backend
+            build_args: ""
           - name: frontend
             context: apps/frontend
+            # SvelteKit's $env/static/public is BUILD-time only — runtime ENV
+            # in compose has no effect. Without this, the JS bundle ends up
+            # with the Dockerfile default http://api.localhost.
+            build_args: |
+              PUBLIC_API_BASE_URL=https://api.research.worldweathernews.com
           - name: pyworkers
             context: apps/pyworkers
+            build_args: ""
     steps:
       - uses: actions/checkout@v4
 
@@ -82,6 +89,7 @@ jobs:
             VERSION=${{ needs.meta.outputs.version }}
             COMMIT=${{ github.sha }}
             BUILD_DATE=${{ needs.meta.outputs.build_date }}
+            ${{ matrix.service.build_args }}
           provenance: true
           sbom: true
 
