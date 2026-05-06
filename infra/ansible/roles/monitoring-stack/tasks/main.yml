@@ -21,6 +21,12 @@
     - loki
     - promtail
     - tempo
+    # `grafana` und `grafana/provisioning` müssen explizit gelistet sein,
+    # damit sie auch 0755 bekommen — sonst legt das file-Modul sie nur
+    # implizit als Eltern an, mit dem System-umask (oft 0750), und der
+    # Grafana-Container (uid 472) kann sie nicht traversieren.
+    - grafana
+    - grafana/provisioning
     - grafana/provisioning/datasources
     - grafana/provisioning/dashboards
     - grafana/dashboards
