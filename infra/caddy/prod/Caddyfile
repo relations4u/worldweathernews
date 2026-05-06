@@ -1,0 +1,41 @@
+# Production-Stub für worldweathernews.com.
+#
+# Phase 1 (jetzt): Caddy holt Let's-Encrypt-Zertifikate für die 4 öffentlichen
+# Hostnames und antwortet mit einer Stub-Zeile. Damit lassen sich DNS, NAT,
+# Port-Forwarding und ACME isoliert verifizieren, bevor die App-Stacks da sind.
+#
+# Phase 2 (später): `respond` wird durch `reverse_proxy` auf die jeweiligen
+# Backend/Frontend-Container ersetzt. HSTS-Policy bleibt bestehen.
+{
+	email ops@worldweathernews.com
+	log {
+		output stdout
+		format json
+	}
+}
+
+# 1 Jahr HSTS, KEIN includeSubDomains — manche zukünftige Subdomain (z. B.
+# Monitoring) bekommt ggf. lange kein TLS, dann würde sie sonst gesperrt.
+(hsts) {
+	header Strict-Transport-Security "max-age=31536000"
+}
+
+worldweathernews.com {
+	import hsts
+	respond "wwn caddy stub: worldweathernews.com" 200
+}
+
+www.worldweathernews.com {
+	import hsts
+	redir https://worldweathernews.com{uri} permanent
+}
+
+research.worldweathernews.com {
+	import hsts
+	respond "wwn caddy stub: research.worldweathernews.com" 200
+}
+
+api.research.worldweathernews.com {
+	import hsts
+	respond "wwn caddy stub: api.research.worldweathernews.com" 200
+}

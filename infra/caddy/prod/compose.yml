@@ -1,0 +1,32 @@
+# Stand-alone Caddy-Stack für wwn-prod.
+#
+# Bewusst getrennt vom App-Compose-Stack (`infra/compose/compose.prod.yml`):
+# In Phase 1 läuft nur Caddy, ohne Backend/Frontend. Sobald der App-Stack
+# deployed ist, wird Caddy entweder hier bleiben (network_mode: host, proxied
+# zu Container-Ports auf 127.0.0.1) oder in den App-Stack umgezogen — diese
+# Entscheidung fällt in Session 11.
+#
+# network_mode: host wurde gewählt, damit Caddy nicht durch Docker-iptables
+# läuft und die echten Client-IPs in den Logs landen.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: wwn-caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  caddy_data:
+    name: wwn_caddy_data
+  caddy_config:
+    name: wwn_caddy_config
