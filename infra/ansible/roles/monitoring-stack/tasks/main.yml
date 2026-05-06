@@ -11,7 +11,10 @@
     state: directory
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
-    mode: "0750"
+    # 0755 statt 0750: die Container laufen mit unterschiedlichen Nicht-deploy-
+    # UIDs (Prometheus uid 65534, Loki/Tempo 10001, Grafana 472) und müssen
+    # die Verzeichnisse traversieren können.
+    mode: "0755"
   loop:
     - ""
     - prometheus
@@ -28,7 +31,9 @@
     dest: "{{ monitoring_app_dir }}/{{ item.dest }}"
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
-    mode: "0640"
+    # 0644: nicht-sensitiver Config-Inhalt, muss von Container-Usern (uid != 1001)
+    # lesbar sein. Geheime Werte gehen ausschließlich über die .env-Files (0640).
+    mode: "0644"
   loop:
     - src: prometheus/prometheus.yml
       dest: prometheus/prometheus.yml
