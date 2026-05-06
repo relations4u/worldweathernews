@@ -34,3 +34,11 @@ ufw_allowed_ports:
 
 # SOPS-File-Pfade (im Repo, nicht auf dem Server).
 secrets_dir: "{{ playbook_dir }}/../../secrets/production"
+
+# Monitoring-Stack-Konfiguration. Defaults stehen in der Rolle, hier nur das,
+# was global überschreibbar ist.
+monitoring_app_dir: /opt/wwn/monitoring-stack
+monitoring_central_host: 10.100.100.22
+monitoring_loki_port: 3100
+monitoring_otlp_grpc_port: 4317
+monitoring_otlp_http_port: 4318
