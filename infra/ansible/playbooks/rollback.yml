@@ -1,0 +1,35 @@
+---
+# Rollback auf eine vorherige Version. Aktuelle Versionen werden vorher
+# angezeigt; Rollback erst nach expliziter Bestätigung.
+
+- name: Rollback application
+  hosts: app
+  become: true
+  vars_prompt:
+    - name: rollback_to
+      prompt: "Version to roll back to"
+      private: false
+  tasks:
+    - name: Show currently running containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        files:
+          - "{{ docker_compose_file }}"
+        state: present
+        pull: never
+      register: current_state
+      check_mode: true
+      changed_when: false
+
+    - name: Confirm rollback
+      ansible.builtin.pause:
+        prompt: "Confirm rollback to {{ rollback_to }}? Press enter to continue."
+
+    - name: Apply rollback by re-running app role with target version
+      ansible.builtin.include_role:
+        name: app
+      vars:
+        versions:
+          backend: "{{ rollback_to }}"
+          frontend: "{{ rollback_to }}"
+          pyworkers: "{{ rollback_to }}"

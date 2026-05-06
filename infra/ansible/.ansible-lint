@@ -1,0 +1,12 @@
+---
+# var-naming[no-role-prefix]: Erzwingt Rollen-Präfix für Variablen (z. B.
+# `common_deploy_user` statt `deploy_user`). Sinnvoll für wiederverwendbare
+# Library-Rollen, aber für unsere first-party Rollen, in denen Variablen
+# bewusst Cross-Role geteilt werden (`deploy_user`, `app_dir`, `image_namespace`),
+# erzeugt das nur Lärm. group_vars/all.yml ist der zentrale Quellpunkt.
+skip_list:
+  - var-naming[no-role-prefix]
+
+# yamllint läuft separat (siehe top-level .pre-commit-config.yaml + .yamllint).
+exclude_paths:
+  - collections/

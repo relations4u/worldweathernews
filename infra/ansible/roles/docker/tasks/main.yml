@@ -1,0 +1,70 @@
+---
+- name: Ensure docker apt keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download Docker apt signing key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Add Docker apt repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') }}
+      signed-by=/etc/apt/keyrings/docker.asc]
+      https://download.docker.com/linux/ubuntu
+      {{ ansible_distribution_release }} stable
+    filename: docker
+    state: present
+
+- name: Install docker engine and compose plugin
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+
+- name: Enable and start docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Decrypt ghcr.io credentials from SOPS
+  community.sops.load_vars:
+    file: "{{ secrets_dir }}/ghcr.env"
+    name: ghcr
+    expressions: ignore
+  delegate_to: localhost
+  become: false
+  no_log: true
+
+- name: Ensure deploy user docker config dir exists
+  ansible.builtin.file:
+    path: "/home/{{ deploy_user }}/.docker"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0700"
+
+- name: Login to ghcr.io as deploy user
+  community.docker.docker_login:
+    registry_url: ghcr.io
+    username: "{{ ghcr.GHCR_USERNAME }}"
+    password: "{{ ghcr.GHCR_TOKEN }}"
+    config_path: "/home/{{ deploy_user }}/.docker/config.json"
+  become: true
+  become_user: "{{ deploy_user }}"
+  no_log: true

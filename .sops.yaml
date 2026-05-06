@@ -1,0 +1,18 @@
+# SOPS-Konfiguration für worldweathernews.com.
+#
+# Wenn ein zweiter Maintainer dazukommt: zusätzlichen Anker unter `keys:` ergänzen
+# (z. B. `- &alice age1...`) und in der `age:`-Liste der creation_rule mit `*alice`
+# referenzieren. Anschließend bestehende Secrets re-keyen:
+#
+#     for f in infra/secrets/production/*.env; do sops updatekeys "$f"; done
+
+keys:
+  - &hwr age1cee9fufhrs0yt85py2gfchytxnm6ze4qxmvds9almqym7y2qg55quelefm
+
+creation_rules:
+  - path_regex: ^infra/secrets/(staging|production)/.+\.env$
+    age:
+      - *hwr
+  - path_regex: ^infra/secrets/(staging|production)/.+\.ya?ml$
+    age:
+      - *hwr

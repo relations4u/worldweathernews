@@ -1,0 +1,29 @@
+# {{ ansible_managed }}
+
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: wwn-node-exporter
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    command:
+      - '--path.rootfs=/host'
+      - '--web.listen-address=:{{ monitoring_prometheus_scrape_port }}'
+    volumes:
+      - /:/host:ro,rslave
+
+  promtail:
+    image: grafana/promtail:3.3.2
+    container_name: wwn-promtail
+    restart: unless-stopped
+    user: "0:0"
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail_data:/tmp
+
+volumes:
+  promtail_data:

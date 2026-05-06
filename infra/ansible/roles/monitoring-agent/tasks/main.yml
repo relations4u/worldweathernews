@@ -1,0 +1,38 @@
+---
+# Stub-Rolle: deployt node_exporter und promtail, beide pushen Metriken/Logs
+# zum zentralen Stack auf wwn-mon (Prometheus/Loki/Tempo/Grafana).
+#
+# wwn-mon selbst betreibt zusätzlich diesen Agent für Self-Monitoring.
+
+- name: Ensure monitoring-agent directory exists
+  ansible.builtin.file:
+    path: "{{ app_dir }}/monitoring-agent"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0750"
+
+- name: Render monitoring-agent compose
+  ansible.builtin.template:
+    src: monitoring-agent-compose.yml.j2
+    dest: "{{ app_dir }}/monitoring-agent/compose.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+
+- name: Render promtail config
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ app_dir }}/monitoring-agent/promtail-config.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+
+- name: Start monitoring-agent stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}/monitoring-agent"
+    files: [compose.yml]
+    state: present
+    pull: missing
+  become: true
+  become_user: "{{ deploy_user }}"

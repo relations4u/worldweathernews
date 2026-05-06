@@ -1,0 +1,27 @@
+---
+# Voller Setup eines Hosts: System-Bootstrap, Docker, Monitoring-Agent,
+# anschließend Application-Stack auf den `app`-Hosts.
+#
+# Erste Ausführung auf einem Host, der noch keinen `deploy`-User kennt:
+#
+#     ansible-playbook -i inventories/production/hosts.yml \
+#         playbooks/site.yml -e ansible_user=hwr
+
+- name: System bootstrap and Docker
+  hosts: wwn
+  become: true
+  roles:
+    - common
+    - docker
+
+- name: Monitoring agent on every host
+  hosts: wwn
+  become: true
+  roles:
+    - monitoring-agent
+
+- name: Application stack on app hosts only
+  hosts: app
+  become: true
+  roles:
+    - app

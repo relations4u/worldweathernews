@@ -25,5 +25,13 @@ task = "latest"
 "pipx:pre-commit" = "4.0.1"
 "pipx:yamllint" = "1.35.1"
 
+# Session 11: Deployment-Toolchain.
+# `age`/`age-keygen` werden weiterhin als System-Pakete vorausgesetzt
+# (`apt install age` bzw. brew). SOPS, Ansible und Terraform via mise.
+terraform = "1.15"
+"ubi:getsops/sops" = "3.12"
+"pipx:ansible-core" = "2.20"
+"pipx:ansible-lint" = "26.4"
+
 [settings]
 experimental = true
