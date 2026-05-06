@@ -148,11 +148,31 @@ trace_id-Label, Cross-Lookup Loki→Tempo via Trace-ID erfolgreich. Volle
 mypy strict erforderte separaten Override für pyworkers.observability.tracing
 (disallow_untyped_calls=false), weil OTel-Instrumentor-Constructor untyped sind.
 
-## Session 11 — Ansible, SOPS, Terraform-Skelett
+## Session 10b — Caddy live auf wwn-prod
 
 Status: ✅ Done
 Datum: 2026-05-06
-Commit: <SHA>
+Commit: 54f1bf5 + 5c41fea (direkt auf main)
+Notizen: Caddy als eigenständiger Compose-Stack unter `/srv/wwn/caddy`
+mit `network_mode: host` deployed. Nicht Teil des App-Stacks
+(`compose.prod.yml`) — bewusste Trennung für unverfälschte Client-IPs
+und unabhängige Lifecycle. Vier Let's-Encrypt-Zertifikate ausgestellt
+(Apex, www, research, api.research) via HTTP-01-Challenge. HSTS
+`max-age=31536000` ohne `includeSubDomains` (Begründung: zukünftige
+interne Subdomains evtl. lange ohne TLS, Lockout-Risiko). Stub-Antworten
+via `respond` 200 — Cutover auf `reverse_proxy` ist Phase von Session 11a.
+Deploy-Pfad: `infra/deploy/deploy-caddy.sh` (rsync + ssh docker compose).
+Snapshot `caddy-online` gesetzt nach grünem End-to-End-Test.
+Stolperstein dokumentiert: `sudo` über plain SSH (BatchMode) braucht
+Terminal — Skript prüft jetzt Verzeichnis-Existenz statt `sudo install`
+direkt zu rufen. Zielverzeichnis `/srv/wwn/caddy` einmalig manuell mit
+`ssh -t` vorzubereiten.
+
+## Session 11 — Ansible, SOPS, Terraform-Skelett
+
+Status: ✅ Done (Skelett gemerged; Server-Deployment via Session 11a)
+Datum: 2026-05-06
+Commit: PR #22 (Skelett) + PR #23 (Caddy-Block-Cleanup)
 Notizen: Skelett, kein Server-Provisioning. Ablauf gegenüber step11.md
 angepasst, weil das Hosting auf Proxmox (wwn-prod 10.100.100.21,
 wwn-mon 10.100.100.22) statt Hetzner liegt — Hetzner-Modul bleibt als
@@ -172,8 +192,23 @@ ergänzt: `terraform`, `ubi:getsops/sops`, `pipx:ansible-core`,
 terraform fmt -check, terraform validate -backend=false. Hausaufgabe
 für Maintainer (in README dokumentiert): `terraform import` der zwei
 manuell erstellten VMs, bevor jemals `terraform apply` läuft.
-Caddy-Block in `infra/compose/compose.prod.yml` wird in eigener
-Folge-PR entfernt (separat von Session 11).
+Folge-PR #23 hat den verwaisten Caddy-Block aus
+`infra/compose/compose.prod.yml` entfernt.
+
+## Session 11a — Komplettes Deployment auf wwn-prod und wwn-mon
+
+Status: ⏸ Pending — Plan in `sessions/step11a.md`
+Notizen (geplant): Bootstrap beider VMs via Ansible (mit
+`-e ansible_user=hwr`-Override für den ersten Lauf). Caddy-Cert-Volume
+`wwn_caddy_data` zu Bind-Mount `/srv/wwn/caddy/data` migrieren (einfacheres
+Backup, klarere Owner-Verhältnisse). Neue Ansible-Rolle `monitoring-stack`
+für wwn-mon (Prometheus/Loki/Tempo/Grafana, adaptiert vom dev-Compose-
+Profile). App-Stack via existierender `app`-Rolle auf wwn-prod. Caddy-
+Cutover von `respond` auf `reverse_proxy` 127.0.0.1:{8080,3000} per
+Hot-Reload (Volume bleibt, Certs unverändert). Snapshot-Strategie
+pro Phase, plus zusätzliches Tar-Backup des Caddy-Data-Volumes vor
+Cutover. Erfolgs-Kriterium: alle 4 Hostnames antworten mit App-Content,
+Cert `notBefore` unverändert, Monitoring zeigt Live-Metriken.
 
 ## Session 12 — Dokumentation finalisieren
 
