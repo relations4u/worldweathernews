@@ -24,24 +24,19 @@ scrape_configs:
   # wwn-mon wäre ein zusätzlicher Service im Stack-compose; bleibt
   # für Folge-PR offen, wenn wir Host-Metriken für wwn-mon brauchen.
 
-  # TODO: Backend- und Pyworkers-Metrics. Aktuell binden die Container ihre
-  # Ports nur auf 127.0.0.1 (siehe app-Rolle compose.prod.yml.j2), also nicht
-  # von wwn-mon erreichbar. Optionen:
-  #   (a) zweites Port-Binding auf 10.100.100.21 mit ufw-Restrict zu
-  #       10.100.100.22
-  #   (b) Pull-Sidecar (vmagent o. ä.) auf wwn-prod, das remote-write zu
-  #       diesem Prometheus macht
-  # Entscheidung in Folge-PR.
-  # - job_name: backend
-  #   metrics_path: /metrics
-  #   static_configs:
-  #     - targets: ["10.100.100.21:8080"]
-  #       labels:
-  #         host: wwn-prod
-  #         service: backend
-  # - job_name: pyworkers
-  #   static_configs:
-  #     - targets: ["10.100.100.21:9100"]
-  #       labels:
-  #         host: wwn-prod
-  #         service: pyworkers
+  # Backend- und Pyworkers-Metrics auf wwn-prod. Beide binden ihre
+  # Ports auf 0.0.0.0; UFW erlaubt sie nur aus dem Manager-LAN
+  # (10.100.100.0/24, siehe common-Rolle, monitoring_scrape_ports).
+  - job_name: backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["10.100.100.21:8080"]
+        labels:
+          host: wwn-prod
+          service: backend
+  - job_name: pyworkers
+    static_configs:
+      - targets: ["10.100.100.21:9100"]
+        labels:
+          host: wwn-prod
+          service: pyworkers
