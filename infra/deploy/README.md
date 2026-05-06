@@ -11,10 +11,15 @@ den Caddy-Stack via `docker compose pull && up -d`.
 ### Voraussetzungen
 
 - SSH-Login `hwr@10.100.100.21` ohne Passwort (Public-Key)
-- `hwr` auf wwn-prod hat passwordless `sudo` (für initiales `mkdir` in `/srv`)
 - Docker Engine + Compose-Plugin auf wwn-prod
 - DNS-Records für die 4 Hostnames zeigen via `gate.hw7.eu` auf den Host
 - Hardware-Firewall leitet Ports 80 und 443 auf wwn-prod weiter
+- Zielverzeichnis `/srv/wwn/caddy` existiert und gehört `hwr:hwr`. Einmalig
+  manuell anlegen (sudo-Passwort wird abgefragt):
+
+  ```bash
+  ssh -t hwr@10.100.100.21 sudo install -d -o hwr -g hwr -m 0755 /srv/wwn/caddy
+  ```
 
 ### Ausführung
 

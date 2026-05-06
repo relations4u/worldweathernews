@@ -33,8 +33,18 @@ ssh_run 'command -v docker >/dev/null && docker compose version >/dev/null' || {
 	exit 1
 }
 
-echo "==> Ensuring ${REMOTE_PATH} exists and is writable by ${REMOTE_USER}"
-ssh_run "sudo install -d -o ${REMOTE_USER} -g ${REMOTE_USER} -m 0755 ${REMOTE_PATH}"
+echo "==> Checking that ${REMOTE_PATH} exists and is writable by ${REMOTE_USER}"
+if ! ssh_run "test -d ${REMOTE_PATH} && test -w ${REMOTE_PATH}"; then
+	cat <<EOF >&2
+ERROR: ${REMOTE_PATH} either doesn't exist or isn't writable by ${REMOTE_USER}.
+Run once on the remote (will prompt for sudo password):
+
+    ssh -t ${REMOTE_TARGET} sudo install -d -o ${REMOTE_USER} -g ${REMOTE_USER} -m 0755 ${REMOTE_PATH}
+
+Then re-run this script.
+EOF
+	exit 1
+fi
 
 echo "==> Syncing Caddy stack"
 rsync -avz --delete \
