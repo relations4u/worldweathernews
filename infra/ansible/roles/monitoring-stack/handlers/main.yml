@@ -1,0 +1,8 @@
+---
+- name: Restart monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_app_dir }}"
+    files: [compose.yml]
+    state: restarted
+  become: true
+  become_user: "{{ deploy_user }}"

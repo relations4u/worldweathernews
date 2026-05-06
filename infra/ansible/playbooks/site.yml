@@ -16,8 +16,11 @@
     - role: docker
       tags: [docker]
 
-- name: Monitoring agent on every host
-  hosts: wwn
+- name: Monitoring agent on app hosts
+  # wwn-mon braucht den Agent NICHT — sein eigener monitoring-stack-Promtail
+  # liest dort schon Container-Logs (Self-Monitoring). Node-Metriken für
+  # wwn-mon fügen wir später optional dem Stack selbst hinzu.
+  hosts: app
   become: true
   roles:
     - role: monitoring-agent
@@ -33,6 +36,15 @@
 - name: Application stack on app hosts only
   hosts: app
   become: true
+  vars:
+    # Erlaubt `ansible-playbook site.yml --tags app -e target_version=X.Y.Z`,
+    # ohne separat playbooks/deploy.yml aufrufen zu müssen. Default 0.0.0
+    # heißt „bewusst kein Deploy" — Service kommt nicht hoch.
+    target_version: "{{ default_versions.backend }}"
+    versions:
+      backend: "{{ target_version }}"
+      frontend: "{{ target_version }}"
+      pyworkers: "{{ target_version }}"
   roles:
     - role: app
       tags: [app]
