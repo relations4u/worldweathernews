@@ -1,0 +1,36 @@
+---
+# Globale Defaults für alle Hosts der wwn-Gruppe.
+
+deploy_user: deploy
+deploy_user_groups: [docker]
+app_dir: /opt/wwn
+docker_compose_file: compose.prod.yml
+image_namespace: relations4u
+
+# Default-Versionen — werden via -e target_version=X.Y.Z im Deploy-Playbook
+# überschrieben. Initial keine `latest`-Pins (siehe CLAUDE.md).
+default_versions:
+  backend: "0.0.0"
+  frontend: "0.0.0"
+  pyworkers: "0.0.0"
+
+# SSH-Hardening — Defaults, die `common` ins sshd_config-Template schreibt.
+sshd_port: 22
+sshd_permit_root_login: "no"
+sshd_password_authentication: "no"
+sshd_pubkey_authentication: "yes"
+
+# UFW — Default-deny-Inbound, nur diese Ports offen.
+ufw_allowed_ports:
+  - port: 22
+    proto: tcp
+    comment: "SSH"
+  - port: 80
+    proto: tcp
+    comment: "HTTP (Caddy)"
+  - port: 443
+    proto: tcp
+    comment: "HTTPS (Caddy)"
+
+# SOPS-File-Pfade (im Repo, nicht auf dem Server).
+secrets_dir: "{{ playbook_dir }}/../../secrets/production"

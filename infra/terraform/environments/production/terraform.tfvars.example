@@ -1,0 +1,22 @@
+# Kopiere als terraform.tfvars und fülle die Werte aus.
+# terraform.tfvars selbst NICHT committen (siehe infra/terraform/.gitignore).
+
+# Proxmox-Endpoint und API-Token. Token-Format: "USER@REALM!TOKENID=SECRET".
+# Alternative: source-aus SOPS via `sops --decrypt infra/secrets/production/proxmox.env`
+# in die Shell, dann `terraform apply` mit TF_VAR_*-Env-Variablen.
+proxmox_endpoint   = "https://CHANGE_ME_PROXMOX_HOST:8006/"
+proxmox_api_token  = "CHANGE_ME_USER@pam!terraform=CHANGE_ME_SECRET"
+proxmox_insecure   = true
+
+# Proxmox-Node, Template-VMID, Storage-Pool. Manuell vorbereiten, bevor ein
+# Apply möglich ist:
+#   1. Cloud-Image runterladen, z. B. ubuntu-24.04-server-cloudimg-amd64.img
+#   2. VM mit dieser Disk erzeugen, qm set <id> --ide2 <storage>:cloudinit
+#      und qm template <id>
+#   3. Template-VMID hier eintragen.
+proxmox_node_name    = "pve"
+proxmox_template_id  = 9000
+proxmox_datastore_id = "local-lvm"
+
+# LAN-Gateway (passend zu 10.100.100.0/24).
+ipv4_gateway = "10.100.100.1"

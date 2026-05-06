@@ -1,0 +1,4 @@
+---
+monitoring_central_host: 10.100.100.22
+monitoring_loki_port: 3100
+monitoring_prometheus_scrape_port: 9100

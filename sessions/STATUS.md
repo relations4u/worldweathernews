@@ -150,7 +150,30 @@ mypy strict erforderte separaten Override für pyworkers.observability.tracing
 
 ## Session 11 — Ansible, SOPS, Terraform-Skelett
 
-Status: ⏸ Pending
+Status: ✅ Done
+Datum: 2026-05-06
+Commit: <SHA>
+Notizen: Skelett, kein Server-Provisioning. Ablauf gegenüber step11.md
+angepasst, weil das Hosting auf Proxmox (wwn-prod 10.100.100.21,
+wwn-mon 10.100.100.22) statt Hetzner liegt — Hetzner-Modul bleibt als
+Migrations-Stub. `bpg/proxmox` ~> 0.66 für die aktive Pipeline.
+SOPS via age, Public-Key in `.sops.yaml`; sechs verschlüsselte Demo-
+Secret-Files unter `infra/secrets/production/` (backend, frontend,
+pyworkers, postgres, ghcr, proxmox). Pre-commit-Hook
+`forbid-unencrypted-secrets` blockt Plaintext-Files unter `infra/secrets/`.
+Ansible: vier Rollen (`common`, `docker`, `app`, `monitoring-agent`),
+drei Playbooks (`site`, `deploy`, `rollback`). `app`-Rolle deployt
+Postgres/Redis/Backend/Frontend/Pyworkers — **Caddy bewusst NICHT**;
+Caddy bleibt unter `/srv/wwn/caddy` mit `infra/deploy/deploy-caddy.sh`
+gemanaged. Inventory startet mit `ansible_user=deploy`; Bootstrap-Pfad
+für wwn-prod via `-e ansible_user=hwr` dokumentiert. Tooling-Pins
+ergänzt: `terraform`, `ubi:getsops/sops`, `pipx:ansible-core`,
+`pipx:ansible-lint`. Validierung lokal: ansible-lint, --syntax-check,
+terraform fmt -check, terraform validate -backend=false. Hausaufgabe
+für Maintainer (in README dokumentiert): `terraform import` der zwei
+manuell erstellten VMs, bevor jemals `terraform apply` läuft.
+Caddy-Block in `infra/compose/compose.prod.yml` wird in eigener
+Folge-PR entfernt (separat von Session 11).
 
 ## Session 12 — Dokumentation finalisieren
 

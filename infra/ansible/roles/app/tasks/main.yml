@@ -1,0 +1,72 @@
+---
+# Hinweis: Diese Rolle deployt NICHT den Caddy-Container. Caddy läuft in
+# einem eigenständigen Stack unter /srv/wwn/caddy (siehe
+# infra/deploy/deploy-caddy.sh). Der Caddy-Block in compose.prod.yml ist
+# bewusst unbenutzt und wird in einer separaten PR entfernt.
+
+- name: Ensure app directory structure
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0750"
+  loop:
+    - "{{ app_dir }}"
+    - "{{ app_dir }}/postgres-init"
+
+- name: Render compose.prod.yml with version pins
+  ansible.builtin.template:
+    src: compose.prod.yml.j2
+    dest: "{{ app_dir }}/{{ docker_compose_file }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+
+- name: Copy postgres-init scripts
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../../compose/postgres-init/"
+    dest: "{{ app_dir }}/postgres-init/"
+    delete: true
+    rsync_opts:
+      - "--chmod=D0755,F0644"
+
+- name: Decrypt SOPS env files into /opt/wwn/.env.<service>
+  ansible.builtin.copy:
+    content: "{{ lookup('community.sops.sops', secrets_dir + '/' + item.src) }}"
+    dest: "{{ app_dir }}/.env.{{ item.name }}"
+    owner: root
+    group: "{{ deploy_user }}"
+    mode: "0640"
+  loop: "{{ secret_files }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+
+- name: Pull container images
+  community.docker.docker_compose_v2_pull:
+    project_src: "{{ app_dir }}"
+    files:
+      - "{{ docker_compose_file }}"
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Start application stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}"
+    files:
+      - "{{ docker_compose_file }}"
+    state: present
+    pull: never
+    remove_orphans: true
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Wait for backend health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:8080/api/v1/ping"
+    status_code: 200
+  register: backend_health
+  retries: 30
+  delay: 2
+  until: backend_health.status == 200

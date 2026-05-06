@@ -1,0 +1,15 @@
+---
+# Defaults für die common-Rolle. Werden in group_vars/all.yml gesetzt;
+# hier nur Fallback-Werte falls die Rolle isoliert getestet wird.
+
+deploy_user: deploy
+deploy_user_groups: []
+maintainer_authorized_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC8I0s/wZ7BLj+m+T3anSKZoHGwzf7DkrxIMj4y3WB1S hwr@relations4u.de"
+
+sshd_port: 22
+sshd_permit_root_login: "no"
+sshd_password_authentication: "no"
+sshd_pubkey_authentication: "yes"
+
+ufw_allowed_ports: []

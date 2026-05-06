@@ -1,0 +1,17 @@
+---
+# Default-Versions kommen aus group_vars/all.yml. `target_version` aus
+# vars_prompt im deploy.yml-Playbook übersteuert pro-Service-Versions.
+versions: "{{ default_versions }}"
+
+# Liste der Secret-Files (im Repo), die nach /opt/wwn/.env.<name> entschlüsselt
+# werden. `name` ist der Suffix nach .env.; `src` ist relativer Pfad unter
+# `secrets_dir` (group_vars/all.yml).
+secret_files:
+  - name: backend
+    src: backend.env
+  - name: frontend
+    src: frontend.env
+  - name: pyworkers
+    src: pyworkers.env
+  - name: postgres
+    src: postgres.env

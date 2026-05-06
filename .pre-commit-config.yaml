@@ -39,6 +39,19 @@ repos:
     hooks:
       - id: gitleaks
 
+  # ─── SOPS-encrypted secrets gate ──────────────────────────────────────────
+  # Verhindert versehentliches Committen unverschlüsselter Files unter
+  # infra/secrets/. Ergänzt gitleaks: gitleaks fängt Secret-Patterns ab,
+  # dieser Hook fängt das *Format* (encrypted vs. plain) zusätzlich ab.
+  - repo: local
+    hooks:
+      - id: forbid-unencrypted-secrets
+        name: Forbid unencrypted secrets
+        entry: scripts/check-encrypted-secrets.sh
+        language: script
+        files: ^infra/secrets/.*\.(env|ya?ml|json)$
+        pass_filenames: true
+
   # ─── Go ───────────────────────────────────────────────────────────────────
   # gofmt + goimports kommen aus dem golangci-lint-Hook (run-Linters enthalten
   # `gofmt` und `goimports`). Separate Hooks würden doppelt laufen.
