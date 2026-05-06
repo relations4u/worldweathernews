@@ -32,6 +32,13 @@ Stand: 2026-05-06.
 - **Postgres-Backups automatisieren** — aktuell manuelle `pg_dump`-
   Kommandos im Runbook. Pflicht, bevor wir echte User-Daten halten.
   Optionen: pgBackRest, Borg, externer Backup-Worker.
+- **Proxmox-Snapshot-Cadence formalisieren** — aktuell manuelle
+  Snapshots durch den Maintainer (z. B. `caddy-online` 6. Mai 2026,
+  `setup-complete` 6. Mai 2026 nach v0.0.2 + Metrics-Wiring auf
+  wwn-prod und wwn-mon). Vor jedem Production-Deploy ohne klares
+  Rollback-Pfad: snapshot. Mittelfristig: Proxmox Backup Server als
+  separate VM auf demselben Host plus externer Off-Site-Sync.
+  Snapshot- vs. Backup-Trennung dokumentieren.
 - **Container-Resource-Metrics** (cAdvisor / Docker-Stats-Exporter)
   und **postgres_exporter / redis_exporter** — der _Infra Overview_-
   Dashboard hat dafür Stubs.
