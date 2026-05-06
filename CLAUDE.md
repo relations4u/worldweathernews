@@ -805,23 +805,23 @@ ein kurzer Eintrag.
 
 ### Aktueller Status (5. Mai 2026)
 
-| Phase | Session                                            | Status                                                  |
-| ----- | -------------------------------------------------- | ------------------------------------------------------- |
-| A     | 1 — Repo-Skelett, mise                             | ✅ Abgeschlossen                                        |
-| A     | 2 — Pre-commit, Makefile                           | ✅ Abgeschlossen                                        |
-| B     | 3 — Compose-Stack                                  | ✅ Abgeschlossen                                        |
-| B     | 4 — Go-Backend                                     | ✅ Abgeschlossen                                        |
-| B     | 5 — SvelteKit-Frontend                             | ✅ Abgeschlossen                                        |
-| B     | 6 — Python-Workers                                 | ✅ Abgeschlossen                                        |
-| C     | 7 — OpenAPI + Codegen                              | ✅ Abgeschlossen                                        |
-| C     | 8 — CI-Workflows                                   | ✅ Abgeschlossen                                        |
-| C     | 9 — Release + ghcr.io                              | ✅ Abgeschlossen                                        |
-| D     | 10a — wwn-prod und wwn-mon Basis-Setup             | ✅ Abgeschlossen (siehe unten)                          |
-| D     | 10b — Caddy auf wwn-prod, Public-Erreichbarkeit    | ✅ Abgeschlossen (6. Mai 2026, Snapshot `caddy-online`) |
-| D     | 10c — Observability-Stack auf wwn-mon              | ⏳ Ausstehend (wird in 11a abgedeckt)                   |
-| D     | 11 — Ansible + SOPS + Terraform-Skelett            | ✅ Code-Skelett gemerged (#22, #23)                     |
-| D     | 11a — Komplettes Deployment auf wwn-prod + wwn-mon | ⏳ Geplant, siehe `sessions/step11a.md`                 |
-| D     | 12 — Dokumentation, ADRs, Runbook                  | ⏳ Ausstehend                                           |
+| Phase | Session                                            | Status                                                    |
+| ----- | -------------------------------------------------- | --------------------------------------------------------- |
+| A     | 1 — Repo-Skelett, mise                             | ✅ Abgeschlossen                                          |
+| A     | 2 — Pre-commit, Makefile                           | ✅ Abgeschlossen                                          |
+| B     | 3 — Compose-Stack                                  | ✅ Abgeschlossen                                          |
+| B     | 4 — Go-Backend                                     | ✅ Abgeschlossen                                          |
+| B     | 5 — SvelteKit-Frontend                             | ✅ Abgeschlossen                                          |
+| B     | 6 — Python-Workers                                 | ✅ Abgeschlossen                                          |
+| C     | 7 — OpenAPI + Codegen                              | ✅ Abgeschlossen                                          |
+| C     | 8 — CI-Workflows                                   | ✅ Abgeschlossen                                          |
+| C     | 9 — Release + ghcr.io                              | ✅ Abgeschlossen                                          |
+| D     | 10a — wwn-prod und wwn-mon Basis-Setup             | ✅ Abgeschlossen (siehe unten)                            |
+| D     | 10b — Caddy auf wwn-prod, Public-Erreichbarkeit    | ✅ Abgeschlossen (6. Mai 2026, Snapshot `caddy-online`)   |
+| D     | 10c — Observability-Stack auf wwn-mon              | ✅ Abgedeckt durch Session 11a (Rolle `monitoring-stack`) |
+| D     | 11 — Ansible + SOPS + Terraform-Skelett            | ✅ Code-Skelett gemerged (#22, #23)                       |
+| D     | 11a — Komplettes Deployment auf wwn-prod + wwn-mon | ✅ Abgeschlossen (6. Mai 2026, v0.0.1-rc4 live)           |
+| D     | 12 — Dokumentation, ADRs, Runbook                  | 🟡 In Arbeit                                              |
 
 **Session 10a-Ergebnisse** (Basis-Setup beider VMs, Stand 5. Mai 2026):
 
@@ -859,11 +859,50 @@ Snapshot `caddy-online` gesetzt. Deploy-Pfad: `infra/deploy/deploy-caddy.sh`.
 
 **Session 10c-Inhalte** (Observability-Stack auf wwn-mon):
 
-In Session 11a integriert. Teil des „Komplettes Deployment"-Plans:
-zentraler Prometheus/Loki/Tempo/Grafana-Stack auf wwn-mon via neu zu
-schreibender Ansible-Rolle `monitoring-stack`, adaptiert vom dev-Compose-
-Profile. Promtail- und node_exporter-Agents auf wwn-prod via existierender
-`monitoring-agent`-Rolle. Detail-Plan: `sessions/step11a.md`.
+Vollständig in Session 11a umgesetzt — neue Ansible-Rolle
+`monitoring-stack` deployt Prometheus/Loki/Tempo/Grafana auf wwn-mon,
+`monitoring-agent` (Promtail + node-exporter) läuft auf wwn-prod.
+
+**Session 11a-Ergebnisse** (komplettes Deployment beider VMs, Stand 6. Mai 2026):
+
+✅ wwn-prod (10.100.100.21):
+
+- App-Stack v0.0.1-rc4 läuft: backend, frontend, pyworkers (alle
+  healthy), postgres (TimescaleDB), redis, plus monitoring-agent
+  (promtail, node-exporter)
+- Caddy unverändert (Stand-alone-Stack), aber Caddyfile auf
+  `reverse_proxy 127.0.0.1:{3000,8080}` umgestellt; alle vier
+  LE-Zertifikate haben unveränderte `notBefore`-Dates seit Session 10b
+- App-Backend-CORS auf die drei aktiven Origins (Apex, www, research)
+  konfiguriert via SOPS-encrypted backend.env
+
+✅ wwn-mon (10.100.100.22):
+
+- monitoring-stack läuft: Prometheus, Loki, Tempo, Grafana 11.3.0
+  mit drei provisionierten Dashboards (Backend, Pyworkers, Infra)
+  unter Folder `worldweathernews`
+- Grafana an 0.0.0.0:3000 gebunden, UFW erlaubt :3000 nur aus
+  10.100.100.0/24 — Zugriff via `http://10.100.100.22:3000`,
+  Admin-Passwort in `infra/secrets/production/grafana.env`
+- Loki :3100 und Tempo OTLP :4317/:4318 von wwn-prod erreichbar
+
+✅ Public Smokes (alle 200):
+
+- `https://worldweathernews.com` — SvelteKit-Frontend, „Backend
+  connected" mit Trace-IDs
+- `https://www.worldweathernews.com` — 301 → Apex
+- `https://research.worldweathernews.com` — SvelteKit-Frontend
+- `https://api.research.worldweathernews.com/api/v1/ping` — Backend-
+  JSON mit `traceId`
+
+⚠️ Bekannt-offen (in `prometheus.yml` als Comment dokumentiert):
+
+- Backend-/Pyworkers-`/metrics`-Ports binden 127.0.0.1 only —
+  Prometheus auf wwn-mon kann sie nicht scrapen. Entscheidung
+  zwischen LAN-Bind+ufw vs. Push-Sidecar steht aus.
+- node-exporter für wwn-mon nicht im Stack (nur node-exporter auf
+  wwn-prod ist UP) — als Folge-PR, falls Host-Metriken für wwn-mon
+  benötigt werden.
 
 ---
 
@@ -1014,6 +1053,27 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   10b verschoben auf Caddy-Online und 10c auf Observability — Sessionplan
   entsprechend angepasst, Phase 11 (Ansible) bleibt ausstehend bis Caddy
   manuell läuft, dann als Referenz für Playbook-Verifikation.
+- **2026-05-06 (Session 11a — Komplettes Deployment live)** — wwn-prod
+  und wwn-mon vollständig via Ansible bootstrapped, App-Stack v0.0.1-rc4
+  läuft auf wwn-prod (backend/frontend/pyworkers alle healthy), zentraler
+  Observability-Stack auf wwn-mon (Prometheus/Loki/Tempo/Grafana mit drei
+  provisionierten Dashboards). Caddy-Cutover von Stub-`respond` auf
+  `reverse_proxy` 127.0.0.1:{3000,8080} mit unveränderten Cert-`notBefore`-
+  Dates. Caddy-Cert-Volume zu Bind-Mount `/srv/wwn/caddy/data` migriert.
+  Code-Fixes auf dem Weg dahin (alle gemerged): release.yml gibt jetzt
+  `PUBLIC_API_BASE_URL` als build-arg an den Frontend-Build (sonst landet
+  der Dockerfile-Default `http://api.localhost` im JS-Bundle), Backend
+  bekommt `WWN_HTTP_CORSORIGINS` für Apex/www/research-Origins, Caddy lässt
+  OPTIONS-Preflights zur Backend-chi-cors durch, monitoring-stack-Rolle
+  erstellt `grafana/`+`grafana/provisioning/` mit Mode 0755 explizit (uid 472
+  brauchte traversal), monitoring-agent-Play limitiert auf `app`-Hosts (mons
+  Stack-Promtail würde sonst kollidieren), neue UFW-`monitoring_scrape_ports`-
+  Liste in der common-Rolle. Single-File-Bind-Mount-Inode-Falle bei Caddy
+  und monitoring-stack: `restart` nach Config-Update nötig (`deploy-caddy.sh`
+  und Ansible-Handler). Frontend-Healthcheck wechselt von `localhost` auf
+  `127.0.0.1` (busybox-wget resolved IPv6, Server bindet IPv4). PR-Reihe
+  #25–#32, Tag v0.0.1-rc4.
+
 - **2026-05-06 (Caddy live + Session-11-Skelett)** — Caddy auf wwn-prod
   als eigenständiger Stack (`/srv/wwn/caddy`, `network_mode: host`)
   deployed; vier Let's-Encrypt-Zertifikate ausgestellt (Apex, www,

@@ -197,19 +197,69 @@ Folge-PR #23 hat den verwaisten Caddy-Block aus
 
 ## Session 11a — Komplettes Deployment auf wwn-prod und wwn-mon
 
-Status: ⏸ Pending — Plan in `sessions/step11a.md`
-Notizen (geplant): Bootstrap beider VMs via Ansible (mit
-`-e ansible_user=hwr`-Override für den ersten Lauf). Caddy-Cert-Volume
-`wwn_caddy_data` zu Bind-Mount `/srv/wwn/caddy/data` migrieren (einfacheres
-Backup, klarere Owner-Verhältnisse). Neue Ansible-Rolle `monitoring-stack`
-für wwn-mon (Prometheus/Loki/Tempo/Grafana, adaptiert vom dev-Compose-
-Profile). App-Stack via existierender `app`-Rolle auf wwn-prod. Caddy-
-Cutover von `respond` auf `reverse_proxy` 127.0.0.1:{8080,3000} per
-Hot-Reload (Volume bleibt, Certs unverändert). Snapshot-Strategie
-pro Phase, plus zusätzliches Tar-Backup des Caddy-Data-Volumes vor
-Cutover. Erfolgs-Kriterium: alle 4 Hostnames antworten mit App-Content,
-Cert `notBefore` unverändert, Monitoring zeigt Live-Metriken.
+Status: ✅ Done
+Datum: 2026-05-06
+Commits: PR #25 (bind-mount migration), PR #26 (monitoring-stack role),
+PR #27 (ansible.cfg yaml callback), PR #28 (site.yml role tags),
+PR #29 (Caddy cutover, UFW LAN-scrape, Grafana 0.0.0.0),
+PR #30 (agent scope, deploy plumbing, restart handler),
+PR #31 (frontend healthcheck IPv4), PR #32 (Grafana provisioning perms,
+backend CORS env, Caddy OPTIONS pass-through, release.yml frontend
+build-arg), Tag v0.0.1-rc4.
+
+Notizen: Sechs Phasen abgearbeitet. Phase 1 — Ansible-Bootstrap auf
+wwn-prod und wwn-mon (deploy-User, SSH-Hardening, ufw, Docker, GHCR-Login).
+Phase 2 — Caddy von Docker-Named-Volume zu Bind-Mount unter
+`/srv/wwn/caddy/data` migriert; alle vier LE-Certs überlebten unverändert
+(Tar-Backup als Sicherheitsnetz, `notBefore`-Diff als Verifikation).
+Phase 3 — Neue Rolle `monitoring-stack` deployt Prometheus/Loki/Tempo/
+Grafana auf wwn-mon. Phase 4 — App-Stack v0.0.1-rc2 → später rc3 → rc4
+auf wwn-prod via `playbooks/deploy.yml`. Phase 5 — Caddy-Cutover von
+Stub-`respond` auf `reverse_proxy` 127.0.0.1:{3000,8080}; Cert-Dates
+unverändert. Phase 6 — End-to-End-Verifikation grün.
+
+Stolpersteine, die als Code-Fix im Repo gelandet sind:
+(a) Fine-grained PAT lacked Org-level Packages: Read → ghcr.io 403;
+auf Classic PAT mit `read:packages` umgestellt.
+(b) Single-File-Bind-Mount-Inode-Falle bei Caddy und monitoring-stack:
+rsync/copy macht atomic-rename, Container liest weiterhin den alten
+Inode → `docker compose restart` nach Config-Update nötig (jetzt im
+deploy-caddy.sh und als Ansible-Handler in monitoring-stack).
+(c) UFW blockierte Prometheus-Scrapes (9101) → neue
+`monitoring_scrape_ports`-Liste in der common-Rolle, LAN-only.
+(d) monitoring-agent-Rolle kollidierte auf wwn-mon mit dem
+Stack-eigenen Promtail (gleicher Container-Name) → site.yml limitiert
+den Agent jetzt auf `app`-Hosts.
+(e) Grafana (uid 472) konnte sein provisioning-Verzeichnis nicht
+traversieren — `grafana/` und `grafana/provisioning/` mussten explizit
+mit Mode 0755 in den Directory-Loop, sonst implizite Eltern-Dirs mit
+umask-Default 0750.
+(f) Backend-CORS war auf Default `http://app.localhost`; Apex-Frontend
+bekam „Backend offline / Failed to fetch" — `WWN_HTTP_CORSORIGINS`
+in backend.env gesetzt für die drei aktiven Origins.
+(g) Caddy fing OPTIONS-Preflights mit bare 204 ohne CORS-Header ab →
+chi-cors auf Backend-Seite kam nicht zum Zug. Caddy-Block entfernt.
+(h) Release-Workflow gab `PUBLIC_API_BASE_URL` nicht als build-arg an
+den Frontend-Build → JS-Bundle hatte Dockerfile-Default
+`http://api.localhost` eingebacken. Per-Service `build_args` in der
+Matrix in release.yml ergänzt.
+
+scripts/deploy.sh läuft jetzt mit `-e ansible_user=hwr` (deploy-User
+hat nur docker-NOPASSWD), monitoring-stack-Rolle hat einen
+`Restart monitoring stack`-Handler bei Config-Änderungen. Public-Smoke
+gegen apex/www/research/api.research alle 200, Grafana-Dashboards sind
+unter `worldweathernews/`-Folder provisioniert.
+
+Bekannte offene Punkte (nicht Session-blockierend, in
+`prometheus.yml` als Comment dokumentiert):
+
+- Backend-/Pyworkers-`/metrics`-Ports binden 127.0.0.1 only —
+  Prometheus auf wwn-mon kann sie nicht scrapen. Entscheidung
+  zwischen LAN-Bind+ufw vs. Push-Sidecar steht aus.
+- node-exporter für wwn-mon nicht im Stack — als Folge-PR, wenn
+  Host-Metriken für Grafana benötigt werden.
 
 ## Session 12 — Dokumentation finalisieren
 
-Status: ⏸ Pending
+Status: 🟡 In Progress
+Datum: 2026-05-06
