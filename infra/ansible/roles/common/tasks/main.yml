@@ -33,6 +33,11 @@
     key: "{{ item }}"
     state: present
   loop: "{{ maintainer_authorized_keys }}"
+  # In `--check`-Mode existiert der `deploy`-User aus der vorigen Task noch
+  # nicht real, dann scheitert authorized_key mit "Either user must exist or
+  # you must provide full path to key file in check mode". Beim echten Run
+  # ist das kein Problem; deshalb diesen Task im Check-Mode überspringen.
+  check_mode: false
 
 - name: Allow deploy user passwordless sudo for docker compose only
   ansible.builtin.copy:
