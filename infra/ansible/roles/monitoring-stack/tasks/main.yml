@@ -53,18 +53,23 @@
     group: "{{ deploy_user }}"
     mode: "0644"
 
-- name: Decrypt grafana env from SOPS
-  community.sops.load_vars:
-    file: "{{ secrets_dir }}/grafana.env"
-    name: grafana
+- name: Decrypt grafana.env via sops lookup
+  ansible.builtin.set_fact:
+    _grafana_env: "{{ lookup('community.sops.sops', secrets_dir + '/grafana.env') }}"
   delegate_to: localhost
   become: false
+  no_log: true
+
+- name: Parse grafana admin password from dotenv content
+  # grafana.env ist Dotenv (KEY=VAL), nicht YAML — regex_findall liest das raus.
+  ansible.builtin.set_fact:
+    _grafana_admin_password: "{{ _grafana_env | regex_findall('^GRAFANA_ADMIN_PASSWORD=(.+)$', multiline=True) | first }}"
   no_log: true
 
 - name: Write Grafana env file with admin password
   ansible.builtin.copy:
     content: |
-      GF_SECURITY_ADMIN_PASSWORD={{ grafana.GRAFANA_ADMIN_PASSWORD }}
+      GF_SECURITY_ADMIN_PASSWORD={{ _grafana_admin_password }}
     dest: "{{ monitoring_app_dir }}/.env.grafana"
     owner: root
     group: "{{ deploy_user }}"
