@@ -1,7 +1,14 @@
 # infra/deploy
 
 Deployment-Skripte für den Self-Hosting-Stack auf den Proxmox-VMs. Kein
-Ansible, kein Terraform — bewusst klein, bis Session 11 das übernimmt.
+Ansible, kein Terraform — bewusst klein, bis Session 11a Ansible übernimmt.
+
+## Skript-Übersicht
+
+| Skript                       | Zweck                                               |
+| ---------------------------- | --------------------------------------------------- |
+| `deploy-caddy.sh`            | Caddy-Stack auf wwn-prod (re)deployen               |
+| `migrate-caddy-bindmount.sh` | Einmalige Migration des Cert-Volumes auf Bind-Mount |
 
 ## deploy-caddy.sh
 
@@ -61,6 +68,59 @@ ssh hwr@10.100.100.21 'cd /srv/wwn/caddy && docker compose logs -f caddy'
 ssh hwr@10.100.100.21 'cd /srv/wwn/caddy && docker compose down'
 ```
 
-`caddy_data` bleibt erhalten (Volume `wwn_caddy_data`) — wichtig, damit beim
-nächsten Start die Zertifikate nicht erneut gezogen werden müssen (Let's-
-Encrypt-Rate-Limit beachten).
+**NIEMALS `docker compose down -v`** — das `-v` würde Bind-Mount-Pfade nicht
+betreffen, aber alte Named-Volumes (vor der Bind-Mount-Migration) und ist
+generell ein Footgun. Nach dem regulären `down` bleiben die Cert-Daten unter
+`/srv/wwn/caddy/data/` erhalten.
+
+## migrate-caddy-bindmount.sh
+
+Einmalige Migration: kopiert die Cert-Daten aus den Docker-Named-Volumes
+(`wwn_caddy_data`, `wwn_caddy_config`) in Bind-Mount-Pfade unter
+`/srv/wwn/caddy/data` und `/srv/wwn/caddy/config`. Das `compose.yml` im Repo
+wurde gleichzeitig auf Bind-Mount umgestellt, der `deploy-caddy.sh`-Guard
+blockt einen Deploy ohne vorherige Migration.
+
+**Wann anwenden:** genau einmal nach dem Merge der Bind-Mount-Migrations-PR
+auf den Stand mit den Live-Certs (Caddy auf wwn-prod läuft seit 6. Mai 2026).
+
+**Aufruf:**
+
+```bash
+bash infra/deploy/migrate-caddy-bindmount.sh
+```
+
+Das Skript ist idempotent — bei erneutem Aufruf nach erfolgreicher Migration
+ist es ein No-op.
+
+**Was es tut, in Reihenfolge:**
+
+1. Idempotenz-Check: ist `/srv/wwn/caddy/data/caddy/certificates/` schon befüllt?
+2. Vorab-Snapshot der `notBefore`-Daten der vier öffentlichen Hostnames
+   (Apex, www, research, api.research).
+3. Tar-Backup des Named-Volumes nach `/srv/wwn/caddy/caddy-data-backup-<TS>.tar.gz`.
+4. Caddy stoppen, Bind-Mount-Verzeichnisse anlegen (Owner `hwr:hwr`,
+   Mode 0750), Volume-Inhalt mit `cp -a` rüberkopieren (Permissions
+   bleiben erhalten).
+5. Aufruf von `deploy-caddy.sh` — der Guard passt nun, neues `compose.yml`
+   wird gesynct, Caddy startet mit Bind-Mount-Daten.
+6. Vergleich der `notBefore`-Daten vorher/nachher. Wenn sie sich unterscheiden,
+   bricht das Skript mit Fehler ab — Caddy hätte dann frisch ge-ACME't, was
+   nicht erwartet ist.
+
+**Voraussetzung:** Die Named-Volumes `wwn_caddy_data` und `wwn_caddy_config`
+müssen auf wwn-prod existieren (Stand: ja, vom Setup am 6. Mai). `hwr` braucht
+`sudo`-Rechte für `tar`, `install -d` und `cp` — die `sudo`-Aufrufe nutzen
+`ssh -t`, also wird das Passwort lokal abgefragt (kein NOPASSWD nötig).
+
+**Aufräumen nach 1-2 Tagen Beobachtungszeit:**
+
+```bash
+ssh hwr@10.100.100.21 docker volume rm wwn_caddy_data wwn_caddy_config
+```
+
+Den Tar-Backup von der Maintainer-Maschine ziehen und off-host sichern:
+
+```bash
+scp hwr@10.100.100.21:/srv/wwn/caddy/caddy-data-backup-*.tar.gz ~/backups/
+```
