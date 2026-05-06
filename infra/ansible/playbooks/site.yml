@@ -11,23 +11,28 @@
   hosts: wwn
   become: true
   roles:
-    - common
-    - docker
+    - role: common
+      tags: [common]
+    - role: docker
+      tags: [docker]
 
 - name: Monitoring agent on every host
   hosts: wwn
   become: true
   roles:
-    - monitoring-agent
+    - role: monitoring-agent
+      tags: [monitoring-agent]
 
 - name: Central monitoring stack on wwn-mon
   hosts: mon
   become: true
   roles:
-    - monitoring-stack
+    - role: monitoring-stack
+      tags: [monitoring-stack]
 
 - name: Application stack on app hosts only
   hosts: app
   become: true
   roles:
-    - app
+    - role: app
+      tags: [app]
