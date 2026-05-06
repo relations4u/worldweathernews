@@ -1,0 +1,106 @@
+---
+# Deployt den zentralen Observability-Stack auf wwn-mon: Prometheus, Loki,
+# Tempo, Grafana, plus Promtail für das Self-Monitoring der wwn-mon-Container.
+#
+# Caddy läuft NICHT vor diesem Stack — Grafana ist nur intern erreichbar
+# (127.0.0.1:3000), Zugriff via SSH-Tunnel oder VPN.
+
+- name: Ensure monitoring-stack directory tree
+  ansible.builtin.file:
+    path: "{{ monitoring_app_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0750"
+  loop:
+    - ""
+    - prometheus
+    - loki
+    - promtail
+    - tempo
+    - grafana/provisioning/datasources
+    - grafana/provisioning/dashboards
+    - grafana/dashboards
+
+- name: Copy service config files
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ monitoring_app_dir }}/{{ item.dest }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+  loop:
+    - src: prometheus/prometheus.yml
+      dest: prometheus/prometheus.yml
+    - src: loki/local-config.yaml
+      dest: loki/local-config.yaml
+    - src: promtail/config.yaml
+      dest: promtail/config.yaml
+    - src: tempo/tempo.yaml
+      dest: tempo/tempo.yaml
+    - src: grafana/provisioning/datasources/datasources.yml
+      dest: grafana/provisioning/datasources/datasources.yml
+    - src: grafana/provisioning/dashboards/dashboards.yml
+      dest: grafana/provisioning/dashboards/dashboards.yml
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Copy Grafana dashboards
+  ansible.builtin.copy:
+    src: grafana/dashboards/
+    dest: "{{ monitoring_app_dir }}/grafana/dashboards/"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0644"
+
+- name: Decrypt grafana env from SOPS
+  community.sops.load_vars:
+    file: "{{ secrets_dir }}/grafana.env"
+    name: grafana
+  delegate_to: localhost
+  become: false
+  no_log: true
+
+- name: Write Grafana env file with admin password
+  ansible.builtin.copy:
+    content: |
+      GF_SECURITY_ADMIN_PASSWORD={{ grafana.GRAFANA_ADMIN_PASSWORD }}
+    dest: "{{ monitoring_app_dir }}/.env.grafana"
+    owner: root
+    group: "{{ deploy_user }}"
+    mode: "0640"
+  no_log: true
+
+- name: Render compose.yml
+  ansible.builtin.template:
+    src: compose.yml.j2
+    dest: "{{ monitoring_app_dir }}/compose.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+
+- name: Pull container images
+  community.docker.docker_compose_v2_pull:
+    project_src: "{{ monitoring_app_dir }}"
+    files: [compose.yml]
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Start monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_app_dir }}"
+    files: [compose.yml]
+    state: present
+    pull: never
+    remove_orphans: true
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Wait for Grafana health endpoint
+  ansible.builtin.uri:
+    url: http://127.0.0.1:3000/api/health
+    status_code: 200
+  register: grafana_health
+  retries: 30
+  delay: 2
+  until: grafana_health.status == 200

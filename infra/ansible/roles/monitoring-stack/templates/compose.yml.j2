@@ -1,0 +1,104 @@
+# {{ ansible_managed }}
+# Zentraler Observability-Stack für wwn-mon.
+#
+# Ports binden bewusst gemischt:
+#   - Grafana, Prometheus, Tempo HTTP — nur 127.0.0.1 (intern via SSH-Tunnel)
+#   - Loki :3100, Tempo OTLP :4317/:4318 — 0.0.0.0 (von wwn-prod erreichbar
+#     für Log-Push und Trace-Export). UFW-Regeln auf wwn-mon müssen das LAN
+#     ranlassen.
+
+services:
+  prometheus:
+    image: {{ monitoring_prometheus_image }}
+    container_name: wwn-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time={{ monitoring_prometheus_retention }}"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [monitoring-net]
+
+  loki:
+    image: {{ monitoring_loki_image }}
+    container_name: wwn-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ./loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "0.0.0.0:{{ monitoring_external_loki_port }}:3100"
+    networks: [monitoring-net]
+
+  promtail:
+    image: {{ monitoring_promtail_image }}
+    container_name: wwn-promtail
+    restart: unless-stopped
+    user: "0:0"
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    volumes:
+      - ./promtail/config.yaml:/etc/promtail/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail_data:/tmp
+    depends_on:
+      - loki
+    networks: [monitoring-net]
+
+  tempo:
+    image: {{ monitoring_tempo_image }}
+    container_name: wwn-tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "127.0.0.1:3200:3200"
+      - "0.0.0.0:{{ monitoring_external_otlp_grpc_port }}:4317"
+      - "0.0.0.0:{{ monitoring_external_otlp_http_port }}:4318"
+    networks: [monitoring-net]
+
+  grafana:
+    image: {{ monitoring_grafana_image }}
+    container_name: wwn-grafana
+    restart: unless-stopped
+    env_file:
+      - {{ monitoring_app_dir }}/.env.grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_USERS_DEFAULT_THEME: dark
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks: [monitoring-net]
+
+networks:
+  monitoring-net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+    name: wwn_mon_prometheus_data
+  loki_data:
+    name: wwn_mon_loki_data
+  tempo_data:
+    name: wwn_mon_tempo_data
+  grafana_data:
+    name: wwn_mon_grafana_data
+  promtail_data:
+    name: wwn_mon_promtail_data

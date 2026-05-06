@@ -1,0 +1,117 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": { "0": { "color": "red", "text": "DOWN" } },
+              "type": "value"
+            },
+            {
+              "options": { "1": { "color": "green", "text": "UP" } },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "up",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrape Targets — UP/DOWN",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "scrape_duration_seconds",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrape Duration",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
+      "id": 3,
+      "options": {
+        "code": { "language": "markdown" },
+        "content": "## Container- und Infra-Metriken (TODO)\n\nDieses Dashboard zeigt aktuell nur Prometheus-eigene Liveness-Metriken.\n\nAusbau-Backlog (Session ≥ 11):\n\n- **postgres_exporter** als Sidecar zu Postgres → Connections, Cache-Hit-Ratio, Query-Latency.\n- **redis_exporter** → Ops/sec, Memory, Hit-Rate.\n- **cAdvisor** oder Docker-Stats-Exporter → Container CPU/Memory pro Service.\n- **node_exporter** auf dem Hypervisor (in Prod-VM-Variante) → Host-Metriken.\n\nSolange diese Exporter nicht laufen, bleibt dieses Dashboard ein Stub mit\nBasis-Health-Panel.",
+        "mode": "markdown"
+      },
+      "title": "Roadmap",
+      "type": "text"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["wwn", "infra"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "WWN Infra Overview",
+  "uid": "wwn-infra-overview",
+  "version": 1,
+  "weekStart": ""
+}

@@ -1,0 +1,49 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: wwn
+    env: production
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          host: wwn-mon
+
+  - job_name: node-exporter-wwn-prod
+    static_configs:
+      - targets: ["10.100.100.21:9101"]
+        labels:
+          host: wwn-prod
+          service: node-exporter
+
+  - job_name: node-exporter-wwn-mon
+    static_configs:
+      - targets: ["10.100.100.22:9101"]
+        labels:
+          host: wwn-mon
+          service: node-exporter
+
+  # TODO: Backend- und Pyworkers-Metrics. Aktuell binden die Container ihre
+  # Ports nur auf 127.0.0.1 (siehe app-Rolle compose.prod.yml.j2), also nicht
+  # von wwn-mon erreichbar. Optionen:
+  #   (a) zweites Port-Binding auf 10.100.100.21 mit ufw-Restrict zu
+  #       10.100.100.22
+  #   (b) Pull-Sidecar (vmagent o. ä.) auf wwn-prod, das remote-write zu
+  #       diesem Prometheus macht
+  # Entscheidung in Folge-PR.
+  # - job_name: backend
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["10.100.100.21:8080"]
+  #       labels:
+  #         host: wwn-prod
+  #         service: backend
+  # - job_name: pyworkers
+  #   static_configs:
+  #     - targets: ["10.100.100.21:9100"]
+  #       labels:
+  #         host: wwn-prod
+  #         service: pyworkers

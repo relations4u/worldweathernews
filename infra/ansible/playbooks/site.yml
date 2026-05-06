@@ -20,6 +20,12 @@
   roles:
     - monitoring-agent
 
+- name: Central monitoring stack on wwn-mon
+  hosts: mon
+  become: true
+  roles:
+    - monitoring-stack
+
 - name: Application stack on app hosts only
   hosts: app
   become: true
