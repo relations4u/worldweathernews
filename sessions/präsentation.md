@@ -374,6 +374,27 @@ flowchart TD
 
 ## 10. Aktueller Stand und Live-Demo
 
+### Effizienz-Vergleich — mit KI vs. ohne KI
+
+| Phase                       | Mit KI (Sessions) | Ohne KI (Solo-Senior-Schätzung) | Faktor     |
+| --------------------------- | ----------------- | ------------------------------- | ---------- |
+| A — Fundament (S 1–2)       | ~0,5 Tage         | 3–5 Tage                        | ~6–10×     |
+| B — Services (S 3–6)        | ~1 Tag            | 12–18 Tage                      | ~12–18×    |
+| C — CI/CD + Release (S 7–9) | ~1 Tag            | 8–12 Tage                       | ~8–12×     |
+| D — Operations (S 10–12)    | ~2,5 Tage         | 18–25 Tage                      | ~7–10×     |
+| **Gesamt**                  | **~5 Tage**       | **~40–60 Tage**                 | **~8–12×** |
+
+Annahmen: Solo-Senior-Developer, der alle Architektur-Entscheidungen
+selbst trifft, alle Stolpersteine sequenziell entdeckt (statt parallel
+zur Diagnose) und sich bei unbekannten Tools (bpg/proxmox, cosign-
+keyless, sqlc, oapi-codegen 3.1, SOPS+age, Caddy `network_mode: host`)
+durch die jeweiligen Docs liest. KI-Stunden enthalten **nicht** den
+Maintainer-Aufwand für Verifikation, manuelle Server-Schritte
+(Snapshots, sudo-TTY-Sessions, Cloudflare-DNS), Cross-Reading der
+generierten Doku und die Architektur-Hoheit — die bleiben Mensch.
+
+### Live-Stand
+
 - **Live unter <https://research.worldweathernews.com>** (Frontend) und
   <https://api.research.worldweathernews.com/api/v1/ping> (Backend).
 - **v0.0.2 in Production:** alle drei Services healthy, alle vier
