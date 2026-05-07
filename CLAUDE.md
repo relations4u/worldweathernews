@@ -556,6 +556,7 @@ Diese Fragen sind im Verlauf der Setup-Phase entschieden worden:
 - ✅ **Apex-Strategie**: Cloudflare CNAME-Flattening
 - ✅ **Mail-Provider**: ProtonMail (kostenpflichtig, Domain `worldweathernews.com`
   verified, MX/DKIM/SPF/DMARC aktiv konfiguriert)
+- ✅ **Lizenz**: AGPL-3.0 (in Session 12 entschieden, siehe `LICENSE`)
 
 ### Entscheidungen ab 2026-05-06 (Caddy-Online + Session 11)
 
@@ -845,11 +846,12 @@ referenziert für eventuelle Cloudflare-Universal-SSL-Aktivierung später.
 - [ ] i18n-Library: svelte-i18n vs. Paraglide vs. Inlang — Entscheidung
       in der ersten Feature-Session.
 - [ ] Backup-Ziel: S3-kompatibel (Hetzner Storage Box?), eigenes NAS, BorgBase?
-      Entscheidung in Session 12 (Runbook). Empfehlung: Proxmox Backup Server
-      als eigene VM auf demselben Host, plus externer Off-Site-Sync.
-- [ ] Lizenz: vermutlich proprietär, evtl. AGPL für Backend, MIT für Schemas.
-      Entscheidung am Ende von Session 12.
-- [ ] Sentry vs. GlitchTip — Entscheidung in Session 10 (Observability).
+      Empfehlung im `docs/backlog.md` als Operations-Punkt: Proxmox Backup
+      Server als eigene VM auf demselben Host, plus externer Off-Site-Sync.
+- [ ] Sentry vs. GlitchTip — bewusst aus Session 10c rausgehalten. Aktuelle
+      Telemetrie: Logs via Loki, Traces via Tempo. Error-Tracking-Tool kommt
+      in der Feature-Phase, wenn Application-Code Error-Capture-fähig ist
+      (z. B. Sentry-SDK in Backend/Frontend integriert).
 
 Wenn eine dieser Fragen für deine Aufgabe relevant wird: **fragen**, nicht annehmen.
 
@@ -864,7 +866,7 @@ definierten Aufgaben. Bei Abweichung: zurück zur Datei, fragen.
 Stand der Sessions wird in `sessions/STATUS.md` gepflegt — am Ende jeder Session
 ein kurzer Eintrag.
 
-### Aktueller Status (5. Mai 2026)
+### Aktueller Status (6. Mai 2026)
 
 | Phase | Session                                            | Status                                                     |
 | ----- | -------------------------------------------------- | ---------------------------------------------------------- |
@@ -1012,7 +1014,11 @@ für Feature-Sessions wird aufgebaut, sobald wir dort ankommen.
   v2-Binary, sonst "can't load config" mit verwirrenden Versions-Hinweisen
 - **`go mod tidy` ergänzt `toolchain`-Zeile** wenn Dependencies höhere Go-Version
   verlangen — alle Quellen gleichziehen
-- **Fine-grained PATs** statt Classic für ghcr.io — mehr Kontrolle
+- **Fine-grained PATs unterstützen ghcr.io NICHT** — die Permission „Packages"
+  existiert in der Fine-grained-Welt nicht (seit Jahren in „Beta", siehe
+  GitHub-Community-Discussions). Für ghcr-Pull/Push klassischen PAT mit
+  `read:packages` bzw. `write:packages` Scope nutzen. Username im docker-login
+  ist der persönliche User (`hwrichter`), nicht der Org-Name (`relations4u`).
 - **Branch-Protection erst NACH Session 8** aktivieren, sonst eigene erste
   Commits blockiert
 - **mise-Hook in zsh aktivieren**: `eval "$(mise activate zsh)"` in `~/.zshrc`
@@ -1128,15 +1134,15 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   Proton-Verification. DMARC verschärft von minimalem `p=quarantine` auf
   vollen Record mit `rua`, `sp`, `aspf=s`, `adkim=s`. Transactional-Mail
   separat für später vorgemerkt.
-- - **2026-05-05 (Setup-Phase)** — Sessions 8 und 9 abgeschlossen, Session 10
-    begonnen mit Aufteilung in 10a (wwn-prod + Caddy) und 10b (wwn-mon +
-    Observability-Stack). Entscheidung: wwn-mon als separate VM (4 GB) statt
-    Co-Location mit wwn-prod — bessere Telemetrie-Isolation bei Crashes,
-    saubere Trennung der I/O-Profile. Setup-Anleitungen `vm-prod-setup.md`
-    und `vm-mon-setup.md` erstellt. Caddy-Konfiguration mit HSTS-Header
-    (max-age=31536000; includeSubDomains, ohne preload bis Plattform stabil),
-    HTTP/3 via UDP/443, Security-Headers (X-Frame-Options, Referrer-Policy,
-    Permissions-Policy). HTTP-01-Challenge für Let's Encrypt (Port 80 offen).
+- **2026-05-05 (Setup-Phase)** — Sessions 8 und 9 abgeschlossen, Session 10
+  begonnen mit Aufteilung in 10a (wwn-prod + Caddy) und 10b (wwn-mon +
+  Observability-Stack). Entscheidung: wwn-mon als separate VM (4 GB) statt
+  Co-Location mit wwn-prod — bessere Telemetrie-Isolation bei Crashes,
+  saubere Trennung der I/O-Profile. Setup-Anleitungen `vm-prod-setup.md`
+  und `vm-mon-setup.md` erstellt. Caddy-Konfiguration mit HSTS-Header
+  (max-age=31536000; includeSubDomains, ohne preload bis Plattform stabil),
+  HTTP/3 via UDP/443, Security-Headers (X-Frame-Options, Referrer-Policy,
+  Permissions-Policy). HTTP-01-Challenge für Let's Encrypt (Port 80 offen).
 
   **Anmerkung 6. Mai:** `includeSubDomains` wurde am 6. Mai gestrichen
   (siehe „Beantwortete Entscheidungen ab 2026-05-06"). Begründung:
@@ -1155,17 +1161,25 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   10b verschoben auf Caddy-Online und 10c auf Observability — Sessionplan
   entsprechend angepasst, Phase 11 (Ansible) bleibt ausstehend bis Caddy
   manuell läuft, dann als Referenz für Playbook-Verifikation.
-- **2026-05-06 (Session 12 — Doku-Finalisierung, Setup-Phase abgeschlossen)** —
-  Vier Doku-Tranchen gemerged (#33..#36): README rewrite + CONTRIBUTING,
-  architecture.md mit Mermaid-Diagramm, development.md mit How-Tos,
-  deployment.md (Bootstrap, Folge-Deploys, Rollback) und runbook.md mit
-  10 Szenarien (Szenario 2 ist exakt das „Backend offline / Failed to
-  fetch"-Diagnose-Pattern aus der 11a-Pipeline), ADRs 0002–0005 im
-  MADR-Format, AGPL-3.0 LICENSE, docs/backlog.md als low-ceremony
-  Folge-Tracker, In-Context-TODO-Triage. Damit alle step12.md-Erfolgs-
-  Kriterien ✅ und die initiale Setup-Phase (Sessions 1–12) formal
-  abgeschlossen.
-
+- **2026-05-06 (Caddy live + Session-11-Skelett)** — Caddy auf wwn-prod
+  als eigenständiger Stack (`/srv/wwn/caddy`, `network_mode: host`)
+  deployed; vier Let's-Encrypt-Zertifikate ausgestellt (Apex, www,
+  research, api.research). HSTS bewusst **ohne** `includeSubDomains`
+  (Abweichung vom 5.-Mai-Plan, dokumentiert oben in Beantwortete
+  Entscheidungen). Snapshot `caddy-online` gesetzt. Session 11 als
+  Code-Skelett geliefert (Feature-Branch + PR): `.sops.yaml` mit
+  age-Pubkey, sechs verschlüsselte Demo-Secrets unter
+  `infra/secrets/production/`, Pre-commit-Hook
+  `forbid-unencrypted-secrets`, vier Ansible-Rollen
+  (`common`/`docker`/`app`/`monitoring-agent`), drei Playbooks
+  (`site`/`deploy`/`rollback`), Terraform-Skelett mit `bpg/proxmox`
+  aktiv und `hetznercloud/hcloud` als Migrations-Stub, `scripts/deploy.sh`-
+  Wrapper mit production-Confirmation. Tooling-Pins ergänzt: terraform
+  1.15, sops 3.12, ansible-core 2.20, ansible-lint 26.4. Validierung
+  lokal grün (ansible-lint, --syntax-check, terraform fmt/validate,
+  pre-commit). Tatsächliches Server-Apply bleibt Maintainer-Hausaufgabe
+  — `terraform import` der bestehenden VMs vor dem ersten `apply`
+  dokumentiert.
 - **2026-05-06 (Session 11a — Komplettes Deployment live)** — wwn-prod
   und wwn-mon vollständig via Ansible bootstrapped, App-Stack v0.0.1-rc4
   läuft auf wwn-prod (backend/frontend/pyworkers alle healthy), zentraler
@@ -1186,23 +1200,34 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   und Ansible-Handler). Frontend-Healthcheck wechselt von `localhost` auf
   `127.0.0.1` (busybox-wget resolved IPv6, Server bindet IPv4). PR-Reihe
   #25–#32, Tag v0.0.1-rc4.
-
-- **2026-05-06 (Caddy live + Session-11-Skelett)** — Caddy auf wwn-prod
-  als eigenständiger Stack (`/srv/wwn/caddy`, `network_mode: host`)
-  deployed; vier Let's-Encrypt-Zertifikate ausgestellt (Apex, www,
-  research, api.research). HSTS bewusst **ohne** `includeSubDomains`
-  (Abweichung vom 5.-Mai-Plan, dokumentiert oben in Beantwortete
-  Entscheidungen). Snapshot `caddy-online` gesetzt. Session 11 als
-  Code-Skelett geliefert (Feature-Branch + PR): `.sops.yaml` mit
-  age-Pubkey, sechs verschlüsselte Demo-Secrets unter
-  `infra/secrets/production/`, Pre-commit-Hook
-  `forbid-unencrypted-secrets`, vier Ansible-Rollen
-  (`common`/`docker`/`app`/`monitoring-agent`), drei Playbooks
-  (`site`/`deploy`/`rollback`), Terraform-Skelett mit `bpg/proxmox`
-  aktiv und `hetznercloud/hcloud` als Migrations-Stub, `scripts/deploy.sh`-
-  Wrapper mit production-Confirmation. Tooling-Pins ergänzt: terraform
-  1.15, sops 3.12, ansible-core 2.20, ansible-lint 26.4. Validierung
-  lokal grün (ansible-lint, --syntax-check, terraform fmt/validate,
-  pre-commit). Tatsächliches Server-Apply bleibt Maintainer-Hausaufgabe
-  — `terraform import` der bestehenden VMs vor dem ersten `apply`
-  dokumentiert.
+- **2026-05-06 (Session 12 — Doku-Finalisierung, Setup-Phase abgeschlossen)** —
+  Vier Doku-Tranchen gemerged (#33..#36): README rewrite + CONTRIBUTING,
+  architecture.md mit Mermaid-Diagramm, development.md mit How-Tos,
+  deployment.md (Bootstrap, Folge-Deploys, Rollback) und runbook.md mit
+  10 Szenarien (Szenario 2 ist exakt das „Backend offline / Failed to
+  fetch"-Diagnose-Pattern aus der 11a-Pipeline), ADRs 0002–0005 im
+  MADR-Format, AGPL-3.0 LICENSE, docs/backlog.md als low-ceremony
+  Folge-Tracker, In-Context-TODO-Triage. Damit alle step12.md-Erfolgs-
+  Kriterien ✅ und die initiale Setup-Phase (Sessions 1–12) formal
+  abgeschlossen.
+- **2026-05-06 (Pflege-Pass nach Session 12)** — sechs Drift-Korrekturen
+  in einer Tranche eingebaut: (1) Pflicht-Pins-Tabelle um Terraform 1.15,
+  sops 3.12, ansible-core 2.20, ansible-lint 26.4 ergänzt — Session 11
+  hatte sie im Changelog erwähnt, aber nicht in der zentralen Tabelle
+  geführt. (2) Neue Sektion „App-Release-Pinning" als Abgrenzung zum
+  Toolchain-Pinning, dokumentiert v0.0.2 als aktuellen Live-Stand und
+  den `default_versions: 0.0.0`-Fail-fast-Marker. (3) „Wo finde ich
+  was" um `docs/backlog.md`, ADR-Enumeration (0001–0005) und `LICENSE`
+  erweitert. (4) HSTS-Strategie disambiguiert: Setup-Phase-Changelog-
+  Eintrag um „Anmerkung 6. Mai" ergänzt, der den 5.-Mai-Plan
+  (`includeSubDomains`) explizit als überholt markiert. (5) Status-
+  Header-Datum auf 6. Mai korrigiert (war noch auf 5. Mai). (6) Offene-
+  Fragen-Sektion bereinigt: Lizenz als AGPL-3.0 entfernt (entschieden,
+  in „Beantwortete Entscheidungen" verschoben), Sentry/GlitchTip-Status
+  ehrlich als „in Feature-Phase, Telemetrie aktuell via Loki/Tempo"
+  formuliert, Backup-Ziel verweist auf `docs/backlog.md` statt auf
+  abgeschlossene Session 12. Plus Korrektur in „Häufige Fallen":
+  alter Eintrag „Fine-grained PATs statt Classic für ghcr.io — mehr
+  Kontrolle" war faktisch falsch (Fine-grained PATs unterstützen
+  Packages-Permission seit Jahren nicht), ersetzt durch korrekte
+  Anweisung „Classic PAT mit `read:packages`/`write:packages` Scope".

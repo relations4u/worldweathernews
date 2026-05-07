@@ -1,8 +1,24 @@
 # Präsentation — worldweathernews.com Setup-Phase
 
-Agenda + Stichpunkte für eine Präsentation über Ziele, Vorgehen, Schritte
+Agenda + Stichpunkte - Präsentation über Ziele, Vorgehen, Schritte
 und aufgefallene Probleme. Stand 2026-05-07. Detaillierte Materialsammlung
 pro Session: [`work-done.md`](work-done.md).
+
+---
+
+## Kontakt
+
+<img src="logo2.png" alt="H.W. Richter Logo" width="150">
+
+Heinz Wolfgang Richter\
+Consulting\
+Lessingstraße 47\
+14482 Potsdam
+
+Telefon: [+49 331 71 93 47](tel:+49331719347)\
+E-Mail: [info@hwrichter.de](mailto:info@hwrichter.de)\
+Web: [https://hwrichter.de](https://hwrichter.de)\
+LinkedIn: [https://www.linkedin.com/in/hwrichter/](https://www.linkedin.com/in/hwrichter/)
 
 ---
 
