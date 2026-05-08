@@ -50,9 +50,8 @@
 	</ul>
 	<p class="mt-3 text-slate-600">
 		Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an Betriebssicherheit,
-		Fehleranalyse, Schutz vor Missbrauch).
-		<!-- TODO Maintainer: Speicherdauer der Logs verbindlich festlegen — Vorschlag 14 Tage rolling, danach Löschung. Aktuell ist Caddy-Default ohne explizite Rotation. -->
-		Speicherdauer: maximal 14 Tage, danach automatische Löschung.
+		Fehleranalyse, Schutz vor Missbrauch). Speicherdauer: maximal 14 Tage, danach automatische
+		Löschung.
 	</p>
 
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">4. Cookies und lokaler Speicher</h2>

@@ -31,7 +31,14 @@
 				</a>
 			</dd>
 		</div>
-		<!-- TODO Maintainer: Telefonnummer optional, falls gewünscht eintragen. -->
+		<div class="flex gap-2">
+			<dt class="font-medium text-slate-900">Telefon:</dt>
+			<dd>
+				<a href="tel:+49331719207" class="underline underline-offset-2 hover:no-underline">
+					+49 331 719207
+				</a>
+			</dd>
+		</div>
 	</dl>
 
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">
