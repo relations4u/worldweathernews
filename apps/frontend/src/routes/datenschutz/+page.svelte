@@ -16,8 +16,9 @@
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">1. Verantwortlicher</h2>
 	<address class="mt-3 not-italic text-slate-600">
 		<strong class="block text-slate-900">Heinz W. Richter</strong>
-		<!-- TODO Maintainer: Anschrift wie im Impressum einfügen. -->
-		<span>[Anschrift wie im Impressum]</span><br />
+		<span>Lessingstraße 47</span><br />
+		<span>14482 Potsdam</span><br />
+		<span>Deutschland</span><br />
 		E-Mail:
 		<a
 			href="mailto:ops@worldweathernews.com"
@@ -143,7 +144,14 @@
 		<li>Widerspruchsrecht gegen die Verarbeitung (Art. 21 DSGVO)</li>
 		<li>
 			Recht auf Beschwerde bei einer Aufsichtsbehörde (Art. 77 DSGVO). Zuständig ist die
-			Aufsichtsbehörde des Bundeslandes, in dem der Verantwortliche seinen Sitz hat.
+			Landesbeauftragte für den Datenschutz und für das Recht auf Akteneinsicht Brandenburg (LDA
+			Brandenburg), Stahnsdorfer Damm 77, 14532 Kleinmachnow,
+			<a
+				href="mailto:Poststelle@LDA.Brandenburg.de"
+				class="underline underline-offset-2 hover:no-underline"
+			>
+				Poststelle@LDA.Brandenburg.de
+			</a>.
 		</li>
 	</ul>
 	<p class="mt-3 text-slate-600">

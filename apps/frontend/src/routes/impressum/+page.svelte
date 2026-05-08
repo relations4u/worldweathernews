@@ -13,9 +13,8 @@
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">Diensteanbieter</h2>
 	<address class="mt-3 not-italic text-slate-600">
 		<strong class="block text-slate-900">Heinz W. Richter</strong>
-		<!-- TODO Maintainer: ladungsfähige Anschrift einfügen — Straße + Hausnummer, PLZ + Ort. -->
-		<span>[Straße und Hausnummer]</span><br />
-		<span>[PLZ Ort]</span><br />
+		<span>Lessingstraße 47</span><br />
+		<span>14482 Potsdam</span><br />
 		<span>Deutschland</span>
 	</address>
 
