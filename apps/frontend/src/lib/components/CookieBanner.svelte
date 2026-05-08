@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
 	import { cookieConsent } from '$lib/stores/cookieConsent.svelte';
 
 	let functional = $state(false);
@@ -39,16 +40,14 @@
 				Wir nutzen ausschließlich technisch notwendige Cookies für den Betrieb dieser Plattform.
 				Optionale Kategorien sind aktuell deaktiviert. Sie können diese Einstellung jederzeit über
 				den Footer-Link
-				<!-- Routes erst ab 1.1 vorhanden — bis dahin plain href, dann auf resolve() umstellen. -->
-				<!-- eslint-disable svelte/no-navigation-without-resolve -->
-				<a href="/cookie-einstellungen" class="underline underline-offset-2 hover:no-underline"
-					>Cookie-Einstellungen</a
+				<a
+					href={resolve('/cookie-einstellungen')}
+					class="underline underline-offset-2 hover:no-underline">Cookie-Einstellungen</a
 				>
 				ändern. Details in der
-				<a href="/datenschutz" class="underline underline-offset-2 hover:no-underline"
+				<a href={resolve('/datenschutz')} class="underline underline-offset-2 hover:no-underline"
 					>Datenschutzerklärung</a
 				>.
-				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</p>
 
 			<fieldset class="mt-4 space-y-2">
