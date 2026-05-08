@@ -7,3 +7,12 @@ pnpm-lock.yaml
 
 # Generierte Files (siehe packages/api-schema/Makefile)
 src/lib/api/types.gen.ts
+
+# Paraglide-generierte Files (kompiliert aus messages/ + project.inlang/)
+src/lib/paraglide/
+project.inlang/.meta.json
+project.inlang/README.md
+
+# mdsvex-Inhalte: prettier kann Svelte-Components in .md-Dateien zerlegen
+# (fügt Leerzeilen innerhalb von Tags ein) — Authoring-Pflege manuell.
+src/content/
