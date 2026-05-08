@@ -1,0 +1,18 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"site_title": "worldweathernews",
+	"site_tagline": "Weather, climate, community",
+	"nav_about": "About",
+	"nav_contact": "Contact",
+	"nav_skip_to_main": "Skip to main content",
+	"locale_switcher_label": "Language",
+	"locale_de": "Deutsch",
+	"locale_en": "English",
+	"footer_imprint": "Imprint",
+	"footer_privacy": "Privacy",
+	"footer_accessibility": "Accessibility",
+	"footer_cookies": "Cookie settings",
+	"footer_attribution": "Sources & Attribution",
+	"footer_contact": "Contact",
+	"footer_research_phase": "Research phase"
+}

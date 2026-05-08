@@ -39,7 +39,9 @@ export default [
 			'coverage/',
 			'pnpm-lock.yaml',
 			// Generated von packages/api-schema (openapi-typescript).
-			'src/lib/api/types.gen.ts'
+			'src/lib/api/types.gen.ts',
+			// Paraglide-generierte i18n-Files (kompiliert aus messages/ + project.inlang/).
+			'src/lib/paraglide/'
 		]
 	}
 ];
