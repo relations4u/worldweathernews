@@ -10,9 +10,21 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<title>worldweathernews — Wetter, Klima, Community</title>
+	<meta
+		name="description"
+		content="worldweathernews.com aggregiert Wetter- und Klimadaten aus nationalen Wetterdiensten weltweit für eine Community von Beobachtern und Wetter-Interessierten."
+	/>
 </svelte:head>
 
 <div class="flex min-h-screen flex-col bg-white text-slate-900">
+	<a
+		href="#main-content"
+		class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-slate-900 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+	>
+		Zum Hauptinhalt springen
+	</a>
+
 	<ResearchBanner />
 
 	<header class="border-b border-slate-200">
@@ -28,7 +40,7 @@
 		</div>
 	</header>
 
-	<main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+	<main id="main-content" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
 		{@render children()}
 	</main>
 
@@ -46,7 +58,7 @@
 				>
 				<a href={resolve('/kontakt')} class="hover:text-slate-900">Kontakt</a>
 			</nav>
-			<p class="mt-4 text-xs text-slate-500">
+			<p class="mt-4 text-xs text-slate-600">
 				© {new Date().getFullYear()} worldweathernews — Forschungs-Phase
 			</p>
 		</div>
