@@ -57,6 +57,26 @@ Stand: 2026-05-06.
   gar nicht aktiviert oder spezifische Sub-Funktion Paid. Voraussetzung
   für den vorigen Punkt (Cloudflare-Worker als CDN-Edge).
 
+## CMS
+
+- **Iteration 1.3b — Image-Pipeline** — Pre-Signed-S3-URL-Worker,
+  WASM-libvips Konvertierung zu WebP + responsive Sizes
+  (320/640/1280/1920) + EXIF-Strip, Sveltia `media_library`-Switch.
+  Voraussetzung: 1.3a stabil, mindestens eine Bild-bedürftige Page
+  in Sicht (Blog 1.4). Code-Stellen: zweiter Cloudflare-Worker
+  `wwn-media-upload` parallel zu `wwn-cms-auth`, plus
+  `apps/frontend/static/admin/config.yml` (`media_folder`).
+- **Decap-Fallback dokumentiert halten** — falls Sveltia-Wartung
+  jemals stagniert: drop-in-kompatibel über Loader-Script-Tausch
+  in `apps/frontend/static/admin/index.html`. Auth-Worker und
+  `config.yml` bleiben identisch.
+- **HSTS double-header auf media.worldweathernews.com** — Caddy
+  und Hetzner Object Storage senden beide `Strict-Transport-
+Security`. Browser akzeptieren nur das erste, Doppelung ist
+  technisch egal, kosmetisch unsauber. Optionen: Hetzner-Header
+  in Caddy strippen (`header_down -Strict-Transport-Security`)
+  oder Caddy-Header weglassen für diesen Vhost.
+
 ## Tooling / Build
 
 - **Mailhog → Mailpit** — Mailhog ist amd64-only, läuft auf Apple

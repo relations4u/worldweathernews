@@ -1,0 +1,14 @@
+name = "wwn-cms-auth"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+workers_dev = true
+
+[vars]
+# Bare hostnames that may initiate OAuth (CSV). Subdomains of listed hosts are
+# accepted automatically. Add staging/preview hosts here when introduced.
+ALLOWED_DOMAINS = "worldweathernews.com,research.worldweathernews.com,localhost"
+
+# GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET come from Wrangler secrets:
+#   wrangler secret put GITHUB_CLIENT_ID
+#   wrangler secret put GITHUB_CLIENT_SECRET
+# Both rotate together when the GitHub OAuth App is regenerated.
