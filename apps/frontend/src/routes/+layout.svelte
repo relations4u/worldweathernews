@@ -1,22 +1,29 @@
 <script lang="ts">
 	import '../app.css';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import * as m from '$lib/paraglide/messages';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import favicon from '$lib/assets/favicon.svg';
 	import ResearchBanner from '$lib/components/ResearchBanner.svelte';
 	import CookieBanner from '$lib/components/CookieBanner.svelte';
 	import LocaleSwitcher from '$lib/components/LocaleSwitcher.svelte';
 
 	let { children } = $props();
+
+	const ogLocale = $derived(getLocale() === 'en' ? 'en_US' : 'de_DE');
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<title>{m.site_title()} — {m.site_tagline()}</title>
-	<meta
-		name="description"
-		content="worldweathernews.com aggregiert Wetter- und Klimadaten aus nationalen Wetterdiensten weltweit für eine Community von Beobachtern und Wetter-Interessierten."
-	/>
+	<meta name="description" content={m.site_tagline()} />
+	<meta property="og:title" content="{m.site_title()} — {m.site_tagline()}" />
+	<meta property="og:description" content={m.site_tagline()} />
+	<meta property="og:locale" content={ogLocale} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={page.url.href} />
+	<meta name="twitter:card" content="summary" />
 </svelte:head>
 
 <div class="flex min-h-screen flex-col bg-white text-slate-900">

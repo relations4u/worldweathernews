@@ -28,6 +28,22 @@ type MdsvexModule = {
 	metadata: PageMetadata;
 };
 
+// Liste aller Locales, in denen ein bestimmter Slug existiert.
+// Wird zur Build-Zeit aus dem Glob ermittelt und für hreflang-Tags genutzt.
+function listAvailableLocales(slug: string): Array<keyof typeof localeToFolder> {
+	const result: Array<keyof typeof localeToFolder> = [];
+	for (const [tag, folder] of Object.entries(localeToFolder) as Array<
+		[keyof typeof localeToFolder, string]
+	>) {
+		const path = `/src/content/pages/${folder}/${slug}.md`;
+		const mod = (modules as Record<string, MdsvexModule>)[path];
+		if (mod?.metadata?.status === 'published') {
+			result.push(tag);
+		}
+	}
+	return result;
+}
+
 export const load: PageLoad = ({ params }) => {
 	const locale = getLocale();
 	const folder = localeToFolder[locale] ?? 'de';
@@ -40,6 +56,7 @@ export const load: PageLoad = ({ params }) => {
 
 	return {
 		metadata: mod.metadata,
-		Content: mod.default
+		Content: mod.default,
+		availableLocales: listAvailableLocales(params.slug)
 	};
 };

@@ -1,15 +1,38 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import * as m from '$lib/paraglide/messages';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	let { data } = $props();
 	const Content = $derived(data.Content);
 	const metadata = $derived(data.metadata);
+	const availableLocales = $derived(data.availableLocales);
+
+	// Kanonischer (de-localisierter) Pfad — Basis für hreflang-Generierung.
+	const canonicalPath = $derived(`/${page.params.slug}`);
 </script>
 
 <svelte:head>
 	<title>{metadata.title} — worldweathernews</title>
 	{#if metadata.lead}
 		<meta name="description" content={metadata.lead} />
+		<meta property="og:description" content={metadata.lead} />
+	{/if}
+	<meta property="og:title" content={metadata.title} />
+	<meta property="og:type" content="article" />
+	{#each availableLocales as tag (tag)}
+		<link
+			rel="alternate"
+			hreflang={tag}
+			href={page.url.origin + localizeHref(canonicalPath, { locale: tag as 'de-de' | 'en' })}
+		/>
+	{/each}
+	{#if availableLocales.includes('de-de')}
+		<link
+			rel="alternate"
+			hreflang="x-default"
+			href={page.url.origin + localizeHref(canonicalPath, { locale: 'de-de' })}
+		/>
 	{/if}
 </svelte:head>
 
