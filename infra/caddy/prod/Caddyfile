@@ -43,3 +43,25 @@ api.research.worldweathernews.com {
 	# scheitert, Browser refused die echte Anfrage.
 	reverse_proxy 127.0.0.1:8080
 }
+
+# Media-Bucket-Proxy: Hetzner S3 routet nach Host-Header. Würde der Client-Host
+# (media.worldweathernews.com) durchgereicht, antwortet Hetzner 400 BadRequest
+# (kein Bucket dieses Namens). Wir rewriten Host auf den virtual-hosted
+# Bucket-Endpoint. Schreibzugriffe laufen NICHT über diesen Proxy — Sveltia
+# nutzt später pre-signed URLs direkt gegen den Bucket-Endpoint.
+media.worldweathernews.com {
+	import hsts
+	encode zstd gzip
+
+	@readonly method GET HEAD
+	handle @readonly {
+		reverse_proxy https://media-worldweathernews-prod.fsn1.your-objectstorage.com {
+			header_up Host media-worldweathernews-prod.fsn1.your-objectstorage.com
+		}
+	}
+
+	handle {
+		header Allow "GET, HEAD"
+		respond 405
+	}
+}

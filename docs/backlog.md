@@ -42,6 +42,20 @@ Stand: 2026-05-06.
 - **Container-Resource-Metrics** (cAdvisor / Docker-Stats-Exporter)
   und **postgres_exporter / redis_exporter** — der _Infra Overview_-
   Dashboard hat dafür Stubs.
+- **CDN/Edge-Cache vor `media.worldweathernews.com`** — aktuell
+  proxied Caddy auf wwn-prod direkt zum Hetzner-Bucket; jeder
+  Request läuft über den Heim-Anschluss, kein Edge-Cache. Optionen,
+  wenn Bandwidth oder Latenz drücken: (a) Cloudflare-Worker mit
+  Cache-API vor dem Hetzner-Endpoint (setzt Workers-Aktivierung
+  voraus, siehe nächster Punkt), (b) Migration zu Cloudflare R2 mit
+  nativer Worker-Binding-API (würde A.13 in `feature-decisions.md`
+  revidieren — DSGVO-Frage neu prüfen). Code-Stelle:
+  `infra/caddy/prod/Caddyfile` (Block `media.worldweathernews.com`).
+- **Cloudflare-Workers-Subscription-Status klären** — bei der
+  Iteration-1.1b-Recherche waren „Custom Domains" und „Routes" für
+  Workers im Cloudflare-Dashboard ausgegraut. Unklar ob Free-Tier
+  gar nicht aktiviert oder spezifische Sub-Funktion Paid. Voraussetzung
+  für den vorigen Punkt (Cloudflare-Worker als CDN-Edge).
 
 ## Tooling / Build
 
