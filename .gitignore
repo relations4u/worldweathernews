@@ -20,3 +20,8 @@ tmp/
 
 # Claude Code lokale Settings
 .claude/
+CLAUDE.local.md
+
+# AWS CLI install artifacts (local maintainer setup)
+aws/
+awscliv2.zip
