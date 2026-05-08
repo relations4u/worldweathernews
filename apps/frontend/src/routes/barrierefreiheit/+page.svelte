@@ -57,9 +57,29 @@
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">Durchsetzungsverfahren</h2>
 	<p class="mt-3 text-slate-600">
 		Sollten Sie auf eine unserer Antworten warten, oder wir keine zufriedenstellende Lösung anbieten
-		können, haben Sie das Recht, sich an die zuständige Aufsichtsbehörde für Barrierefreiheit zu
-		wenden.
-		<!-- TODO Maintainer: Zuständige Aufsichtsbehörde gemäß Wohnsitz-Bundesland einsetzen. Liste: bfit-bund.de oder das jeweilige Landesamt. -->
-		Die zuständige Aufsichtsbehörde wird hier nach Klärung des Bundeslands ergänzt.
+		können, haben Sie das Recht, sich an die Schlichtungsstelle nach § 16 BGG bei der Beauftragten
+		der Bundesregierung für die Belange von Menschen mit Behinderungen zu wenden:
 	</p>
+	<address class="mt-3 not-italic text-slate-600">
+		<strong class="block text-slate-900">Schlichtungsstelle nach dem BGG</strong>
+		bei der Beauftragten der Bundesregierung für die Belange von Menschen mit Behinderungen<br />
+		Mauerstraße 53<br />
+		10117 Berlin<br />
+		E-Mail:
+		<a
+			href="mailto:info@schlichtungsstelle-bgg.de"
+			class="underline underline-offset-2 hover:no-underline"
+		>
+			info@schlichtungsstelle-bgg.de
+		</a><br />
+		Web:
+		<a
+			href="https://www.schlichtungsstelle-bgg.de"
+			class="underline underline-offset-2 hover:no-underline"
+			rel="noopener noreferrer"
+			target="_blank"
+		>
+			www.schlichtungsstelle-bgg.de
+		</a>
+	</address>
 </section>
