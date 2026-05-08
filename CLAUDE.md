@@ -508,6 +508,10 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 | Media-Bucket-Doku              | `docs/media-storage.md`                                                                      |
 | Media-Bucket-Credentials       | `infra/secrets/production/media-storage.env`                                                 |
 | Media-Bucket-Policy + CORS     | `infra/object-storage/{bucket-policy,cors}.json`                                             |
+| CMS-Authoring-Guide            | `docs/cms.md`                                                                                |
+| Markdown-Content-Pages         | `apps/frontend/src/content/pages/{de,en}/<slug>.md`                                          |
+| Content-Components             | `apps/frontend/src/lib/content-components/`                                                  |
+| i18n-Messages                  | `apps/frontend/messages/{de-de,en}.json` + `apps/frontend/project.inlang/`                   |
 | Compose-Configs                | `infra/compose/`                                                                             |
 | Lychee-Ignores                 | `.lycheeignore`                                                                              |
 | Hosting-Hardware               | `docs/architecture.md` (Hardware-Übersicht)                                                  |
