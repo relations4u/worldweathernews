@@ -509,6 +509,9 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 | Media-Bucket-Credentials       | `infra/secrets/production/media-storage.env`                                                 |
 | Media-Bucket-Policy + CORS     | `infra/object-storage/{bucket-policy,cors}.json`                                             |
 | CMS-Authoring-Guide            | `docs/cms.md`                                                                                |
+| Sveltia-Loader                 | `apps/frontend/static/admin/index.html`                                                      |
+| Sveltia-Konfiguration          | `apps/frontend/static/admin/config.yml`                                                      |
+| CMS-OAuth-Worker               | `infra/cloudflare-worker-cms-auth/` (Cloudflare-Worker, Maintainer-Deploy)                   |
 | Markdown-Content-Pages         | `apps/frontend/src/content/pages/{de,en}/<slug>.md`                                          |
 | Content-Components             | `apps/frontend/src/lib/content-components/`                                                  |
 | i18n-Messages                  | `apps/frontend/messages/{de-de,en}.json` + `apps/frontend/project.inlang/`                   |

@@ -1,0 +1,144 @@
+# Sveltia CMS — Konfiguration für worldweathernews.com
+#
+# Iteration 1.3a: Text-Edit für bestehende Markdown-Pages, Image-Upload
+# bewusst deaktiviert (`media_folder: ""`). Bilder folgen in 1.3b mit
+# eigener Pre-Signed-S3-Pipeline und WASM-Optimierung.
+#
+# Auth-Endpoint:
+#   `base_url` zeigt auf den Cloudflare-Worker `wwn-cms-auth`. Bis der
+#   Worker deployed ist, bleibt der Wert ein Platzhalter — Login wird
+#   dann mit „Backend not reachable" abbrechen, was beabsichtigt ist
+#   (siehe infra/cloudflare-worker-cms-auth/README.md).
+#
+# Editorial-Workflow:
+#   `publish_mode: editorial_workflow` zwingt Sveltia, jeden Edit als
+#   Branch + Pull-Request zu ablegen. main bleibt PR-only, branch
+#   protection greift weiter, alle Edits gehen durch CI.
+---
+backend:
+  name: github
+  repo: relations4u/worldweathernews
+  branch: main
+  base_url: https://wwn-cms-auth.PLACEHOLDER.workers.dev
+  auth_endpoint: auth
+
+publish_mode: editorial_workflow
+
+# Image-Upload deaktiviert für 1.3a. Sveltia rendert die Drag-and-Drop-
+# Zone im Markdown-Editor trotzdem, aber Uploads schlagen fehl, weil
+# kein gültiges Ziel konfiguriert ist. In 1.3b wechseln wir auf
+# `media_library: { name: cloudimage }` mit Pre-Signed-URLs.
+media_folder: ''
+public_folder: ''
+
+# UI-Sprache der Sveltia-Oberfläche.
+locale: de
+
+site_url: https://worldweathernews.com
+display_url: https://worldweathernews.com
+logo_url: https://worldweathernews.com/favicon.svg
+
+collections:
+  - name: pages_de
+    label: Pages — Deutsch
+    label_singular: Page (DE)
+    description: >
+      Statische Pages auf der DE-Site (Methodik, Quellen-Attribution etc.).
+      Slug = URL-Pfad-Segment ohne führenden Slash. Im Markdown-Body bleibt
+      der `<script>`-Block am Anfang und die Component-Tags
+      (`<DataSourceCard>`, `<Callout>`) bestehen — nicht löschen.
+    folder: apps/frontend/src/content/pages/de
+    create: true
+    delete: false
+    extension: md
+    format: frontmatter
+    slug: '{{fields.slug}}'
+    media_folder: ''
+    fields:
+      - name: title
+        label: Titel
+        widget: string
+      - name: slug
+        label: Slug
+        widget: string
+        hint: 'URL-Pfad-Segment ohne Slash (z. B. methodik). Muss zum Dateinamen passen.'
+      - name: lang
+        label: Sprache
+        widget: hidden
+        default: de-de
+      - name: lead
+        label: Lead-Text
+        widget: text
+        required: false
+        hint: 'Untertitel + meta-description + og:description'
+      - name: updated_at
+        label: Letzte Änderung
+        widget: datetime
+        format: 'YYYY-MM-DD'
+        date_format: 'YYYY-MM-DD'
+        time_format: false
+        picker_utc: true
+        required: false
+      - name: status
+        label: Status
+        widget: select
+        options:
+          - draft
+          - published
+        default: draft
+        required: true
+      - name: body
+        label: Inhalt
+        widget: markdown
+        hint: '`<script>`-Block am Anfang und Component-Tags nicht entfernen. Bilder kommen in 1.3b.'
+
+  - name: pages_en
+    label: Pages — English
+    label_singular: Page (EN)
+    description: >
+      Static pages on the English site. Same conventions as the German
+      collection. Keep `<script>` block and component tags intact.
+    folder: apps/frontend/src/content/pages/en
+    create: true
+    delete: false
+    extension: md
+    format: frontmatter
+    slug: '{{fields.slug}}'
+    media_folder: ''
+    fields:
+      - name: title
+        label: Title
+        widget: string
+      - name: slug
+        label: Slug
+        widget: string
+        hint: 'URL path segment without leading slash. Must match filename.'
+      - name: lang
+        label: Language
+        widget: hidden
+        default: en
+      - name: lead
+        label: Lead
+        widget: text
+        required: false
+        hint: 'Subtitle + meta-description + og:description'
+      - name: updated_at
+        label: Last updated
+        widget: datetime
+        format: 'YYYY-MM-DD'
+        date_format: 'YYYY-MM-DD'
+        time_format: false
+        picker_utc: true
+        required: false
+      - name: status
+        label: Status
+        widget: select
+        options:
+          - draft
+          - published
+        default: draft
+        required: true
+      - name: body
+        label: Content
+        widget: markdown
+        hint: 'Do not remove the leading `<script>` block or component tags. Images come in 1.3b.'
