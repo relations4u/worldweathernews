@@ -365,6 +365,64 @@ externer Backup-Worker, siehe Backlog).
 
 ---
 
+### 11) "media.worldweathernews.com nicht erreichbar"
+
+**Symptome**: Bilder im Frontend laden nicht, `curl
+https://media.worldweathernews.com/site/<key>` gibt 4xx/5xx oder
+Timeout.
+
+**Diagnose-Reihenfolge** (von außen nach innen):
+
+```bash
+# 1) DNS — löst der Name auf gate.hw7.eu / Public-IP?
+dig +short media.worldweathernews.com
+# Erwartet: CNAME-Kette media → home → gate, am Ende eine A-Record IP.
+# Falls nicht: Cloudflare-DNS-Tab prüfen, CNAME media → home setzen,
+# Proxy AUS (graue Wolke).
+
+# 2) Caddy auf wwn-prod erreichbar und hat Cert?
+ssh hwr@10.100.100.21 'sudo -u deploy docker logs caddy --tail 100 | grep -i media'
+curl -vI https://media.worldweathernews.com/site/test.txt 2>&1 | grep -E '^(<|>)' | head
+# Cert sichtbar? Wenn TLS handshake fehlschlägt: Caddy holt LE-Cert
+# erst nach erstem HTTPS-Hit; ggf. minutenlang warten und nochmal.
+# `sudo -u deploy docker exec caddy ls /data/caddy/certificates/...`
+# zeigt ob LE-Issuance erfolgt ist.
+
+# 3) Caddy → Hetzner-Upstream — Host-Header korrekt rewritten?
+ssh hwr@10.100.100.21 \
+  'sudo -u deploy docker exec caddy curl -sI \
+   -H "Host: media-worldweathernews-prod.fsn1.your-objectstorage.com" \
+   https://media-worldweathernews-prod.fsn1.your-objectstorage.com/site/test.txt'
+# Erwartet: HTTP/2 200. Wenn 400 BadRequest: Bucket-Name in
+# infra/caddy/prod/Caddyfile (header_up Host …) prüfen.
+
+# 4) Bucket selbst — Object da, Public-Read aktiv?
+aws s3api head-object \
+  --bucket media-worldweathernews-prod \
+  --key site/test.txt \
+  --endpoint-url https://fsn1.your-objectstorage.com
+# Wenn 403 ohne Credentials, aber Object existiert: Bucket-Policy
+# fehlt oder Pfad nicht in der Whitelist (site/blog/pages/team).
+# Re-apply: aws s3api put-bucket-policy --bucket … --policy file://infra/object-storage/bucket-policy.json
+```
+
+**Häufigste Ursachen**:
+
+- DNS-Eintrag verschwunden oder versehentlich auf orange-Cloud
+  gestellt (Cloudflare-Proxy würde HTTP-01-Challenge brechen).
+- Caddy-Stack nach Update nicht neugestartet (Bind-Mount-Inode-Falle
+  — `infra/deploy/deploy-caddy.sh` macht `restart caddy`, nicht
+  `up -d`).
+- Hetzner-Credentials rotiert, Bucket-Policy versehentlich gelöscht.
+
+**Rollback / Workaround**: Wenn das Bucket-Routing kaputt ist und
+das Frontend Bilder zeigt, die jetzt nicht laden — Sveltia (kommt
+in Iteration 1.3) kennt einen Maintenance-Mode, bis dahin
+nicht relevant. Static Fallback-Bilder im Frontend-Build sind
+keine geplant.
+
+---
+
 ## Bekannte Lücken (in andere Sessions / Folge-PRs verschoben)
 
 - **Caddy-Metriken** sind in `prometheus.yml` auskommentiert — Caddy-
