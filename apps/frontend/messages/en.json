@@ -14,5 +14,11 @@
 	"footer_cookies": "Cookie settings",
 	"footer_attribution": "Sources & Attribution",
 	"footer_contact": "Contact",
-	"footer_research_phase": "Research phase"
+	"footer_research_phase": "Research phase",
+	"data_source_status_active": "active",
+	"data_source_status_planned": "planned",
+	"callout_info": "Info",
+	"callout_warning": "Warning",
+	"callout_note": "Note",
+	"page_last_updated": "Last updated"
 }

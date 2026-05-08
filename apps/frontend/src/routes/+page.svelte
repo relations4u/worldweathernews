@@ -23,14 +23,11 @@
 		>
 			Über die Plattform
 		</a>
-		<!-- /methodik-Route folgt in Iteration 1.2 — bis dahin plain href, dann auf resolve() umstellen. -->
-		<!-- eslint-disable svelte/no-navigation-without-resolve -->
 		<a
-			href="/methodik"
+			href={resolve('/methodik')}
 			class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
 		>
-			Methodik (folgt)
+			Methodik
 		</a>
-		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 	</div>
 </section>

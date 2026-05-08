@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
+
 	type Variant = 'info' | 'warning' | 'note';
 
 	type Props = {
@@ -24,16 +26,16 @@
 		}
 	};
 
-	const variantLabel: Record<Variant, string> = {
-		info: 'Hinweis',
-		warning: 'Achtung',
-		note: 'Notiz'
+	const variantLabel: Record<Variant, () => string> = {
+		info: m.callout_info,
+		warning: m.callout_warning,
+		note: m.callout_note
 	};
 </script>
 
 <aside class="not-prose my-4 rounded-md border px-4 py-3 text-sm {styles[variant].container}">
 	<p class="font-semibold {styles[variant].titleColor}">
-		{title ?? variantLabel[variant]}
+		{title ?? variantLabel[variant]()}
 	</p>
 	<div class="mt-1">
 		{@render children()}

@@ -12,3 +12,7 @@ src/lib/api/types.gen.ts
 src/lib/paraglide/
 project.inlang/.meta.json
 project.inlang/README.md
+
+# mdsvex-Inhalte: prettier kann Svelte-Components in .md-Dateien zerlegen
+# (fügt Leerzeilen innerhalb von Tags ein) — Authoring-Pflege manuell.
+src/content/

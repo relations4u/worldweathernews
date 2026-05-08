@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
+
 	let { data } = $props();
 	const Content = $derived(data.Content);
 	const metadata = $derived(data.metadata);
@@ -27,7 +29,7 @@
 
 	{#if metadata.updated_at}
 		<footer class="mt-12 border-t border-slate-200 pt-4 text-xs text-slate-500">
-			Letzte Aktualisierung: {metadata.updated_at}
+			{m.page_last_updated()}: {metadata.updated_at}
 		</footer>
 	{/if}
 </article>

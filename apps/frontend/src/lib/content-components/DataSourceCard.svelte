@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
+
 	type Status = 'active' | 'planned';
 
 	type Props = {
@@ -12,9 +14,9 @@
 
 	let { name, license, url, region, status = 'planned', children }: Props = $props();
 
-	const statusLabel: Record<Status, string> = {
-		active: 'aktiv',
-		planned: 'geplant'
+	const statusLabel: Record<Status, () => string> = {
+		active: m.data_source_status_active,
+		planned: m.data_source_status_planned
 	};
 </script>
 
@@ -44,7 +46,7 @@
 				? 'bg-emerald-100 text-emerald-900'
 				: 'bg-amber-100 text-amber-900'}"
 		>
-			{statusLabel[status]}
+			{statusLabel[status]()}
 		</span>
 	</header>
 
