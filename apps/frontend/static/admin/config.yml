@@ -5,10 +5,9 @@
 # eigener Pre-Signed-S3-Pipeline und WASM-Optimierung.
 #
 # Auth-Endpoint:
-#   `base_url` zeigt auf den Cloudflare-Worker `wwn-cms-auth`. Bis der
-#   Worker deployed ist, bleibt der Wert ein Platzhalter — Login wird
-#   dann mit „Backend not reachable" abbrechen, was beabsichtigt ist
-#   (siehe infra/cloudflare-worker-cms-auth/README.md).
+#   `base_url` zeigt auf den deployten Cloudflare-Worker `wwn-cms-auth`
+#   im Account `hwr-06e`. Source und Deploy-Workflow:
+#   infra/cloudflare-worker-cms-auth/README.md.
 #
 # Editorial-Workflow:
 #   `publish_mode: editorial_workflow` zwingt Sveltia, jeden Edit als
@@ -19,7 +18,7 @@ backend:
   name: github
   repo: relations4u/worldweathernews
   branch: main
-  base_url: https://wwn-cms-auth.PLACEHOLDER.workers.dev
+  base_url: https://wwn-cms-auth.hwr-06e.workers.dev
   auth_endpoint: auth
 
 publish_mode: editorial_workflow
