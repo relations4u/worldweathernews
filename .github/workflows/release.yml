@@ -54,7 +54,7 @@ jobs:
             context: apps/cms-auth
             build_args: ""
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: docker/setup-buildx-action@v3
 
@@ -148,7 +148,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [meta, build]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
