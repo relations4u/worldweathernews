@@ -21,6 +21,7 @@ dependencies = [
     "opentelemetry-instrumentation-asyncpg~=0.50b0",
     "opentelemetry-instrumentation-redis~=0.50b0",
     "opentelemetry-instrumentation-httpx~=0.50b0",
+    "urllib3>=2.7.0",  # CVE-2026-44431, CVE-2026-44432
 ]
 
 [project.scripts]

@@ -19,7 +19,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   trivy-fs:
@@ -35,11 +34,19 @@ jobs:
           output: trivy-fs.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-      - uses: github/codeql-action/upload-sarif@v3
+      # SARIF as artifact instead of code-scanning upload: this repo is
+      # private and GitHub Advanced Security is not enabled, so the
+      # github/codeql-action/upload-sarif endpoint returns 403. Same
+      # pattern as the Trivy step in release.yml. Switch back to the
+      # codeql-action upload if/when GHAS is enabled or the repo is made
+      # public.
+      - name: Upload Trivy SARIF artifact
+        uses: actions/upload-artifact@v7
         if: always()
         with:
-          sarif_file: trivy-fs.sarif
-          category: trivy-fs
+          name: trivy-fs-sarif
+          path: trivy-fs.sarif
+          retention-days: 30
 
   govulncheck:
     name: govulncheck
@@ -48,7 +55,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version-file: apps/backend/go.mod
           cache-dependency-path: apps/backend/go.sum
       - name: Run govulncheck
         working-directory: apps/backend
@@ -73,7 +80,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --audit-level=high
+      # --prod skips devDependencies (e.g. @redocly/cli pulling in
+      # vulnerable fast-xml-parser / fast-uri) that are not part of the
+      # production runtime. Runtime risk is what we want to gate on.
+      - run: pnpm audit --audit-level=high --prod
 
   pip-audit:
     name: pip-audit

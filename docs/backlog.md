@@ -103,35 +103,42 @@ Security`. Browser akzeptieren nur das erste, Doppelung ist
   Pipeline signiert beim Push, der Pull macht's nicht automatisch.
   Ansible-Task `cosign verify` vor dem `docker compose pull`
   ergänzen.
-- **Security-Scan-Workflow grün bekommen** —
-  `.github/workflows/security-scan.yml` schlägt auf main seit 11. Mai 2026 zuverlässig fehl, sobald er triggert
-  (`**/go.mod|go.sum|package.json|pnpm-lock.yaml|pyproject.toml|uv.lock|Dockerfile`).
-  Vier separate Befunde, die getrennt triagiert gehören:
-  1. **`Trivy upload-sarif` 403** — privates Repo ohne GitHub Advanced
-     Security; Endpoint `github/codeql-action/upload-sarif` braucht
-     GHAS oder ein public-Repo. Workflow akzeptiert das woanders bereits
-     (Trivy in `release.yml` lädt SARIF als Artifact statt zu code-scanning,
-     siehe Kommentar dort). In `security-scan.yml` denselben Pattern
-     anwenden.
-  2. **`pnpm audit --audit-level=high`** Exit 1 — hochstufige npm-
-     Findings in `apps/frontend/`. `pnpm audit` lokal ausführen, die
-     Treffer-Pakete identifizieren, je Treffer entscheiden:
-     bumpen, ersetzen, oder mit `pnpm audit --ignore <advisory-id>`
-     bewusst durchwinken mit Kommentar.
-  3. **`pip-audit`** Exit 1 in `apps/pyworkers/` — analog: vulnerable
-     Python-Dependencies prüfen, pinnen oder upgraden.
-  4. **`govulncheck`** Exit 3 — meldet Call-Chains durch
-     `http.HandlerFunc → template.Template.Execute` (über chi /
-     generated api.gen.go) und diverse `net.Resolver.*`-Pfade. Sieht
-     nach False-Positive aus (chi nutzt keine `text/template`-
-     Substitution), aber verifizieren: `govulncheck -mode binary`
-     gegen das gebaute Backend ausführen oder pro CVE-ID die echte
-     Codepfad-Aufrufkette gegenchecken. Wenn FP: `govulncheck.yaml`
-     mit Excludes ergänzen.
-     Zwischenzustand: Workflow läuft, schlägt aber durchgängig fehl —
-     d. h. Slack-/Mail-Alarme aus dem CI sind aktuell wertlos. Erst
-     fixen oder Workflow temporär auf `continue-on-error: true` setzen,
-     bevor wir uns auf seine Signale verlassen.
+- **Security-Scan-Workflow: behoben 2026-05-11** — die vier Befunde
+  aus dem ursprünglichen Backlog-Eintrag (Trivy-SARIF-403, pnpm audit,
+  pip-audit, govulncheck) sind durch die Triage-Runde im Branch
+  `chore/security-triage-post-v0-0-4` weggegangen. Die zugehörigen
+  Commits:
+  1. `af63796` (Go-Toolchain 1.25.10) — schließt govulncheck-CVEs
+     GO-2026-4982 / -4980 / -4971 / -4918 (Stdlib) und GO-2025-3770
+     (chi v5.2.5 in cms-auth).
+  2. `ce8da5c` (urllib3 >= 2.7.0) — schließt CVE-2026-44431 / -44432
+     im pyworkers-Dep-Graph; pip-audit damit grün.
+  3. `0e53867` (`security-scan.yml`-Fixes) — Trivy lädt SARIF jetzt
+     als Artifact (gleicher Pattern wie `release.yml`, weil
+     codeql-action/upload-sarif ohne GHAS auf privaten Repos 403
+     liefert); pnpm audit läuft mit `--prod`, weil die hochstufigen
+     Findings transitiv durch `@redocly/cli` kamen — Build-only-Tooling,
+     kein Runtime-Risiko.
+
+  Bewusst aus der Runde rausgelassen (Folge-Iterationen):
+  - **devDep-Updates `@redocly/cli`** — pulls vulnerable
+    `fast-xml-parser` und `fast-uri` via `redoc → @redocly/openapi-core
+→ @redocly/ajv`. Mit `--prod` aus dem CI-Gate raus, aber im lokalen
+    Build trotzdem im node_modules-Tree. Als eigene devDep-Pflege-
+    Iteration auf die aktuelle `@redocly/cli`-Major (oder Migration
+    zu `vacuum` / `spectral`) anstoßen, sobald die nächste
+    OpenAPI-Schema-Pflege ansteht.
+  - **CodeQL-Action v3 → v4 Migration** —
+    `github/codeql-action/*` ist bei v4. Wir nutzen `@v3` nach den
+    Workflow-Fixes nirgends mehr (upload-sarif ist raus). Falls wir
+    CodeQL irgendwo neu hinzufügen, direkt mit v4 anfangen, nicht
+    aus alten Beispielen kopieren.
+  - **SARIF-Konsumenten-Frage** — `release.yml` und `security-scan.yml`
+    legen Trivy-SARIF jetzt als Artifact ab, ohne dass etwas die liest.
+    Wenn GHAS aktiviert wird oder das Repo public geht: zurück auf
+    `github/codeql-action/upload-sarif@v4` (und die `security-events:
+write`-Permission wieder rein). Bis dahin SARIF manuell ziehen,
+    wenn Trivy rot wird — Hinweis in beiden Workflow-Files vorhanden.
 
 ## Produkt / Features (gehören eigentlich nicht hier rein, aber als Reminder)
 
