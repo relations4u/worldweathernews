@@ -54,7 +54,7 @@ jobs:
         run: uv run pytest --cov=pyworkers --cov-report=xml
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pyworkers-coverage
           path: apps/pyworkers/coverage.xml
