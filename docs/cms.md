@@ -340,9 +340,11 @@ sind bewusst nicht im Code automatisiert, weil sie OAuth-Secrets erfordern:
    damit das Let's-Encrypt-Cert für den neuen Host ausgestellt wird.
 5. **Login testen** auf <https://worldweathernews.com/admin/>.
 
-Nach erfolgreichem Cutover: Cloudflare-Worker `wwn-cms-auth` löschen
-(`wrangler delete` im Account `hwr-06e`), Verzeichnis
-`infra/cloudflare-worker-cms-auth/` aus dem Repo entfernen.
+Cutover wurde am 11. Mai 2026 abgeschlossen: Cloudflare-Worker
+`wwn-cms-auth` via `wrangler delete` im Account `hwr-06e` entfernt,
+Source unter `infra/cloudflare-worker-cms-auth/` aus dem Repo
+gelöscht. Sveltia-OAuth läuft seitdem ausschließlich gegen den
+self-hosted Service.
 
 ### Decap-Fallback
 
