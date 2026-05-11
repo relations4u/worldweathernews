@@ -1,6 +1,6 @@
 # Feature-Phase — Decisions Log
 
-Stand: 7. Mai 2026
+Stand: 11. Mai 2026 (Implementation-Stand v0.0.4, Track 1 fast komplett)
 Maintainer: Heinz W. Richter <hwr@relations4u.de>
 
 Dieses Dokument hält atomar fest, **was entschieden** ist. Begründungen kurz.
@@ -51,19 +51,32 @@ Verworfene Alternativen:
 
 ### A.4 — OAuth-Proxy-Hosting
 
-[DECIDED 2026-05-07, SUPERSEDED 2026-05-11] ~~**Cloudflare Worker** mit
-Sveltias offiziellem `sveltia-cms-auth` Worker.~~
+[SUPERSEDED 2026-05-11] Ursprünglich [DECIDED 2026-05-07]:
+~~**Cloudflare Worker** mit Sveltias offiziellem `sveltia-cms-auth`
+Worker.~~
 
-**Update 2026-05-11 — self-hosted Container statt CF-Worker.**
+**Neuer Stand seit 2026-05-11 — self-hosted Container statt CF-Worker.**
+
 Cloudflare-Worker-Abhängigkeit wurde im laufenden Betrieb als unerwünschte
 zusätzliche Drittanbieter-Verflechtung eingestuft (DNS bei Cloudflare ist
 ohnehin schon; ein weiterer kritischer Pfad dort hebt das Migrations-Risiko
 unnötig). Die Auth läuft jetzt als Go-Service `apps/cms-auth/` im App-
 Compose-Stack auf wwn-prod hinter Caddy unter `cms-auth.worldweathernews.com`.
 Logik ist 1:1 vom CF-Worker portiert (Chi statt itty-router, sonst gleicher
-postMessage-Handshake). Migration-Doku in `docs/cms.md` →
-„Maintainer-Aufgaben für Erst-Aktivierung". Zugehöriger CLAUDE.md-Eintrag
-unter „Beantwortete Entscheidungen ab 2026-05-11".
+postMessage-Handshake, ~170 LOC). Distroless-Image, HEALTHCHECK über
+Binary-Subcommand. Bind auf `127.0.0.1:8090`, Caddy proxied unter
+`cms-auth.worldweathernews.com`.
+
+Live seit v0.0.4 auf wwn-prod (PR #58 für Service, PR #59 für Cleanup
+des CF-Worker-Codes).
+
+Migration-Doku in `docs/cms.md` → „Maintainer-Aufgaben für Erst-Aktivierung".
+Zugehöriger CLAUDE.md-Eintrag unter „Beantwortete Entscheidungen ab 2026-05-11".
+
+**Leitlinie als Konsequenz (siehe neuer Punkt A.19):** Self-hosting-
+Prinzip — neue Services landen erst-mal als Container im App-Stack, nicht
+als CF-Worker. Konkret betrifft das Iteration 1.3b (Image-Pipeline): wird
+als `apps/cms-media-upload/` Go-Service geplant, nicht als CF-Worker.
 
 ### A.5 — Render-Strategie
 
@@ -254,19 +267,35 @@ Diese Trennung — Mensch direkt, Agent via Review — ist bewusst gewählt.
 
 ### A.13 — Storage-Provider für Bilder und Media-Assets
 
-[DECIDED 2026-05-07] **Hetzner Object Storage** in Falkenstein (FSN1).
+[DECIDED 2026-05-07, UPDATED 2026-05-11] **Hetzner Object Storage** in
+Falkenstein (FSN1), Auslieferung über **Caddy-Reverse-Proxy** auf wwn-prod.
 
 Konfiguration:
 
 - Bucket: `media-worldweathernews-prod`
 - Region: Falkenstein (DSGVO-konform, deutsche Server)
-- Auslieferung: `media.worldweathernews.com` (Cloudflare CNAME)
+- Bucket-Endpoint: `https://fsn1.your-objectstorage.com`
+- Auslieferung: `https://media.worldweathernews.com` — **Reverse-Proxy
+  über Caddy auf wwn-prod**, der den Host-Header auf den Hetzner-Bucket-
+  Endpoint rewritet
+- DNS-Verlauf: `media → home → gate.hw7.eu → Public-IP → Firewall-NAT → Caddy`
+- Cloudflare-Proxy: **AUS** (graue Wolke, DNS-only)
 - Pricing: **€6.49/Monat** Basispreis ab 1. April 2026 (vorher €4.99),
   inkludiert 1 TB Storage und 1 TB Egress.
 - Mehrkosten: €6.49/Monat pro weitere TB Storage,
   €1.30/TB Egress über Free-Frame.
 
-Begründung:
+**Warum Caddy-Proxy statt direkter CNAME** (Lesson aus Iteration 1.1b,
+2026-05-08):
+Hetzner S3 routet **host-basiert**. Ein direkter CNAME mit Cloudflare-Proxy
+liefert dem Bucket den Client-Host `media.worldweathernews.com`, was
+Hetzner mit `400 BadRequest` quittiert. Caddy auf wwn-prod terminiert TLS,
+forwardet GET/HEAD an den Bucket und setzt dabei den Host-Header auf
+`media-worldweathernews-prod.fsn1.your-objectstorage.com` um. Read-Only-
+Proxy — Schreibzugriffe (Sveltia-Upload) gehen direkt zum Bucket-Endpoint
+über Pre-Signed-URLs, nicht durch Caddy.
+
+Begründung Hetzner OS:
 
 - S3-kompatibel — Sveltia kann direkt drauf zugreifen
 - DSGVO-trivial (deutscher Anbieter, deutsche Server)
@@ -282,6 +311,14 @@ Object Storage +30%, Memory-Add-ons +575% wegen DRAM-Preisanstieg
 (+171% YoY durch AI-Compute-Boom). Object Storage von €4.99 auf €6.49
 ist relativ moderat im Vergleich zu Cloud-Servern (+30-43%).
 
+**Backlog-Punkte:**
+
+- CDN/Edge-Cache vor `media.worldweathernews.com` (aktuell: Caddy
+  liefert direkt, kein Edge-Cache) — siehe `docs/backlog.md`
+- Cloudflare-Workers-Subscription-Status im Account `hwr-06e` klären
+  (Workers-Menüs ausgegraut, Idee einer CF-Worker-basierten Edge-Cache-
+  Lösung pausiert)
+
 Verworfene Alternativen:
 
 - **MinIO-VM auf eigenem Proxmox**: macht Backup-Last bei uns,
@@ -291,6 +328,7 @@ Verworfene Alternativen:
   (DSGVO-Komplexität)
 - **Hetzner Storage Box**: kein S3-API, Sveltia-Integration komplexer
 - **GCP Cloud Storage**: 4-6x teurer für vergleichbare Leistung
+- **Direkter CNAME ohne Proxy**: scheitert am Hetzner-Host-Routing (400)
 
 ### A.16 — Compute-Hosting-Strategie
 
@@ -379,6 +417,55 @@ IONOS AE16-128 — IONOS Mittelklasse
   (wenn Proxmox wegfällt, was ersetzt Snapshot-Workflow?)
 
 **Re-Evaluation:** Trigger-Bedingungen alle 3 Monate prüfen.
+
+### A.19 — Self-hosting-Prinzip für neue Services
+
+[DECIDED 2026-05-11] **Neue Services landen erst-mal als Container im
+App-Compose-Stack auf wwn-prod, nicht als Cloudflare-Worker oder anderer
+Drittanbieter-Compute.**
+
+Hintergrund:
+DNS läuft bereits über Cloudflare, das ist ein unvermeidlicher kritischer
+Pfad. Jeder zusätzliche kritische Pfad bei Cloudflare (Workers, Pages,
+KV-Storage, R2) hebt das Migrations-Risiko unnötig und macht uns von einer
+weiteren Komponente des gleichen Anbieters abhängig.
+
+Konkreter Auslöser:
+Iteration 1.3a wurde am 2026-05-08 mit Cloudflare Worker als OAuth-Proxy
+für Sveltia released. Drei Tage später (2026-05-11) als self-hosted Go-
+Service neu gebaut (A.4 SUPERSEDED). Lessons:
+
+- 1:1-Port von Worker zu Go-Container ist machbar in ~170 LOC
+- Self-hosted Variante fügt sich in bestehendes Compose-/Caddy-/Monitoring-
+  Setup natürlich ein (keine separate Wrangler-Toolchain, kein extra
+  Dashboard, keine eigene CI-Pipeline)
+- Deploy-Workflow ist identisch zu Backend/Frontend/Pyworkers — eine
+  Versionspflege weniger
+
+Anwendung auf kommende Iterationen:
+
+- **Iteration 1.3b (Image-Pipeline)**: als `apps/cms-media-upload/`
+  Go-Service, nicht als CF-Worker. Pre-Signed-URL-Generierung +
+  WebP-Konvertierung + EXIF-Strip im selben Service oder zweiter Container.
+- **Track 3 (KI-Agenten)**: LLM-Provider-Wahl (C.3) ist davon NICHT
+  betroffen — Cloud-LLM-APIs sind etwas anderes als Compute-Hosting.
+  Der Agent-Container, der die APIs aufruft, läuft self-hosted.
+
+Verworfene Ausnahmen:
+
+- **CF-Worker-Edge-Cache für `media.worldweathernews.com`**: wurde
+  als Backlog-Item dokumentiert, weil der Account-Subscription-Status
+  unklar ist (siehe A.13). Wenn das geklärt wird, ist es eine reine
+  Cache-Schicht — kein kritischer Pfad. Dafür wäre A.19 keine
+  Ausschluss-Regel.
+- **Cloudflare R2 statt Hetzner OS**: wurde explizit verworfen, weil
+  Hetzner OS DSGVO-trivialer und billiger ist (siehe A.13). A.19
+  bestätigt diese Wahl zusätzlich.
+
+Die Regel gilt für **Compute**, nicht für reine **Edge-/Cache-Schichten**
+oder **DNS**. Cloudflare bleibt DNS-Anbieter. Cloudflare-Cache vor einer
+self-hosted Origin ist okay. CF-Worker, die unabhängig App-Logik halten,
+sind nicht okay.
 
 ### A.14 — Cookie-Strategie und Banner
 
@@ -609,3 +696,46 @@ Repos auf wwn-handover, später Move-Entscheidung pro File.
   Sveltia für Inhalts-Markdown — beide parallel ohne Konflikt.
 
   **Track 1 Status: 18 von 18 A-Punkten entschieden.**
+
+- 2026-05-08 bis 2026-05-11 — Implementation läuft, Lessons fließen
+  in Decisions zurück:
+
+  **A.13 (Storage) UPDATED**: Caddy-Reverse-Proxy mit Host-Rewrite
+  statt direktem CNAME mit Cloudflare-Proxy. Hetzner S3 routet
+  host-basiert, direkter CNAME bekam 400 BadRequest. Lesson aus
+  Iteration 1.1b (PR #44, 2026-05-08).
+
+  **A.4 (OAuth-Proxy) SUPERSEDED 2026-05-11**: Self-hosted Go-Service
+  `apps/cms-auth/` statt Cloudflare Worker. 1:1-Port der Worker-Logik
+  in ~170 LOC. Cloudflare-Worker-Quellcode aus Repo entfernt (PR #58
+  für Service, #59 für Cleanup). Live in v0.0.4.
+
+  **A.19 NEU (DECIDED 2026-05-11)**: Self-hosting-Prinzip als
+  Architektur-Leitlinie. Neue Services landen als Container im
+  App-Compose-Stack, nicht als CF-Worker. Konsequenz für Iteration
+  1.3b: Image-Pipeline wird `apps/cms-media-upload/` Go-Service.
+
+  **Iteration 1.2 fertig (PR #46)**: Paraglide-i18n live, DE/EN
+  parallel funktional, mdsvex-Components-Library mit DataSourceCard.
+  Folge-Bug: Standalone `apps/frontend/pnpm-lock.yaml` musste manuell
+  resync werden (Docker-Build-Context-Falle, Fix in #32f571d).
+
+  **Iteration 1.3a fertig (PR #47/#48)**: Sveltia-CMS unter /admin,
+  Editorial-Workflow per `publish_mode: editorial_workflow`. Image-
+  Upload bewusst aus (`media_folder: ""`) bis 1.3b.
+
+  **Tailwind v3 → v4 Migration (PR #63)**: 1-Line-Dependabot-Bump
+  wurde durch saubere Migration ersetzt. `@tailwindcss/vite` als
+  Vite-Plugin, `autoprefixer` raus, Config in `@theme`-Block in
+  `src/app.css`. shadcn-svelte HSL-Variablen via `--color-*` gebrückt.
+
+  **Dependabot-Triage 2026-05-11 (PR #60, #62)**: 21 PRs auf 1
+  reduziert. Toolchain-Major-Bumps (Go 1.25→1.26, Python 3.12→3.14,
+  Node 22→26) geschlossen — verstoßen gegen Pin-Regel. Dependabot-
+  Config gehärtet, dass sie nicht zurückkommen. cms-auth als vierter
+  Docker-Watcher hinzugefügt. Frontend-Patches konsolidiert in #62.
+
+  **security-scan.yml ❌ failing**: Trivy SARIF upload 403, pnpm
+  audit + pip-audit Findings, govulncheck Exit 3 (False-Positives
+  vermutet). Backlog-PR #64 dokumentiert die Triage. Workflow läuft,
+  aber Alarme aktuell rauschend.

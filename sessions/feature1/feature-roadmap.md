@@ -1,11 +1,11 @@
 # Feature-Phase — Roadmap und Vorgehens-Schritte
 
-Stand: 7. Mai 2026
+Stand: 11. Mai 2026 (Implementation-Fortschritt eingearbeitet)
 Maintainer: Heinz W. Richter <hwr@relations4u.de>
 
 Dieses Dokument hält fest, **wie wir vorgehen**. Konkrete Schritte,
 Reihenfolge, Akzeptanzkriterien. Entscheidungen separat in
-`feature-decisions.md`.
+`feature-decisions.md`. Live-Status pro Iteration in `STATUS.md`.
 
 ---
 
@@ -27,11 +27,20 @@ Track 3 startet, sobald Track 2 die erste Datenquelle (Open-Meteo) live hat.
 - Wetterdaten ohne Frontend = unsichtbare API
 - Agenten ohne Datenbasis = keine sinnvollen Outputs
 
+**Aktueller Stand (Stand 11. Mai 2026):**
+
+Track 1 ist bei Iteration 1.3a fertig — Sveltia läuft mit Text-Edit,
+Image-Upload bewusst pausiert bis Iteration 1.3b (Image-Pipeline).
+Track 2 kann starten, sobald 1.4 (Blog) angegangen wird oder
+Maintainer früher loslegen will (1.3b ist nicht zwingend für Track 2).
+
 ---
 
 ## Track 1 — Frontend, statische Seiten, CMS
 
 ### Iteration 1.1 — Hardcoded-Skelett mit Compliance (2-3 Tage Arbeit)
+
+**Status: ✅ Done 2026-05-07 (PR #45, Squash 80fc6ec)**
 
 **Ziel:** Live-Seite mit allen rechtlich nötigen Pages und Cookie-Banner,
 ohne CMS.
@@ -129,12 +138,14 @@ ohne CMS.
 
 ### Iteration 1.1b — Hetzner Object Storage einrichten (1 Tag, parallel zu 1.1)
 
+**Status: ✅ Done 2026-05-08 (PR #44, Squash 55af7e3)**
+
 **Ziel:** S3-kompatibler Bucket bei Hetzner bereit, bevor Sveltia-Bild-
 Upload getestet wird.
 
 **Vorbedingung:** A.13 entschieden (Hetzner Object Storage Falkenstein)
 
-**Schritte:**
+**Realisierte Schritte (mit Lessons aus der Implementation):**
 
 1. Hetzner Cloud Account vorbereiten
    - Account erstellen oder existierenden nutzen
@@ -156,12 +167,14 @@ Upload getestet wird.
      S3_ACCESS_KEY=...
      S3_SECRET_KEY=...
      S3_BUCKET=media-worldweathernews-prod
+     S3_PUBLIC_URL=https://media.worldweathernews.com
      ```
 
 4. CORS-Konfiguration
    - Erlaubte Origins: `https://research.worldweathernews.com`,
-     `https://worldweathernews.com`, `https://www.worldweathernews.com`
-   - Methods: GET, HEAD, PUT (für Sveltia-Upload)
+     `https://worldweathernews.com`, `https://www.worldweathernews.com`,
+     `http://localhost:5173`
+   - Methods: GET, HEAD, PUT (für späteren Sveltia-Upload)
    - Headers: Content-Type, Authorization, x-amz-\*
 
 5. Bucket-Struktur anlegen
@@ -169,45 +182,87 @@ Upload getestet wird.
    - `media/pages/<slug>/` für Page-Bilder
    - `media/team/` für Team-Fotos
    - `media/site/` für Logo, Favicons, OG-Bilder
-   - Public-Read aktivieren mit IAM-Policy
+   - Public-Read-Policy in `infra/object-storage/bucket-policy.json`
 
-6. CDN-Domain einrichten
-   - Cloudflare DNS: CNAME `media.worldweathernews.com` →
-     `media-worldweathernews-prod.fsn1.your-objectstorage.com`
-   - HTTPS via Cloudflare Universal SSL (Proxy AN für diese Subdomain)
-     ODER direkt vom Hetzner Endpoint mit eigener Subdomain-Config
-   - Test: `media.worldweathernews.com/test.jpg` lädt nach Test-Upload
+6. **Caddy-Reverse-Proxy** (Realisierung weicht vom ursprünglichen
+   Plan ab, siehe Lesson unten):
+   - Caddy-Block für `media.worldweathernews.com` in
+     `infra/caddy/prod/Caddyfile`
+   - Forward auf Bucket-Endpoint mit Host-Header-Rewrite
+   - DNS via Cloudflare: CNAME `media → home.worldweathernews.com`,
+     Proxy **AUS** (DNS-only, graue Wolke)
+   - HTTPS via Caddy + Let's-Encrypt (HTTP-01-Challenge)
+   - Deploy via `bash infra/deploy/deploy-caddy.sh` (macht `restart`,
+     nicht `up -d`, wegen Bind-Mount-Inode-Falle)
 
-7. Test-Upload manuell
-   - Mit `aws-cli` oder `s3cmd` ein Test-Bild uploaden
-   - Über `media.worldweathernews.com/test.jpg` abrufen
-   - HTTPS, CORS prüfen via Browser-DevTools
+7. Test-Upload
+   - aws-cli auf wwn-dev oder Maintainer-Mac
+   - Test-Datei in `s3://.../site/test.txt`
+   - Abruf via `curl -I https://media.worldweathernews.com/site/test.txt`
 
-8. Sveltia-Worker-Anpassung
-   - Sveltia-CMS unterstützt direkten S3-Upload via Pre-Signed-URLs
-   - Cloudflare Worker für Pre-Signed-URL-Generierung
-   - Worker-Secrets: S3-Credentials aus SOPS
+8. Doku
+   - `docs/media-storage.md` neu
+   - `docs/runbook.md` erweitert um Szenario „media nicht erreichbar"
+   - `CLAUDE.md` „Wo finde ich was"-Tabelle erweitert
+   - `docs/backlog.md` ergänzt um CDN/Edge-Cache, Lifecycle-Policies,
+     Bucket-Backup, Image-Optimierung
 
-**Akzeptanzkriterien:**
+**Lesson aus Iteration 1.1b (relevant für Folge-Arbeit):**
 
-- [ ] Bucket erreichbar unter media.worldweathernews.com
-- [ ] HTTPS funktioniert
-- [ ] CORS für Frontend-Origin aktiv
-- [ ] SOPS-Secrets eingerichtet und committed (verschlüsselt)
-- [ ] Test-Upload via aws-cli erfolgreich
-- [ ] Initial-Asset-Set hochgeladen (Logo, Favicon, OG-Default-Bild)
+Ursprünglicher Plan war direkter CNAME `media → bucket-endpoint` mit
+Cloudflare-Proxy AN für TLS und CDN-Effekt. Das **funktioniert nicht**,
+weil Hetzner S3 **host-basiert routet**: kommt der Request mit Host-Header
+`media.worldweathernews.com`, antwortet der Bucket mit `400 BadRequest`,
+weil der Bucket-Name nicht im Host steht.
+
+Lösung: Caddy auf wwn-prod als Reverse-Proxy. Er terminiert TLS, schreibt
+den Host-Header beim Forward auf `media-worldweathernews-prod.fsn1.your-objectstorage.com`
+um, und liefert das Bucket-Object zurück. **Read-Only-Proxy** — Schreib-
+zugriffe (Sveltia-Upload in 1.3b) gehen direkt zum Bucket-Endpoint über
+Pre-Signed-URLs, nicht durch Caddy.
+
+Parallel dazu wurde geprüft, ob ein **Cloudflare-Worker** als Edge-Cache
+vor dem Caddy-Proxy sinnvoll wäre. Idee verworfen, weil:
+
+- Cloudflare-Workers-Menüs im Account `hwr-06e` ausgegraut sind
+  (Subscription-Status unklar)
+- Hinzukommend: A.19 etabliert Self-hosting-Prinzip — weniger
+  Cloudflare-Compute, nicht mehr
+
+Beide Punkte (Edge-Cache + Subscription) liegen im Backlog.
+
+**Akzeptanzkriterien (alle erfüllt):**
+
+- [x] Bucket erreichbar unter media.worldweathernews.com
+- [x] HTTPS funktioniert
+- [x] CORS für Frontend-Origins aktiv
+- [x] SOPS-Secrets eingerichtet und committed (verschlüsselt)
+- [x] Test-Upload via aws-cli erfolgreich
+- [x] Caddy-Block deployed, Let's-Encrypt-Cert ausgestellt
 
 **Kosten-Erwartung:**
 
-- Initial: €4.99/Monat (innerhalb 1 TB Storage, 1 TB Egress)
+- Initial: €6.49/Monat (innerhalb 1 TB Storage, 1 TB Egress, post-April-2026)
 - Wachstum: linear, transparent
 
 ---
 
 ### Iteration 1.2 — mdsvex-Pipeline mit Paraglide-i18n (2 Tage)
 
+**Status: ✅ Done 2026-05-08 (PR #46 + Follow-Up #32f571d)**
+
 **Ziel:** Methodik-Seite als mdsvex, gerendert zur Build-Zeit, mit
 DE/EN-Versionen via Paraglide-i18n.
+
+**Lesson (Follow-Up-Commit #32f571d):**
+
+`apps/frontend/pnpm-lock.yaml` ist ein **standalone** Lockfile, den
+der Docker-Build-Context nutzt (nicht der Workspace-Root-Lockfile).
+pnpm regeneriert ihn standardmäßig **nicht**, weil der Workspace-Root
+ihn überschattet. Workaround dokumentiert: `pnpm-workspace.yaml`
+temporär verstecken, dann `pnpm install`, dann wieder zurück. Dieses
+Pattern kommt bei jedem Frontend-Dependency-Update wieder, taucht
+auch in der Dependabot-Triage am 2026-05-11 erneut auf (PR #62).
 
 **Vorbedingung:** Iteration 1.1 fertig
 
@@ -295,58 +350,132 @@ DE/EN-Versionen via Paraglide-i18n.
 
 ---
 
-### Iteration 1.3 — Sveltia CMS einbinden (1 Tag)
+### Iteration 1.3a — Sveltia-Text-Edit + OAuth-Proxy (1 Tag → 3 Tage tatsächlich, in zwei Stufen)
+
+**Status: ✅ Done 2026-05-08 (PRs #47/#48), Re-Build des OAuth-Proxys
+2026-05-11 (PRs #58/#59, supersedes A.4 — siehe unten)**
 
 **Ziel:** Co-Autor:innen können /methodik via Browser editieren.
+Bild-Upload bewusst pausiert (kommt in 1.3b).
 
-**Schritte:**
+**Realisierte Schritte:**
 
 1. GitHub OAuth-App anlegen
    - https://github.com/settings/applications/new
    - Application name: `worldweathernews-cms`
    - Homepage URL: `https://research.worldweathernews.com`
-   - Authorization callback URL: später Cloudflare-Worker-URL
+   - Authorization callback URL: zunächst auf CF-Worker, ab 2026-05-11
+     auf self-hosted `cms-auth.worldweathernews.com/callback`
    - Client ID und Secret notieren (Secret in 1Password/Bitwarden)
 
-2. Cloudflare Worker für OAuth-Proxy aufsetzen
-   - Sveltias offiziellen `sveltia-cms-auth` clonen
-   - Wrangler installieren, Worker deployen
-   - Client-ID und Secret als Worker-Secrets setzen
-   - Callback-URL in GitHub-OAuth-App eintragen
-   - Test: Worker antwortet auf /auth-Endpoint
+2. OAuth-Proxy aufsetzen
+   - **Initial 2026-05-08**: Cloudflare-Worker `wwn-cms-auth` im Account
+     `hwr-06e`, Sveltias offizieller `sveltia-cms-auth` portiert
+   - **Re-Build 2026-05-11**: self-hosted Go-Service `apps/cms-auth/`
+     im App-Compose-Stack auf wwn-prod (siehe A.4 SUPERSEDED + A.19)
+   - Chi-Router + slog + distroless-Image
+   - Bind `127.0.0.1:8090`, Caddy proxied unter
+     `cms-auth.worldweathernews.com`
+   - ~170 LOC, 1:1-Logik vom CF-Worker
 
 3. Sveltia-Loader im Frontend
-   - `apps/frontend/static/admin/index.html` anlegen
-   - Script-Tag für `@sveltia/cms` Module
-   - Minimal HTML-Skelett
+   - `apps/frontend/static/admin/index.html` mit `@sveltia/cms` Script-Tag
 
 4. Sveltia-Konfiguration
    - `apps/frontend/static/admin/config.yml`
-   - Backend: github-Provider mit Worker-URL
+   - Backend: github-Provider mit OAuth-Proxy-URL
    - Collections: pages plus blog
-   - Field-Definitionen pro Collection
+   - `publish_mode: editorial_workflow` (jeder Edit → PR)
+   - `media_folder: ""` (Bild-Upload aus bis 1.3b)
 
 5. Test-Edit-Cycle
-   - Login als Maintainer
-   - /methodik via Sveltia editieren
-   - Commit erfolgt mit signiertem Author
-   - Build-Pipeline läuft an
-   - Live-Site zeigt Änderung
+   - Login als Maintainer am 2026-05-08, danach final am 2026-05-11
+     mit self-hosted Proxy
+   - /methodik via Sveltia editiert, PR erstellt, gemerged, live
 
-6. Dokumentation für Co-Autor:innen
-   - `docs/cms.md` schreiben
-   - Login-Anleitung, Markdown-Basics, Bild-Upload
-   - Wie speichere ich, was passiert nach Commit
-   - Wann ist meine Änderung live
+6. Dokumentation
+   - `docs/cms.md` mit Login-Anleitung, Markdown-Basics, Edit-Workflow
+   - Decap-Fallback dokumentiert (1-Zeilen-Swap im config.yml)
+   - „Maintainer-Aufgaben für Erst-Aktivierung" für den OAuth-Proxy
 
-**Akzeptanzkriterien:**
+**Akzeptanzkriterien (alle erfüllt):**
 
-- [ ] /admin lädt Sveltia-UI
-- [ ] GitHub-OAuth-Login funktioniert
-- [ ] Edit von /methodik landet als Commit im Repo
-- [ ] Live-Site zeigt Änderung nach Build (3-5 Min)
-- [ ] CMS-Doku in docs/cms.md verfügbar
-- [ ] Decap-Fallback dokumentiert (1-Zeilen-Swap im Worst Case)
+- [x] /admin lädt Sveltia-UI
+- [x] GitHub-OAuth-Login funktioniert (Cutover auf self-hosted geschafft)
+- [x] Edit von /methodik landet als PR im Repo
+- [x] Live-Site zeigt Änderung nach Build (3-5 Min)
+- [x] CMS-Doku in docs/cms.md verfügbar
+- [x] Decap-Fallback dokumentiert
+
+**Lesson aus Re-Build (PR #58):** `gh pr merge` verweigerte teilweise
+auf Workflow-Files ohne `workflow`-Scope auf dem PAT. Retry hat geklappt
+(Race oder lazy-loaded Scope-Check). Falls wieder: `gh auth refresh -s workflow`
+oder Web-UI-Merge.
+
+---
+
+### Iteration 1.3b — Image-Pipeline (Geplant, kein Termin)
+
+**Status: ⏳ Geplant**
+
+**Ziel:** Sveltia-Bild-Upload via Pre-Signed-URL S3 + WebP-Konvertierung
+
+- responsive Sizes + EXIF-Strip.
+
+**Vorbedingung:** Mindestens eine bildbedürftige Page in Sicht (Blog 1.4) —
+keine Eile vor diesem Trigger. Aktuell sind alle Live-Pages text-only.
+
+**Architektur-Entscheidung (A.19):** Image-Pipeline läuft als
+self-hosted Go-Service `apps/cms-media-upload/`, **nicht** als
+Cloudflare Worker. Analog zu cms-auth aus 1.3a.
+
+**Schritte (Skizze, finale Spec bei Iteration-Start):**
+
+1. Service-Skelett `apps/cms-media-upload/`
+   - Go + Chi + slog wie cms-auth
+   - Endpoint POST `/presign` mit Auth-Check
+   - Endpoint POST `/process` für post-upload Transformations
+   - Bind `127.0.0.1:8091`, Caddy proxied unter
+     `cms-media.worldweathernews.com`
+
+2. Pre-Signed-URL-Generierung
+   - SOPS-Secret `media-storage.sops.env` aus 1.1b lesen
+   - aws-sdk-go-v2 für PresignPostObject
+   - URL-Ablauf: 5 Min
+
+3. Image-Pipeline nach Upload
+   - WebP-Konvertierung (libvips via govips oder bimg)
+   - Responsive Sizes: 320 / 640 / 1280 / 1920 px Breite
+   - EXIF-Strip (Privacy)
+   - Original im Bucket archivieren
+
+4. Sveltia-Config-Switch
+   - `apps/frontend/static/admin/config.yml`
+   - `media_folder` auf Bucket-Pfad
+   - `media_library: { name: 'custom', config: { uploader: 'cms-media-upload' } }`
+
+5. Doku
+   - `docs/cms.md` Bild-Upload-Sektion
+   - `docs/media-storage.md` Bucket-Layout für variants
+
+**Akzeptanzkriterien (TBD bei Iteration-Start):**
+
+- [ ] Co-Autor:innen können in Sveltia Bilder hochladen
+- [ ] Upload landet direkt im Bucket (nicht über App-Server)
+- [ ] WebP-Variant in 4 Größen vorhanden
+- [ ] EXIF gestrippt
+- [ ] Markdown referenziert die generierten Bildpfade
+
+---
+
+### Iteration 1.3 — Original-Spec (historisch, vor Split in 1.3a/1.3b)
+
+**Status: ⏭ Skipped, ersetzt durch 1.3a + 1.3b**
+
+(Behalten als Archiv-Eintrag — die ursprüngliche 1-Tag-Spec für „Sveltia
+einbinden" war zu klein für die Realität: OAuth-Proxy musste neu gebaut
+werden, Image-Upload braucht eigenen Service. Split in 1.3a/1.3b spiegelt
+das wider.)
 
 ---
 
@@ -518,18 +647,21 @@ sollten nicht vergessen werden:
 
 ## Status-Tracking
 
+(Detail-Status pro Iteration in `STATUS.md`)
+
 ### Track 1
 
-- [ ] Iteration 1.1 — Hardcoded-Skelett mit Compliance
-- [ ] Iteration 1.1b — Object Storage einrichten (parallel möglich)
-- [ ] Iteration 1.2 — Markdown-Pipeline
-- [ ] Iteration 1.3 — Sveltia CMS einbinden
+- [x] Iteration 1.1 — Hardcoded-Skelett mit Compliance ✅ 2026-05-07 (PR #45)
+- [x] Iteration 1.1b — Object Storage einrichten ✅ 2026-05-08 (PR #44)
+- [x] Iteration 1.2 — Markdown-Pipeline + Paraglide ✅ 2026-05-08 (PR #46)
+- [x] Iteration 1.3a — Sveltia + OAuth (self-hosted seit 2026-05-11) ✅ (PRs #47/#48/#58/#59)
+- [ ] Iteration 1.3b — Image-Pipeline (geplant, wartet auf Blog-Bedarf)
 - [ ] Iteration 1.4 — Blog-Collection
 - [ ] Iteration 1.5 — Editor-Onboarding
 
 ### Track 2
 
-- [ ] Iteration 2.1 — Open-Meteo
+- [ ] Iteration 2.1 — Open-Meteo (TBD nach Konzept-Diskussion)
 - [ ] Iteration 2.2 — DWD Stations
 - [ ] Iteration 2.3 — DWD MOSMIX
 - [ ] Iteration 2.4 — Satellitenbilder
@@ -571,3 +703,22 @@ sollten nicht vergessen werden:
   `messages/en.json` als zentrale Translation-Files (Strategy A),
   Paraglide-Routing für `/de/...` und `/en/...`. Locale-Switcher
   als eigene Component, CI-Check für Translation-Key-Konsistenz.
+
+- 2026-05-11 (Tranche 6) — Implementation-Realität in Roadmap zurück-
+  gespiegelt. Vier Iterationen als ✅ Done markiert (1.1, 1.1b, 1.2, 1.3a),
+  Status-Tracking aktualisiert. Drei substantielle Spec-Änderungen:
+
+  **Iteration 1.1b**: Caddy-Reverse-Proxy mit Host-Rewrite statt
+  direktem CNAME (Hetzner S3 routet host-basiert, direkter CNAME → 400).
+
+  **Iteration 1.3 → 1.3a + 1.3b Split**: Original-1-Tag-Spec war zu klein.
+  1.3a: Sveltia-Text-Edit + OAuth-Proxy (self-hosted seit 2026-05-11
+  als `apps/cms-auth/` Go-Service, supersedes A.4-CF-Worker-Plan).
+  1.3b: Image-Pipeline als eigene Iteration, geplant als
+  `apps/cms-media-upload/` Go-Service nach A.19 Self-hosting-Prinzip,
+  wartet auf Blog-Bedarf in 1.4.
+
+  **Iteration 1.2 Lesson**: `apps/frontend/pnpm-lock.yaml` ist standalone,
+  Workspace-Lockfile überschattet ihn. Bei Dependency-Updates: temp-hide
+  `pnpm-workspace.yaml`, dann `pnpm install`. Pattern dokumentiert, taucht
+  bei jedem Frontend-Update wieder auf.
