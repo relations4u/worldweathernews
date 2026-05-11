@@ -14,5 +14,6 @@
       backend: "{{ target_version }}"
       frontend: "{{ target_version }}"
       pyworkers: "{{ target_version }}"
+      cms-auth: "{{ target_version }}"
   roles:
     - role: app

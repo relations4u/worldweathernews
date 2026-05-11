@@ -242,15 +242,16 @@ gesamten `static/`-Baum unverändert nach `/admin/index.html` und
 
 Hinter den Kulissen:
 
-- Popup ruft `https://wwn-cms-auth.<account>.workers.dev/auth?provider=github&site_id=worldweathernews.com&scope=repo,user` auf.
-- Worker leitet auf GitHub um, GitHub kommt mit `code` zurück, Worker
-  tauscht gegen Token, schickt per `postMessage` an Sveltia.
+- Popup ruft `https://cms-auth.worldweathernews.com/auth?provider=github&site_id=worldweathernews.com&scope=repo,user` auf.
+- `wwn-cms-auth` (self-hosted Go-Service auf wwn-prod) leitet auf GitHub um,
+  GitHub kommt mit `code` zurück, der Service tauscht gegen Token, schickt
+  per `postMessage` an Sveltia.
 - Sveltia speichert das Token in IndexedDB und nutzt es direkt gegen die
   GitHub-API. Kein Backend-State.
 
-Wenn der Worker noch nicht deployed ist (Platzhalter `PLACEHOLDER` in
-`base_url`), bricht der Login mit „Backend not reachable" ab — das ist
-beabsichtigt und kein Bug.
+Wenn der OAuth-Proxy nicht erreichbar ist (z. B. Container down, DNS-Record
+fehlt, Cert noch nicht ausgestellt), bricht der Login mit „Backend not
+reachable" ab — das ist beabsichtigt und kein Bug.
 
 ### Edit-Workflow
 
@@ -299,9 +300,10 @@ landen sonst direkt im Git-Repo, was bei mehreren MB pro Bild den Clone
 Sizes erzeugt.
 
 Iteration 1.3b führt eine Pre-Signed-URL-S3-Upload-Pipeline ein:
-Sveltia → Cloudflare-Worker → Hetzner Object Storage → CDN-Edge. Bilder
-werden dabei vom Worker per WASM-libvips zu WebP konvertiert, in vier
-Größen ausgeliefert (320/640/1280/1920) und EXIF-stripped.
+Sveltia → kleiner self-hosted Upload-Service → Hetzner Object Storage →
+CDN-Edge. Bilder werden serverseitig per libvips zu WebP konvertiert, in
+vier Größen ausgeliefert (320/640/1280/1920) und EXIF-stripped. Dasselbe
+Self-Hosting-Prinzip wie der OAuth-Proxy — keine Cloudflare-Worker-Abhängigkeit.
 
 Bis dahin: Bild-bedürftige Pages weiter direkt im Repo pflegen, oder
 Bilder als externe URL einbetten (`![alt](https://…)`).
@@ -323,16 +325,24 @@ ausgeliefert (siehe „Mehrsprachigkeit" oben).
 ### Maintainer-Aufgaben für Erst-Aktivierung
 
 Sveltia ist erst voll funktional, wenn folgende Punkte erledigt sind. Sie
-sind bewusst nicht im Code automatisiert, weil sie OAuth-Secrets und
-Cloudflare-Account-Zugang erfordern:
+sind bewusst nicht im Code automatisiert, weil sie OAuth-Secrets erfordern:
 
-1. **GitHub OAuth-App registrieren** (relations4u-Org oder persönlich).
-   Callback-URL: `https://wwn-cms-auth.<cf-account>.workers.dev/callback`.
-2. **Cloudflare-Worker deployen** — siehe
-   [`infra/cloudflare-worker-cms-auth/README.md`](../infra/cloudflare-worker-cms-auth/README.md).
-3. **Worker-URL eintragen** in `apps/frontend/static/admin/config.yml`
-   unter `backend.base_url`. Commit, mergen, deployen.
-4. **Login testen** auf <https://worldweathernews.com/admin/>.
+1. **DNS-Record** anlegen in Cloudflare: `cms-auth.worldweathernews.com`
+   CNAME → `home.worldweathernews.com` (DNS-only, graue Wolke).
+2. **GitHub OAuth-App registrieren** (relations4u-Org oder persönlich).
+   - Homepage URL: `https://worldweathernews.com`
+   - Authorization callback URL: `https://cms-auth.worldweathernews.com/callback`
+3. **Secrets ergänzen** in `infra/secrets/production/cms-auth.env` —
+   `sops infra/secrets/production/cms-auth.env`, `WWN_CMS_AUTH_CLIENT_ID`
+   und `WWN_CMS_AUTH_CLIENT_SECRET` mit den GitHub-Werten ersetzen.
+4. **Deployen**: Release-Tag pushen → `bash scripts/deploy.sh production X.Y.Z`.
+   Anschließend Caddy auf wwn-prod neu laden (`bash infra/deploy/deploy-caddy.sh`),
+   damit das Let's-Encrypt-Cert für den neuen Host ausgestellt wird.
+5. **Login testen** auf <https://worldweathernews.com/admin/>.
+
+Nach erfolgreichem Cutover: Cloudflare-Worker `wwn-cms-auth` löschen
+(`wrangler delete` im Account `hwr-06e`), Verzeichnis
+`infra/cloudflare-worker-cms-auth/` aus dem Repo entfernen.
 
 ### Decap-Fallback
 
@@ -340,8 +350,8 @@ Sveltia ist seit 2024 sehr aktiv gepflegt, aber falls das Projekt jemals
 stagniert: Decap CMS ist API-kompatibel. Migration besteht aus genau
 drei Schritten: Loader-Script-URL in `static/admin/index.html` von
 `@sveltia/cms` auf `decap-cms` ändern, dieselbe `config.yml` weiter
-nutzen, denselben OAuth-Worker weiter nutzen. Im `docs/backlog.md` als
-Eventual-Backup vermerkt.
+nutzen, denselben OAuth-Proxy (`apps/cms-auth/`) weiter nutzen. Im
+`docs/backlog.md` als Eventual-Backup vermerkt.
 
 ---
 

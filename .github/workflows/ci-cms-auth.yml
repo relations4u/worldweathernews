@@ -1,0 +1,73 @@
+name: CI cms-auth
+
+on:
+  pull_request:
+    paths:
+      - "apps/cms-auth/**"
+      - ".github/workflows/ci-cms-auth.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/cms-auth/**"
+      - ".github/workflows/ci-cms-auth.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.25"
+  GOLANGCI_LINT_VERSION: "v2.12.1"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: apps/cms-auth/go.sum
+
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: apps/cms-auth
+          args: --timeout=5m
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: apps/cms-auth/go.sum
+
+      - name: Run tests
+        working-directory: apps/cms-auth
+        run: go test -race -cover ./...
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: apps/cms-auth/go.sum
+
+      - name: Build
+        working-directory: apps/cms-auth
+        env:
+          CGO_ENABLED: 0
+        run: |
+          go build -trimpath -ldflags "-s -w" -o bin/wwn-cms-auth ./cmd/cms-auth
+          ls -la bin/

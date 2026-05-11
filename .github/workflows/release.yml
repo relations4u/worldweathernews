@@ -50,6 +50,9 @@ jobs:
           - name: pyworkers
             context: apps/pyworkers
             build_args: ""
+          - name: cms-auth
+            context: apps/cms-auth
+            build_args: ""
     steps:
       - uses: actions/checkout@v4
 
@@ -177,6 +180,7 @@ jobs:
             ghcr.io/${{ env.IMAGE_NAMESPACE }}/wwn-backend:${{ needs.meta.outputs.version }}
             ghcr.io/${{ env.IMAGE_NAMESPACE }}/wwn-frontend:${{ needs.meta.outputs.version }}
             ghcr.io/${{ env.IMAGE_NAMESPACE }}/wwn-pyworkers:${{ needs.meta.outputs.version }}
+            ghcr.io/${{ env.IMAGE_NAMESPACE }}/wwn-cms-auth:${{ needs.meta.outputs.version }}
             ```
 
             All images are signed with cosign (keyless via Sigstore). SBOMs are
