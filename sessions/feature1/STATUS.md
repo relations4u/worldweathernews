@@ -8,13 +8,17 @@ woran man erkennt, dass es Zeit ist.
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-11
+Stand: 2026-05-11 (nach v0.0.5-Deploy + Security-Scan-Triage)
 
 ---
 
 ## Live auf Production (wwn-prod)
 
-- **App-Stack v0.0.4** läuft (backend, frontend, pyworkers, cms-auth, postgres, redis)
+- **App-Stack v0.0.5** läuft (backend, frontend, pyworkers, cms-auth,
+  postgres, redis). Deployed 2026-05-11 ~20:55 UTC, alle vier wwn-
+  Container `healthy`. v0.0.5 unterscheidet sich von v0.0.4 nur in den
+  Go-/Python-/JS-Toolchain-Securityfixes (kein Feature-Code, keine
+  Schema-Änderung); im Backend lief sicher nur das Image-Update.
 - **Caddy** als eigenständiger Stack mit Let's-Encrypt-Certs für:
   - `worldweathernews.com` (Apex → Frontend)
   - `www.worldweathernews.com` (301 → Apex)
@@ -222,24 +226,50 @@ Lokal verifiziert: `pnpm build`, `pnpm test` (5 passed), `pnpm check`
 
 ### Security-Scan-Workflow
 
-Status: ❌ Failing (pre-existing, nicht durch Feature-Arbeit verursacht)
-PR mit Backlog-Eintrag: #64 (Squash b2836cf)
-Notizen: `.github/workflows/security-scan.yml` schlägt seit 11. Mai 2026
-auf jedem Commit fehl, der Dependency-Manifeste oder Dockerfiles berührt.
-Vier separate Befunde:
+Status: ✅ Done
+Datum: 2026-05-11 (Backlog-Eintrag #64, Triage-PR #67)
+Notizen: Vier Befunde durch Triage-Runde behoben — siehe folgender
+Abschnitt. Workflow läuft beim nächsten Trigger (push auf
+`**/go.mod|pyproject.toml|pnpm-lock.yaml|Dockerfile`) erwartungsgemäß
+grün; davor war er zuverlässig rot und damit als Alarm-Quelle wertlos.
 
-1. `Trivy upload-sarif` → 403 (privates Repo ohne GHAS — gleicher Pattern
-   wie in `release.yml` lösbar: SARIF als Artifact hochladen statt zu
-   code-scanning)
-2. `pnpm audit --audit-level=high` Exit 1 (npm-Findings in `apps/frontend/`)
-3. `pip-audit` Exit 1 (Python-Findings in `apps/pyworkers/`)
-4. `govulncheck` Exit 3 (Backend — Call-Chains durch `template.Template.Execute`
-   und `net.Resolver.*`, sehen nach False-Positives aus)
+### Security-Triage post-v0.0.4
 
-Detail-Triage in `docs/backlog.md` → Sicherheit. Zwischenzustand:
-Workflow läuft, aber das rote Häkchen ist aktuell rauschend — Alarme
-daraus sind wertlos, bis die vier Punkte einzeln triagiert sind oder
-der Workflow temporär auf `continue-on-error: true` geht.
+Status: ✅ Done
+Datum: 2026-05-11
+PR: #67 (Squash e801cf5)
+Tag: v0.0.5 (live)
+Commits in der Branch `chore/security-triage-post-v0-0-4`:
+
+1. **`af63796`** — Go-Toolchain 1.25.9 → 1.25.10 in vier Quellen synchron
+   (.mise.toml, beide go.mods, beide Dockerfiles), CI-Workflows auf
+   `go-version-file:` umgestellt für künftige One-Source-of-Truth-
+   Updates. Schließt vier Stdlib-CVEs (GO-2026-4982 / -4980 / -4971 /
+   -4918, html/template + net + http2) plus GO-2025-3770 (Host-header-
+   Injection in chi `RedirectSlashes`, cms-auth war auf v5.2.1, jetzt
+   v5.2.5 wie backend).
+2. **`ce8da5c`** — `urllib3 >= 2.7.0` als Top-Level-Dep in
+   `apps/pyworkers/pyproject.toml` (kam vorher transitiv), uv.lock auf
+   2.7.0. Schließt CVE-2026-44431 / -44432 (ProxyManager-Header-Leak).
+3. **`0e53867`** — `security-scan.yml`-Workflow-Fixes:
+   `codeql-action/upload-sarif` → `actions/upload-artifact@v7` mit
+   `retention-days: 30` (gleicher Pattern wie release.yml; codeql-upload
+   liefert ohne GHAS 403 auf privaten Repos), `pnpm audit --prod` statt
+   ohne (die hochstufigen Findings waren alle transitiv via
+   `@redocly/cli` devDep, kein Runtime-Risiko).
+4. **`64f1340`** — `docs/backlog.md`: ursprünglicher 4-Punkte-Eintrag
+   (Vorbereitungs-Backlog aus PR #64) durch „behoben"-Eintrag mit
+   Commit-Verweisen ersetzt; drei Folge-Punkte stehen separat:
+   `@redocly/cli` devDep-Pflege, CodeQL v3→v4 Migration für später,
+   SARIF-Konsumenten-Frage (Re-Activate `upload-sarif` wenn GHAS oder
+   public-Repo).
+
+Lokal verifiziert vor PR: `govulncheck` beide Go-Module „No
+vulnerabilities found", `pip-audit` clean, `pnpm audit
+--audit-level=high --prod` clean, `make lint && make test` grün,
+beide Docker-Builds grün. Release-Pipeline für v0.0.5 baut vier Images
+(backend, frontend, pyworkers, cms-auth) in ~4 Min, Ansible-Deploy
+durch mit `changed=5`. Letzte Public-Smokes grün (siehe oben).
 
 ---
 
