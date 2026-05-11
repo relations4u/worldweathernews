@@ -11,7 +11,7 @@
 	</p>
 
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">Diensteanbieter</h2>
-	<address class="mt-3 not-italic text-slate-600">
+	<address class="mt-3 text-slate-600 not-italic">
 		<strong class="block text-slate-900">Heinz W. Richter</strong>
 		<span>Lessingstraße 47</span><br />
 		<span>14482 Potsdam</span><br />
@@ -44,7 +44,7 @@
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">
 		Verantwortlicher i.S.v. § 18 Abs. 2 MStV
 	</h2>
-	<address class="mt-3 not-italic text-slate-600">
+	<address class="mt-3 text-slate-600 not-italic">
 		Heinz W. Richter<br />
 		Anschrift wie oben
 	</address>
