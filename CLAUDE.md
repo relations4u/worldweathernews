@@ -620,10 +620,12 @@ Diese Fragen sind im Verlauf der Setup-Phase entschieden worden:
   ~170 LOC, Distroless-Image) im App-Compose-Stack auf wwn-prod hinter
   Caddy unter `cms-auth.worldweathernews.com`. Begründung: Maintainer-
   Prinzip „Cloudflare-Abhängigkeit minimieren". Der vormalige Worker
-  unter `infra/cloudflare-worker-cms-auth/` ist deprecated und wird nach
-  erfolgreichem Cutover entfernt. Migration-Checkliste in
-  `docs/cms.md` → „Maintainer-Aufgaben für Erst-Aktivierung".
-  Setzt A.4 aus `sessions/feature1/feature-decisions.md` ausser Kraft.
+  unter `infra/cloudflare-worker-cms-auth/` wurde nach erfolgreichem
+  Cutover am 11. Mai 2026 aus dem Repo entfernt (Worker selbst via
+  `wrangler delete` im Account `hwr-06e` durch Maintainer abgebaut).
+  Migration-Checkliste in `docs/cms.md` → „Maintainer-Aufgaben für
+  Erst-Aktivierung". Setzt A.4 aus
+  `sessions/feature1/feature-decisions.md` ausser Kraft.
 
 ---
 
@@ -1267,10 +1269,15 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   baut viertes Image `wwn-cms-auth`, eigener CI-Workflow
   `ci-cms-auth.yml`. Subdomain-Tabelle und DNS-Auflösungs-Kette
   erweitert. A.4 in `sessions/feature1/feature-decisions.md` mit
-  Verweis auf die neue Entscheidung superseded. Cloudflare-Worker-
-  Verzeichnis `infra/cloudflare-worker-cms-auth/` bleibt vorerst
-  als Rollback-Pfad im Repo und wird nach erfolgreichem Cutover in
-  Folge-PR entfernt. Maintainer-Hausaufgaben: DNS-CNAME setzen,
-  GitHub-OAuth-App-Callback-URL umstellen, GitHub-Client-ID/Secret
-  in die neue env-Datei einsetzen, Tag pushen + deployen, Caddy
-  reloaden für Cert.
+  Verweis auf die neue Entscheidung superseded. Maintainer-Hausaufgaben:
+  DNS-CNAME setzen, GitHub-OAuth-App-Callback-URL umstellen, GitHub-
+  Client-ID/Secret in die neue env-Datei einsetzen, Tag pushen +
+  deployen, Caddy reloaden für Cert.
+- **2026-05-11 (CF-Worker-Cleanup)** — Nach erfolgreichem Cutover und
+  Live-Smoketest des Sveltia-Logins wurde der CF-Worker im Account
+  `hwr-06e` via `wrangler delete` abgebaut. Repo-Verzeichnis
+  `infra/cloudflare-worker-cms-auth/` entfernt (Folge-PR). Verweise
+  in `CLAUDE.md`, `docs/cms.md`, `apps/frontend/static/admin/config.yml`
+  und `apps/cms-auth/README.md` auf den vormaligen Pfad bereinigt.
+  Damit ist die Sveltia-OAuth komplett self-hosted, der einzige
+  verbleibende CF-Touchpoint ist DNS.

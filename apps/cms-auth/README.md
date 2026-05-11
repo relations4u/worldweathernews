@@ -2,8 +2,8 @@
 
 Self-hosted GitHub OAuth proxy for Sveltia CMS.
 
-Ersetzt den Cloudflare-Worker unter `infra/cloudflare-worker-cms-auth/`,
-um die Cloudflare-Abhängigkeit zu reduzieren. Funktional 1:1 — Sveltia
+Hat den ursprünglichen Cloudflare-Worker am 11. Mai 2026 abgelöst, um
+die Cloudflare-Abhängigkeit zu reduzieren. Funktional 1:1 — Sveltia
 spricht den gleichen postMessage-Handshake.
 
 ## Endpoints
