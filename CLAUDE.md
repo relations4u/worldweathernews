@@ -627,6 +627,19 @@ Diese Fragen sind im Verlauf der Setup-Phase entschieden worden:
   Erst-Aktivierung". Setzt A.4 aus
   `sessions/feature1/feature-decisions.md` ausser Kraft.
 
+- ✅ **Self-hosting-Prinzip als generelle Architektur-Leitlinie**:
+  Aus dem cms-auth-Refactor abgeleitet. Neue Services landen als
+  Container im App-Compose-Stack auf wwn-prod, nicht als Cloudflare-
+  Worker oder vergleichbare Drittanbieter-Compute-Schicht. Begründung:
+  DNS ist bei Cloudflare bereits ein kritischer Pfad; jeder weitere
+  kritische Pfad beim selben Anbieter hebt das Migrations-Risiko
+  unnötig. Reine **Edge-/Cache-Schichten** vor self-hosted Origins
+  sind die einzige Ausnahme (kein kritischer Pfad). Konkrete Folgen:
+  Iteration 1.3b (Image-Pipeline) wird `apps/cms-media-upload/`
+  Go-Service. Track 3 LLM-Calls sind davon **nicht** betroffen —
+  Cloud-LLM-API-Aufrufe sind keine Compute-Hosting-Frage. Volle
+  Regel als A.19 in `sessions/feature1/feature-decisions.md`.
+
 ---
 
 ## Hosting-Architektur
@@ -1133,6 +1146,47 @@ für Feature-Sessions wird aufgebaut, sobald wir dort ankommen.
   Cluster, bevor `terraform apply` etwas Sinnvolles tut. Workflow:
   Cloud-Image runterladen, daraus VM erzeugen, `qm set --ide2 cloudinit`,
   `qm template`, VMID in `proxmox_template_id` eintragen.
+- **`apps/frontend/pnpm-lock.yaml` ist ein standalone Lockfile** —
+  der Docker-Build-Context unter `apps/frontend/` nutzt diesen, **nicht**
+  den Workspace-Root-Lockfile. pnpm regeneriert den standalone-Lockfile
+  von sich aus nicht, weil der Workspace-Root ihn überschattet. Symptom:
+  Frontend-Container-Build schlägt mit Lockfile-Drift fehl, obwohl der
+  Workspace-Install grün war. Fix-Workflow für Dependency-Updates:
+  `pnpm-workspace.yaml` temporär verstecken, `pnpm install` (regeneriert
+  standalone), Workspace zurück, `pnpm install` erneut (regeneriert
+  Workspace), beide Lockfiles committen. Pattern taucht bei jedem
+  Frontend-Dependency-Update wieder auf — siehe `32f571d` (Folge zu #46)
+  und PR #62 (Dependabot-Triage 11. Mai).
+- **`gh pr merge` schlägt fehl bei Workflow-File-Änderungen ohne
+  `workflow`-Scope** auf dem PAT — GraphQL-Error
+  `mergePullRequest: workflow scope missing`. Drei Optionen:
+  (1) Sofort-Retry — klappt oft beim zweiten Versuch (Race oder
+  lazy-loaded Scope-Check). (2) Sauber:
+  `gh auth refresh -s workflow` und neu authentifizieren.
+  (3) Notlösung: Web-UI-Merge bypasst das CLI-Check. Beobachtet
+  bei PR #63 (Tailwind v4) und bei der CF-Worker-Cleanup-Tranche
+  am 11. Mai.
+- **Tailwind v4: `@theme`-Block in CSS, keine `tailwind.config.js`** —
+  Tailwind v4 hat keine JS-Config-Datei mehr. Konfiguration läuft
+  über `@theme`-Block in `src/app.css`. shadcn-svelte-HSL-Variablen
+  (`--background`, `--primary` …) werden via `--color-*` in den v4-
+  Namespace gebrückt, damit Utility-Klassen wie `bg-primary` weiter
+  auflösen. **Vite-Integration:** `@tailwindcss/vite` ersetzt das
+  PostCSS-Plugin — PostCSS-Pfad kollidiert mit Vites postcss-import,
+  das `@import "tailwindcss"` als relative Datei aufzulösen versucht.
+  **autoprefixer entfällt** — Lightning CSS macht Vendor-Prefixing
+  intern. `.dark`-Strategie über `@custom-variant dark` beibehalten.
+  Referenz: PR #63 (11. Mai).
+- **Self-hosting-Prinzip für neue Services**: neue Compute-Services
+  landen erst-mal als Container im App-Compose-Stack auf wwn-prod,
+  nicht als Cloudflare-Worker. Begründung: DNS läuft bereits über
+  Cloudflare — jeder zusätzliche kritische Pfad bei demselben Anbieter
+  hebt das Migrations-Risiko unnötig. CF-Worker-zu-Go-Container-Port
+  ist machbar (~170 LOC bei cms-auth), fügt sich in bestehendes
+  Compose-/Caddy-/Monitoring-Setup natürlich ein. Ausnahme: reine
+  **Edge-/Cache-Schichten** vor self-hosted Origins sind okay
+  (kein kritischer Pfad). Volle Regel als A.19 in
+  `sessions/feature1/feature-decisions.md` dokumentiert.
 
 ---
 
@@ -1281,3 +1335,21 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   und `apps/cms-auth/README.md` auf den vormaligen Pfad bereinigt.
   Damit ist die Sveltia-OAuth komplett self-hosted, der einzige
   verbleibende CF-Touchpoint ist DNS.
+- **2026-05-11 (Pflege-Runde nach v0.0.4)** — vier Lessons aus der
+  Feature-Phase als generalisierbare Regeln in „Häufige Fallen"
+  nachgezogen, damit sie nicht nur in einzelnen PR-Beschreibungen
+  versteckt sind:
+  (1) **Standalone `apps/frontend/pnpm-lock.yaml`** — Docker-Build
+  nutzt diesen, nicht den Workspace-Root. Re-Sync-Workflow für jedes
+  Frontend-Dependency-Update dokumentiert (Folge aus #32f571d und PR #62).
+  (2) **`gh pr merge` ohne `workflow`-Scope** — drei Optionen
+  (Sofort-Retry, `gh auth refresh -s workflow`, Web-UI-Merge),
+  beobachtet bei PR #63 und CF-Worker-Cleanup.
+  (3) **Tailwind v4 mit `@theme`-Block** statt `tailwind.config.js`,
+  `@tailwindcss/vite` als Vite-Plugin, autoprefixer entfällt,
+  shadcn-svelte HSL via `--color-*` gebrückt (Referenz PR #63).
+  (4) **Self-hosting-Prinzip für neue Services** als allgemeine
+  Leitlinie — nicht nur eine Einzelfall-Entscheidung für cms-auth.
+  Konsequenz: Iteration 1.3b (Image-Pipeline) wird als Container
+  geplant, nicht als CF-Worker. Volle Regel als A.19 in
+  `sessions/feature1/feature-decisions.md`.
