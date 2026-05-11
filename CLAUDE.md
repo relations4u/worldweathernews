@@ -511,7 +511,7 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 | CMS-Authoring-Guide            | `docs/cms.md`                                                                                |
 | Sveltia-Loader                 | `apps/frontend/static/admin/index.html`                                                      |
 | Sveltia-Konfiguration          | `apps/frontend/static/admin/config.yml`                                                      |
-| CMS-OAuth-Worker               | `infra/cloudflare-worker-cms-auth/` (Cloudflare-Worker, Maintainer-Deploy)                   |
+| CMS-OAuth-Proxy                | `apps/cms-auth/` (self-hosted Go-Service auf wwn-prod hinter Caddy)                          |
 | Markdown-Content-Pages         | `apps/frontend/src/content/pages/{de,en}/<slug>.md`                                          |
 | Content-Components             | `apps/frontend/src/lib/content-components/`                                                  |
 | i18n-Messages                  | `apps/frontend/messages/{de-de,en}.json` + `apps/frontend/project.inlang/`                   |
@@ -613,6 +613,18 @@ Diese Fragen sind im Verlauf der Setup-Phase entschieden worden:
   `infra/terraform/README.md` dokumentiert, ist Maintainer-Hausaufgabe
   (NICHT in der Skelett-Session ausgeführt).
 
+### Entscheidungen ab 2026-05-11
+
+- ✅ **CMS-OAuth-Proxy self-hosted statt Cloudflare-Worker**:
+  Sveltia-Auth läuft als kleiner Go-Service `apps/cms-auth/` (Chi-Router,
+  ~170 LOC, Distroless-Image) im App-Compose-Stack auf wwn-prod hinter
+  Caddy unter `cms-auth.worldweathernews.com`. Begründung: Maintainer-
+  Prinzip „Cloudflare-Abhängigkeit minimieren". Der vormalige Worker
+  unter `infra/cloudflare-worker-cms-auth/` ist deprecated und wird nach
+  erfolgreichem Cutover entfernt. Migration-Checkliste in
+  `docs/cms.md` → „Maintainer-Aufgaben für Erst-Aktivierung".
+  Setzt A.4 aus `sessions/feature1/feature-decisions.md` ausser Kraft.
+
 ---
 
 ## Hosting-Architektur
@@ -708,14 +720,16 @@ Proxmox jetzt und gegen Hetzner später).
 
 ### Subdomain-Schema
 
-| Hostname                            | Zweck                            | Phase                                              |
-| ----------------------------------- | -------------------------------- | -------------------------------------------------- |
-| `worldweathernews.com`              | Apex — Landing-Page              | jetzt: simple Landing, später: Production-Frontend |
-| `www.worldweathernews.com`          | 301-Redirect auf Apex            | dauerhaft                                          |
-| `research.worldweathernews.com`     | Forschungs-Frontend              | Forschungs-Phase (jetzt)                           |
-| `api.research.worldweathernews.com` | Forschungs-Backend-API           | Forschungs-Phase (jetzt)                           |
-| `api.worldweathernews.com`          | Production-Backend-API           | später (Production-Phase)                          |
-| `status.worldweathernews.com`       | Public Uptime-Page (Uptime Kuma) | ab Session 10                                      |
+| Hostname                            | Zweck                                  | Phase                                              |
+| ----------------------------------- | -------------------------------------- | -------------------------------------------------- |
+| `worldweathernews.com`              | Apex — Landing-Page                    | jetzt: simple Landing, später: Production-Frontend |
+| `www.worldweathernews.com`          | 301-Redirect auf Apex                  | dauerhaft                                          |
+| `research.worldweathernews.com`     | Forschungs-Frontend                    | Forschungs-Phase (jetzt)                           |
+| `api.research.worldweathernews.com` | Forschungs-Backend-API                 | Forschungs-Phase (jetzt)                           |
+| `api.worldweathernews.com`          | Production-Backend-API                 | später (Production-Phase)                          |
+| `cms-auth.worldweathernews.com`     | Self-hosted OAuth-Proxy für Sveltia    | seit 2026-05-11                                    |
+| `media.worldweathernews.com`        | Hetzner Object-Storage Read-Only-Proxy | seit Iteration 1.1b                                |
+| `status.worldweathernews.com`       | Public Uptime-Page (Uptime Kuma)       | ab Session 10                                      |
 
 ### Nicht öffentlich erreichbar
 
@@ -738,6 +752,8 @@ worldweathernews.com (Apex)              CNAME  gate.hw7.eu          (Cloudflare
 www.worldweathernews.com                 CNAME  worldweathernews.com (Cloudflare)
 research.worldweathernews.com            CNAME  home.worldweathernews.com (Cloudflare)
 api.research.worldweathernews.com        CNAME  home.worldweathernews.com (Cloudflare)
+cms-auth.worldweathernews.com            CNAME  home.worldweathernews.com (Cloudflare)
+media.worldweathernews.com               CNAME  home.worldweathernews.com (Cloudflare)
 ```
 
 ### Cloudflare-Konfiguration
@@ -1241,3 +1257,20 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   Kontrolle" war faktisch falsch (Fine-grained PATs unterstützen
   Packages-Permission seit Jahren nicht), ersetzt durch korrekte
   Anweisung „Classic PAT mit `read:packages`/`write:packages` Scope".
+- **2026-05-11 (CMS-OAuth self-hosted)** — Cloudflare-Worker für die
+  Sveltia-OAuth ersetzt durch einen self-hosted Go-Service unter
+  `apps/cms-auth/` (Chi-Router, Distroless-Image, ~170 LOC Logik 1:1
+  vom CF-Worker portiert). Service läuft im App-Compose-Stack auf
+  wwn-prod (Bind 127.0.0.1:8090), Caddy proxied unter neuem Host
+  `cms-auth.worldweathernews.com`. SOPS-Secret
+  `infra/secrets/production/cms-auth.env` ergänzt, Release-Pipeline
+  baut viertes Image `wwn-cms-auth`, eigener CI-Workflow
+  `ci-cms-auth.yml`. Subdomain-Tabelle und DNS-Auflösungs-Kette
+  erweitert. A.4 in `sessions/feature1/feature-decisions.md` mit
+  Verweis auf die neue Entscheidung superseded. Cloudflare-Worker-
+  Verzeichnis `infra/cloudflare-worker-cms-auth/` bleibt vorerst
+  als Rollback-Pfad im Repo und wird nach erfolgreichem Cutover in
+  Folge-PR entfernt. Maintainer-Hausaufgaben: DNS-CNAME setzen,
+  GitHub-OAuth-App-Callback-URL umstellen, GitHub-Client-ID/Secret
+  in die neue env-Datei einsetzen, Tag pushen + deployen, Caddy
+  reloaden für Cert.

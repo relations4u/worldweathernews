@@ -74,6 +74,17 @@ services:
       redis: {condition: service_healthy}
     networks: [wwn-net]
 
+  cms-auth:
+    image: ghcr.io/{{ image_namespace }}/wwn-cms-auth:{{ versions['cms-auth'] }}
+    container_name: wwn-cms-auth
+    restart: unless-stopped
+    env_file:
+      - {{ app_dir }}/.env.cms-auth
+    ports:
+      # Caddy (network_mode: host) proxied von 127.0.0.1:8090 — nicht öffentlich.
+      - "127.0.0.1:8090:8090"
+    networks: [wwn-net]
+
 networks:
   wwn-net:
     name: wwn-net

@@ -13,6 +13,7 @@ default_versions:
   backend: "0.0.0"
   frontend: "0.0.0"
   pyworkers: "0.0.0"
+  cms-auth: "0.0.0"
 
 # SSH-Hardening — Defaults, die `common` ins sshd_config-Template schreibt.
 sshd_port: 22

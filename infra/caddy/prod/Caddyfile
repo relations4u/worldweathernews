@@ -44,6 +44,14 @@ api.research.worldweathernews.com {
 	reverse_proxy 127.0.0.1:8080
 }
 
+# Self-hosted GitHub-OAuth-Proxy für Sveltia CMS — ersetzt den vormaligen
+# Cloudflare-Worker. Container bindet auf 127.0.0.1:8090 und prüft erlaubte
+# Origins selbst (WWN_CMS_AUTH_ALLOWED_DOMAINS in der env-Datei).
+cms-auth.worldweathernews.com {
+	import hsts
+	reverse_proxy 127.0.0.1:8090
+}
+
 # Media-Bucket-Proxy: Hetzner S3 routet nach Host-Header. Würde der Client-Host
 # (media.worldweathernews.com) durchgereicht, antwortet Hetzner 400 BadRequest
 # (kein Bucket dieses Namens). Wir rewriten Host auf den virtual-hosted
