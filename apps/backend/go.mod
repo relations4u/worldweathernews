@@ -3,7 +3,7 @@ module github.com/relations4u/worldweathernews/apps/backend
 go 1.25.0
 
 require (
-	github.com/getkin/kin-openapi v0.137.0
+	github.com/getkin/kin-openapi v0.138.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
 	github.com/jackc/pgx/v5 v5.9.2
