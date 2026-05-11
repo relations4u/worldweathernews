@@ -103,6 +103,35 @@ Security`. Browser akzeptieren nur das erste, Doppelung ist
   Pipeline signiert beim Push, der Pull macht's nicht automatisch.
   Ansible-Task `cosign verify` vor dem `docker compose pull`
   ergänzen.
+- **Security-Scan-Workflow grün bekommen** —
+  `.github/workflows/security-scan.yml` schlägt auf main seit 11. Mai 2026 zuverlässig fehl, sobald er triggert
+  (`**/go.mod|go.sum|package.json|pnpm-lock.yaml|pyproject.toml|uv.lock|Dockerfile`).
+  Vier separate Befunde, die getrennt triagiert gehören:
+  1. **`Trivy upload-sarif` 403** — privates Repo ohne GitHub Advanced
+     Security; Endpoint `github/codeql-action/upload-sarif` braucht
+     GHAS oder ein public-Repo. Workflow akzeptiert das woanders bereits
+     (Trivy in `release.yml` lädt SARIF als Artifact statt zu code-scanning,
+     siehe Kommentar dort). In `security-scan.yml` denselben Pattern
+     anwenden.
+  2. **`pnpm audit --audit-level=high`** Exit 1 — hochstufige npm-
+     Findings in `apps/frontend/`. `pnpm audit` lokal ausführen, die
+     Treffer-Pakete identifizieren, je Treffer entscheiden:
+     bumpen, ersetzen, oder mit `pnpm audit --ignore <advisory-id>`
+     bewusst durchwinken mit Kommentar.
+  3. **`pip-audit`** Exit 1 in `apps/pyworkers/` — analog: vulnerable
+     Python-Dependencies prüfen, pinnen oder upgraden.
+  4. **`govulncheck`** Exit 3 — meldet Call-Chains durch
+     `http.HandlerFunc → template.Template.Execute` (über chi /
+     generated api.gen.go) und diverse `net.Resolver.*`-Pfade. Sieht
+     nach False-Positive aus (chi nutzt keine `text/template`-
+     Substitution), aber verifizieren: `govulncheck -mode binary`
+     gegen das gebaute Backend ausführen oder pro CVE-ID die echte
+     Codepfad-Aufrufkette gegenchecken. Wenn FP: `govulncheck.yaml`
+     mit Excludes ergänzen.
+     Zwischenzustand: Workflow läuft, schlägt aber durchgängig fehl —
+     d. h. Slack-/Mail-Alarme aus dem CI sind aktuell wertlos. Erst
+     fixen oder Workflow temporär auf `continue-on-error: true` setzen,
+     bevor wir uns auf seine Signale verlassen.
 
 ## Produkt / Features (gehören eigentlich nicht hier rein, aber als Reminder)
 
