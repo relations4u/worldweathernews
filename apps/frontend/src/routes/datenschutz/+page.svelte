@@ -14,7 +14,7 @@
 	<!-- TODO Maintainer: Nach erstem juristischen Review (eRecht24-Generator oder Anwalt) prüfen, ob alle Pflichtangaben vollständig sind. Bei Aktivierung von Plausible/Analytics oder externen Embeds: Abschnitte ergänzen, Cookie-Banner-Verhalten anpassen, Consent-Logik prüfen. -->
 
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">1. Verantwortlicher</h2>
-	<address class="mt-3 not-italic text-slate-600">
+	<address class="mt-3 text-slate-600 not-italic">
 		<strong class="block text-slate-900">Heinz W. Richter</strong>
 		<span>Lessingstraße 47</span><br />
 		<span>14482 Potsdam</span><br />

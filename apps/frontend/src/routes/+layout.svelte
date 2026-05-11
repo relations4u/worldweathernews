@@ -29,7 +29,7 @@
 <div class="flex min-h-screen flex-col bg-white text-slate-900">
 	<a
 		href="#main-content"
-		class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-slate-900 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+		class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-slate-900 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
 	>
 		{m.nav_skip_to_main()}
 	</a>

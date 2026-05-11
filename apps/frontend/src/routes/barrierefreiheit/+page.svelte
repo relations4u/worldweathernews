@@ -60,7 +60,7 @@
 		können, haben Sie das Recht, sich an die Schlichtungsstelle nach § 16 BGG bei der Beauftragten
 		der Bundesregierung für die Belange von Menschen mit Behinderungen zu wenden:
 	</p>
-	<address class="mt-3 not-italic text-slate-600">
+	<address class="mt-3 text-slate-600 not-italic">
 		<strong class="block text-slate-900">Schlichtungsstelle nach dem BGG</strong>
 		bei der Beauftragten der Bundesregierung für die Belange von Menschen mit Behinderungen<br />
 		Mauerstraße 53<br />
