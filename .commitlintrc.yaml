@@ -8,4 +8,4 @@ rules:
   scope-enum:
     - 1
     - always
-    - [backend, frontend, pyworkers, infra, api, ci, deps, docs, root]
+    - [backend, frontend, pyworkers, infra, api, ci, deps, docs, root, db, test]
