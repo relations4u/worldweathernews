@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import * as m from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
-	import favicon from '$lib/assets/favicon.svg';
+	import logoUrl from '$lib/assets/logo.png';
 	import ResearchBanner from '$lib/components/ResearchBanner.svelte';
 	import CookieBanner from '$lib/components/CookieBanner.svelte';
 	import LocaleSwitcher from '$lib/components/LocaleSwitcher.svelte';
@@ -15,7 +15,10 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+	<link rel="shortcut icon" href="/favicon.ico" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 	<title>{m.site_title()} — {m.site_tagline()}</title>
 	<meta name="description" content={m.site_tagline()} />
 	<meta property="og:title" content="{m.site_title()} — {m.site_tagline()}" />
@@ -38,8 +41,9 @@
 
 	<header class="border-b border-slate-200">
 		<div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
-			<a href={resolve('/')} class="text-xl font-semibold tracking-tight">
-				{m.site_title()}
+			<a href={resolve('/')} class="flex items-center gap-3 text-xl font-semibold tracking-tight">
+				<img src={logoUrl} alt="" class="h-10 w-10" width="40" height="40" />
+				<span>{m.site_title()}</span>
 			</a>
 
 			<nav aria-label="Hauptnavigation" class="flex items-center gap-4 text-sm text-slate-600">
