@@ -24,6 +24,12 @@ JOB_RUNS_TOTAL: Counter = Counter(
     ["job", "status"],
 )
 
+OPEN_METEO_FETCHES_TOTAL: Counter = Counter(
+    "wwn_open_meteo_fetches_total",
+    "Total Open-Meteo API fetches, labeled by kind (current|hourly) and status (ok|error).",
+    ["kind", "status"],
+)
+
 
 def start_metrics_server(port: int) -> None:
     """Startet den Prometheus-HTTP-Server auf dem angegebenen Port."""

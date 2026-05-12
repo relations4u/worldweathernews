@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # Heartbeat
     heartbeat_interval_seconds: int = Field(default=30, ge=1)
 
+    # Open-Meteo Worker
+    open_meteo_enabled: bool = True
+    open_meteo_current_interval_seconds: int = Field(default=600, ge=60)
+    open_meteo_hourly_interval_seconds: int = Field(default=3600, ge=60)
+
     # Tracing (OTLP gRPC → Tempo). Endpoint ist host:port ohne Schema.
     tracing_enabled: bool = False
     tracing_endpoint: str = "tempo:4317"
