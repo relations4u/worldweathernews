@@ -97,17 +97,21 @@
   # Migrations werden per `docker cp` in den postgres-Container gestaged,
   # dort gegen 127.0.0.1 ausgeführt, anschliessend wieder entfernt.
   # POSTGRES_USER/PASSWORD/DB stammen aus der Container-Env (SOPS-Secret),
-  # tauchen also nicht im Ansible-Log auf.
+  # tauchen also nicht im Ansible-Log auf. `docker exec -u 0` ist nötig:
+  # die timescaledb-ha:pg16-Image-Default-User ist `postgres`, der wegen
+  # sticky-bit auf /tmp root-owned Files nicht löschen kann (per docker cp
+  # gestaged). goose-Auth läuft über TCP+Password, also unabhängig vom
+  # OS-User innerhalb des Containers.
   ansible.builtin.shell: |
     set -euo pipefail
     docker cp {{ app_dir }}/migrations wwn-postgres:/tmp/wwn-migrations
     docker cp /usr/local/bin/goose wwn-postgres:/tmp/goose
-    docker exec wwn-postgres bash -c '
+    docker exec -u 0 wwn-postgres bash -c '
       /tmp/goose -dir /tmp/wwn-migrations postgres \
         "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?sslmode=disable" \
         up
     '
-    docker exec wwn-postgres rm -rf /tmp/wwn-migrations /tmp/goose
+    docker exec -u 0 wwn-postgres rm -rf /tmp/wwn-migrations /tmp/goose
   args:
     executable: /bin/bash
   # goose ist idempotent (no-op bei gleichem DB-Zustand); wir markieren den
