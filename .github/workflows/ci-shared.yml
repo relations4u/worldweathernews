@@ -60,6 +60,9 @@ jobs:
         working-directory: apps/frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.27.0
+
       - name: Run code generation
         run: ./scripts/check-generated.sh
 

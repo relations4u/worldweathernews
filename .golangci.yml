@@ -43,6 +43,8 @@ linters:
     paths:
       # Generierte Files aus packages/api-schema (oapi-codegen).
       - 'apps/backend/internal/api/.*\.gen\.go$'
+      # Generierte Files aus sqlc.
+      - 'apps/backend/internal/storage/db/.*\.go$'
     rules:
       - path: '_test\.go'
         linters:
@@ -55,3 +57,5 @@ formatters:
   exclusions:
     paths:
       - 'apps/backend/internal/api/.*\.gen\.go$'
+      # Generierte Files aus sqlc.
+      - 'apps/backend/internal/storage/db/.*\.go$'

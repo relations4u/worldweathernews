@@ -28,8 +28,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search locations by query string */
-        get: operations["searchLocations"];
+        /** List all active locations */
+        get: operations["listLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/locations/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get location with latest observation and 24h-forecast */
+        get: operations["getLocationDetail"];
         put?: never;
         post?: never;
         delete?: never;
@@ -48,17 +65,59 @@ export interface components {
             traceId: string;
         };
         Location: {
-            /** Format: uuid */
-            id: string;
+            /** Format: int64 */
+            id: number;
+            /** @description URL-safe key, z.B. "potsdam" */
+            slug: string;
             name: string;
             /** @description ISO 3166-1 alpha-2 */
-            countryCode: string;
+            country: string;
             /** Format: double */
             latitude: number;
             /** Format: double */
             longitude: number;
-            /** @description IANA timezone, e.g. Europe/Berlin */
-            timezone?: string;
+            /** @description IANA timezone, z.B. Europe/Berlin */
+            timezone: string;
+            /** @description Datenquelle, z.B. "open-meteo" */
+            source: string;
+        };
+        /** @description Eine Messung (current oder historisch). */
+        Observation: {
+            /** Format: date-time */
+            observedAt: string;
+            /** @description Temperatur in °C (2 m über Grund). Fehlt, wenn Quelle null liefert. */
+            temperature?: number;
+            /** @description Niederschlag in mm. Fehlt, wenn Quelle null liefert. */
+            precipitation?: number;
+            /** @description Windgeschwindigkeit in km/h (10 m über Grund). Fehlt, wenn Quelle null liefert. */
+            windSpeed?: number;
+            /** @description Windrichtung in Grad (0 = N, 90 = O). Fehlt, wenn Quelle null liefert. */
+            windDirection?: number;
+            source: string;
+            /** Format: date-time */
+            fetchedAt: string;
+        };
+        /** @description Ein stündlicher Vorhersage-Datenpunkt. */
+        ForecastEntry: {
+            /** Format: date-time */
+            forecastFor: string;
+            temperature?: number;
+            precipitation?: number;
+            windSpeed?: number;
+            windDirection?: number;
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Forecast-Runs (alle Einträge eines Calls teilen dasselbe runAt).
+             */
+            runAt: string;
+        };
+        LocationDetail: {
+            location: components["schemas"]["Location"];
+            /** @description Letzte Messung. Fehlt, wenn noch keine Beobachtung vorliegt. */
+            current?: components["schemas"]["Observation"];
+            /** @description Stündliche Forecast-Einträge für die nächsten 24 h (kann leer sein). */
+            forecast: components["schemas"]["ForecastEntry"][];
+            attribution: string;
         };
         /** @description Problem details object as per RFC 7807.
          *      */
@@ -131,19 +190,16 @@ export interface operations {
             };
         };
     };
-    searchLocations: {
+    listLocations: {
         parameters: {
-            query: {
-                q: string;
-                limit?: number;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description List of matching locations */
+            /** @description List of active locations */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -151,10 +207,33 @@ export interface operations {
                 content: {
                     "application/json": {
                         results: components["schemas"]["Location"][];
+                        attribution: string;
                     };
                 };
             };
-            400: components["responses"]["BadRequest"];
+        };
+    };
+    getLocationDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Location detail mit current und forecast */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDetail"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
 }

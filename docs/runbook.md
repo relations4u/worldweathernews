@@ -421,6 +421,88 @@ in Iteration 1.3) kennt einen Maintenance-Mode, bis dahin
 nicht relevant. Static Fallback-Bilder im Frontend-Build sind
 keine geplant.
 
+### 12) "Open-Meteo-Worker liefert keine Daten"
+
+**Symptome**: `/api/v1/locations/{slug}` antwortet mit `current: null`
+oder einem `observedAt`, das deutlich älter als 15 min ist. Frontend
+zeigt „Noch keine aktuelle Beobachtung vorliegend" auf den Cards.
+`forecast` ist leer oder veraltet (forecastFor in der Vergangenheit).
+
+**Diagnose-Reihenfolge** (von DB nach Quelle):
+
+```bash
+# 1) DB-Stand prüfen — wann wurde zuletzt eine Beobachtung
+# persistiert? Sollte alle 10-15 min Fortschritt zeigen.
+docker exec wwn-postgres psql -U wwn -d wwn -c \
+  "SELECT l.slug, o.observed_at, o.fetched_at, NOW() - o.fetched_at AS age
+   FROM observations o JOIN locations l ON l.id = o.location_id
+   WHERE o.observed_at = (SELECT MAX(observed_at) FROM observations
+                          WHERE location_id = l.id)
+   ORDER BY l.slug;"
+# age > 30 min für alle Locations: Worker-Pipeline steht.
+# age > 30 min für einzelne: locations.active prüfen.
+
+# 2) Pyworkers-Container gesund + Scheduler läuft?
+docker ps --filter name=wwn-pyworkers --format '{{.Status}}'
+docker logs --since 5m wwn-pyworkers 2>&1 | grep -E \
+  "scheduler_started|open_meteo|error|Exception" | tail -20
+# Erwartet: 'scheduler_started' mit open_meteo_enabled=true und
+# regelmäßige 'open_meteo_current_persisted'-Logs alle 10 min.
+
+# 3) Metrik-Counter prüfen (wenn Prometheus läuft)
+# wwn_open_meteo_fetches_total{kind="current",status="error"}
+# steigt → Open-Meteo-API oder DB-Schreibfehler.
+# wwn_open_meteo_fetches_total{kind="current",status="ok"}
+# stagniert → Scheduler firet nicht.
+
+# 4) Open-Meteo-API direkt prüfen
+curl -s "https://api.open-meteo.com/v1/forecast?latitude=52.5&longitude=13.4&current=temperature_2m&timezone=Europe/Berlin"
+# Erwartet: JSON mit current.temperature_2m. 5xx oder Timeout →
+# Open-Meteo-Down (Statusseite: https://open-meteo.com).
+
+# 5) Worker manuell triggern (umgeht Scheduler-Frage)
+docker exec wwn-pyworkers python -c '
+import asyncio
+from pyworkers.config import load_settings
+from pyworkers.storage.postgres import create_pool
+from pyworkers.jobs import open_meteo
+
+async def main():
+    settings = load_settings()
+    pool = await create_pool(str(settings.database_url))
+    await open_meteo.run_current(pool)
+    await pool.close()
+
+asyncio.run(main())
+'
+# Wenn das eine neue observation schreibt → Scheduler-Problem
+# (APScheduler hängt? Restart hilft).
+# Wenn das fehlschlägt → siehe Stack-Trace.
+```
+
+**Häufigste Ursachen**:
+
+- **Worker-Container läuft alte Code-Version**: nach Code-Update
+  ohne Container-Restart greift der bind-mount-Reload (watchfiles)
+  manchmal nicht zuverlässig. `docker compose restart pyworkers`
+  forciert einen frischen Start mit neuem Code.
+- **DB-Connection-Problem**: asyncpg-Pool-Acquire-Fehler in den
+  Logs (z. B. nach Postgres-Restart ohne Worker-Reconnect).
+- **Open-Meteo-Rate-Limit**: extrem unwahrscheinlich (10 000/Tag
+  Free-Tier, wir liegen bei ~580/Tag), aber bei Spike-Tests
+  möglich.
+- **Falsche Locations-Konfiguration**: `locations.active = FALSE`
+  oder `source != 'open-meteo'` → Worker iteriert über leere Liste.
+  Quick-Check: `SELECT slug, active, source FROM locations`.
+- **Schema-Drift**: nach Migration ohne Worker-Restart können die
+  asyncpg-Prepared-Statements ungültig sein. Worker-Restart.
+
+**Rollback / Workaround**: Open-Meteo ist die einzige aktive Daten-
+quelle (Stand Iteration 2.1). Wenn sie ausfällt, zeigt das Frontend
+die Fallback-Strings („Noch keine aktuelle Beobachtung"). Keine
+weitere Aktion nötig, bis DWD-Adapter (2.2) live ist — dann ist
+Multi-Source-Failover ein eigenes Backlog-Thema.
+
 ---
 
 ## Bekannte Lücken (in andere Sessions / Folge-PRs verschoben)

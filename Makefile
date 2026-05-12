@@ -94,18 +94,37 @@ fmt: ## Auto-Format (gofmt, ruff, prettier wo verfügbar)
 build: ## Container bauen
 	@echo "Wird ab Session 4 sinnvoll. Aktuell nichts zu bauen."
 
-gen: ## Generierten Code aus OpenAPI aktualisieren (Go-Server-Stubs + TS-Types)
+gen: ## Generierten Code aktualisieren (OpenAPI + sqlc)
 	$(MAKE) -C packages/api-schema gen
+	$(MAKE) sqlc-schema
+	$(MAKE) sqlc-generate
+
+sqlc-schema: ## schema.sql für sqlc aus den goose-Migrations generieren
+	python3 scripts/build-sqlc-schema.py
+
+sqlc-generate: ## sqlc-Code generieren (apps/backend/internal/storage/db/)
+	cd apps/backend && sqlc generate
 
 gen-check: ## Prüft, ob generierter Code aktuell ist (für CI)
 	$(MAKE) gen
 	@git diff --exit-code -- \
 		apps/backend/internal/api/api.gen.go \
 		apps/frontend/src/lib/api/types.gen.ts \
+		apps/backend/internal/storage/schema.sql \
+		apps/backend/internal/storage/db/ \
 		|| (echo "Generated code is out of date. Run 'make gen' and commit." && exit 1)
 
-migrate: ## DB-Migrations anwenden
-	@echo "Wird in Session 4/9 implementiert."
+migrate: ## DB-Migrations anwenden (alle pending)
+	bash scripts/migrate.sh up
+
+migrate-status: ## DB-Migrations-Status anzeigen
+	bash scripts/migrate.sh status
+
+migrate-down: ## Letzte DB-Migration zurückrollen
+	bash scripts/migrate.sh down
+
+migrate-reset: ## Alle DB-Migrations zurückrollen
+	bash scripts/migrate.sh reset
 
 release: ## Neuen Release-Tag erstellen (interaktiv) und pushen
 	bash scripts/release.sh

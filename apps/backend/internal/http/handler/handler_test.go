@@ -51,11 +51,12 @@ func TestHealth_ReturnsOKWithVersion(t *testing.T) {
 
 // apiTestServer baut den Strict-Server gegen den APIHandler, montiert auf einen
 // Chi-Router mit RequestID-Middleware. Genug für End-to-End-Test eines Endpoints
-// ohne den vollen Backend-Boot.
+// ohne den vollen Backend-Boot. Pool=nil triggert den dev-Fallback-Pfad im
+// Handler (leere Listen, 404 für Detail).
 func apiTestServer() http.Handler {
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
-	apiHandler := handler.NewAPIHandler()
+	apiHandler := handler.NewAPIHandler(nil)
 	strict := api.NewStrictHandler(apiHandler, nil)
 	api.HandlerFromMux(strict, r)
 	return r
@@ -84,10 +85,10 @@ func TestPing_ReturnsPongWithTraceID(t *testing.T) {
 	}
 }
 
-func TestSearchLocations_StubReturnsEmpty(t *testing.T) {
+func TestListLocations_NilPoolReturnsEmptyListWithAttribution(t *testing.T) {
 	srv := apiTestServer()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/locations?q=ber", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/locations", nil)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 
@@ -96,12 +97,28 @@ func TestSearchLocations_StubReturnsEmpty(t *testing.T) {
 	}
 
 	var body struct {
-		Results []api.Location `json:"results"`
+		Results     []api.Location `json:"results"`
+		Attribution string         `json:"attribution"`
 	}
 	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body.Results == nil {
 		t.Errorf("results field must be present (even if empty)")
+	}
+	if body.Attribution == "" {
+		t.Errorf("attribution missing")
+	}
+}
+
+func TestGetLocationDetail_NilPoolReturns404(t *testing.T) {
+	srv := apiTestServer()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/locations/potsdam", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status: got %d want 404", rec.Code)
 	}
 }

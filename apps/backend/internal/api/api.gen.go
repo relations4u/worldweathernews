@@ -14,25 +14,74 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// ForecastEntry Ein stündlicher Vorhersage-Datenpunkt.
+type ForecastEntry struct {
+	ForecastFor   time.Time `json:"forecastFor"`
+	Precipitation *float32  `json:"precipitation,omitempty"`
+
+	// RunAt Zeitpunkt des Forecast-Runs (alle Einträge eines Calls teilen dasselbe runAt).
+	RunAt         time.Time `json:"runAt"`
+	Temperature   *float32  `json:"temperature,omitempty"`
+	WindDirection *int      `json:"windDirection,omitempty"`
+	WindSpeed     *float32  `json:"windSpeed,omitempty"`
+}
 
 // Location defines model for Location.
 type Location struct {
-	// CountryCode ISO 3166-1 alpha-2
-	CountryCode string             `json:"countryCode"`
-	Id          openapi_types.UUID `json:"id"`
-	Latitude    float64            `json:"latitude"`
-	Longitude   float64            `json:"longitude"`
-	Name        string             `json:"name"`
+	// Country ISO 3166-1 alpha-2
+	Country   string  `json:"country"`
+	Id        int64   `json:"id"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Name      string  `json:"name"`
 
-	// Timezone IANA timezone, e.g. Europe/Berlin
-	Timezone *string `json:"timezone,omitempty"`
+	// Slug URL-safe key, z.B. "potsdam"
+	Slug string `json:"slug"`
+
+	// Source Datenquelle, z.B. "open-meteo"
+	Source string `json:"source"`
+
+	// Timezone IANA timezone, z.B. Europe/Berlin
+	Timezone string `json:"timezone"`
+}
+
+// LocationDetail defines model for LocationDetail.
+type LocationDetail struct {
+	Attribution string `json:"attribution"`
+
+	// Current Eine Messung (current oder historisch).
+	Current *Observation `json:"current,omitempty"`
+
+	// Forecast Stündliche Forecast-Einträge für die nächsten 24 h (kann leer sein).
+	Forecast []ForecastEntry `json:"forecast"`
+	Location Location        `json:"location"`
+}
+
+// Observation Eine Messung (current oder historisch).
+type Observation struct {
+	FetchedAt  time.Time `json:"fetchedAt"`
+	ObservedAt time.Time `json:"observedAt"`
+
+	// Precipitation Niederschlag in mm. Fehlt, wenn Quelle null liefert.
+	Precipitation *float32 `json:"precipitation,omitempty"`
+	Source        string   `json:"source"`
+
+	// Temperature Temperatur in °C (2 m über Grund). Fehlt, wenn Quelle null liefert.
+	Temperature *float32 `json:"temperature,omitempty"`
+
+	// WindDirection Windrichtung in Grad (0 = N, 90 = O). Fehlt, wenn Quelle null liefert.
+	WindDirection *int `json:"windDirection,omitempty"`
+
+	// WindSpeed Windgeschwindigkeit in km/h (10 m über Grund). Fehlt, wenn Quelle null liefert.
+	WindSpeed *float32 `json:"windSpeed,omitempty"`
 }
 
 // PingResponse defines model for PingResponse.
@@ -51,20 +100,17 @@ type Problem struct {
 	Type     *string `json:"type,omitempty"`
 }
 
-// BadRequest Problem details object as per RFC 7807.
-type BadRequest = Problem
-
-// SearchLocationsParams defines parameters for SearchLocations.
-type SearchLocationsParams struct {
-	Q     string `form:"q" json:"q"`
-	Limit *int   `form:"limit,omitempty" json:"limit,omitempty"`
-}
+// NotFound Problem details object as per RFC 7807.
+type NotFound = Problem
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Search locations by query string
+	// List all active locations
 	// (GET /api/v1/locations)
-	SearchLocations(w http.ResponseWriter, r *http.Request, params SearchLocationsParams)
+	ListLocations(w http.ResponseWriter, r *http.Request)
+	// Get location with latest observation and 24h-forecast
+	// (GET /api/v1/locations/{slug})
+	GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string)
 	// Connectivity check
 	// (GET /api/v1/ping)
 	Ping(w http.ResponseWriter, r *http.Request)
@@ -74,9 +120,15 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
-// Search locations by query string
+// List all active locations
 // (GET /api/v1/locations)
-func (_ Unimplemented) SearchLocations(w http.ResponseWriter, r *http.Request, params SearchLocationsParams) {
+func (_ Unimplemented) ListLocations(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get location with latest observation and 24h-forecast
+// (GET /api/v1/locations/{slug})
+func (_ Unimplemented) GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -95,39 +147,36 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// SearchLocations operation middleware
-func (siw *ServerInterfaceWrapper) SearchLocations(w http.ResponseWriter, r *http.Request) {
+// ListLocations operation middleware
+func (siw *ServerInterfaceWrapper) ListLocations(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLocations(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLocationDetail operation middleware
+func (siw *ServerInterfaceWrapper) GetLocationDetail(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params SearchLocationsParams
+	// ------------- Path parameter "slug" -------------
+	var slug string
 
-	// ------------- Required query parameter "q" -------------
-
-	if paramValue := r.URL.Query().Get("q"); paramValue != "" {
-
-	} else {
-		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
-		return
-	}
-
-	err = runtime.BindQueryParameter("form", true, true, "q", r.URL.Query(), &params.Q)
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", chi.URLParam(r, "slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "limit" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SearchLocations(w, r, params)
+		siw.Handler.GetLocationDetail(w, r, slug)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -265,7 +314,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/v1/locations", wrapper.SearchLocations)
+		r.Get(options.BaseURL+"/api/v1/locations", wrapper.ListLocations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/locations/{slug}", wrapper.GetLocationDetail)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/ping", wrapper.Ping)
@@ -274,34 +326,51 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	return r
 }
 
-type BadRequestApplicationProblemPlusJSONResponse Problem
+type NotFoundApplicationProblemPlusJSONResponse Problem
 
-type SearchLocationsRequestObject struct {
-	Params SearchLocationsParams
+type ListLocationsRequestObject struct {
 }
 
-type SearchLocationsResponseObject interface {
-	VisitSearchLocationsResponse(w http.ResponseWriter) error
+type ListLocationsResponseObject interface {
+	VisitListLocationsResponse(w http.ResponseWriter) error
 }
 
-type SearchLocations200JSONResponse struct {
-	Results []Location `json:"results"`
+type ListLocations200JSONResponse struct {
+	Attribution string     `json:"attribution"`
+	Results     []Location `json:"results"`
 }
 
-func (response SearchLocations200JSONResponse) VisitSearchLocationsResponse(w http.ResponseWriter) error {
+func (response ListLocations200JSONResponse) VisitListLocationsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type SearchLocations400ApplicationProblemPlusJSONResponse struct {
-	BadRequestApplicationProblemPlusJSONResponse
+type GetLocationDetailRequestObject struct {
+	Slug string `json:"slug"`
 }
 
-func (response SearchLocations400ApplicationProblemPlusJSONResponse) VisitSearchLocationsResponse(w http.ResponseWriter) error {
+type GetLocationDetailResponseObject interface {
+	VisitGetLocationDetailResponse(w http.ResponseWriter) error
+}
+
+type GetLocationDetail200JSONResponse LocationDetail
+
+func (response GetLocationDetail200JSONResponse) VisitGetLocationDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLocationDetail404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetLocationDetail404ApplicationProblemPlusJSONResponse) VisitGetLocationDetailResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/problem+json")
-	w.WriteHeader(400)
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -324,9 +393,12 @@ func (response Ping200JSONResponse) VisitPingResponse(w http.ResponseWriter) err
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Search locations by query string
+	// List all active locations
 	// (GET /api/v1/locations)
-	SearchLocations(ctx context.Context, request SearchLocationsRequestObject) (SearchLocationsResponseObject, error)
+	ListLocations(ctx context.Context, request ListLocationsRequestObject) (ListLocationsResponseObject, error)
+	// Get location with latest observation and 24h-forecast
+	// (GET /api/v1/locations/{slug})
+	GetLocationDetail(ctx context.Context, request GetLocationDetailRequestObject) (GetLocationDetailResponseObject, error)
 	// Connectivity check
 	// (GET /api/v1/ping)
 	Ping(ctx context.Context, request PingRequestObject) (PingResponseObject, error)
@@ -361,25 +433,49 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
-// SearchLocations operation middleware
-func (sh *strictHandler) SearchLocations(w http.ResponseWriter, r *http.Request, params SearchLocationsParams) {
-	var request SearchLocationsRequestObject
-
-	request.Params = params
+// ListLocations operation middleware
+func (sh *strictHandler) ListLocations(w http.ResponseWriter, r *http.Request) {
+	var request ListLocationsRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.SearchLocations(ctx, request.(SearchLocationsRequestObject))
+		return sh.ssi.ListLocations(ctx, request.(ListLocationsRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "SearchLocations")
+		handler = middleware(handler, "ListLocations")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(SearchLocationsResponseObject); ok {
-		if err := validResponse.VisitSearchLocationsResponse(w); err != nil {
+	} else if validResponse, ok := response.(ListLocationsResponseObject); ok {
+		if err := validResponse.VisitListLocationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLocationDetail operation middleware
+func (sh *strictHandler) GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetLocationDetailRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLocationDetail(ctx, request.(GetLocationDetailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLocationDetail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLocationDetailResponseObject); ok {
+		if err := validResponse.VisitGetLocationDetailResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -414,22 +510,33 @@ func (sh *strictHandler) Ping(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"xvASAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

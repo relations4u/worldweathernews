@@ -136,21 +136,21 @@ getestet. Wartet auf erste externe Editor:innen.
 
 ## Track 2 — Wetterdaten
 
-Status: ⏳ Konzept offen
-Notizen: Keine Architektur-Entscheidungen getroffen. Drei offene B-Punkte
-in `feature-decisions.md`: B.1 (Datenquelle-Reihenfolge — Open-Meteo vs.
-DWD), B.2 (Wetterkarten — selbst rendern vs. einbinden), B.4 (Daten-
-Lizenzen + Attribution).
+Status: 🟡 Iteration 2.1 fertig auf Branch, PR + Tag stehen aus.
+Detail-Status in `../feature2/STATUS.md`.
 
-Drei Einstiegs-Optionen aus `status-snapshot.md`:
+**Iteration 2.1 — Open-Meteo Hello World** ✅ (Branch
+`feat/iteration-2-1-open-meteo`, 8 Commits, geplanter Tag v0.4.0).
+Pipeline live verifiziert: pyworkers fetcht alle 10 min current und
+alle 60 min hourly-Forecast für Potsdam/Berlin/Hamburg in TimescaleDB-
+Hypertables, Backend serviert `/api/v1/locations` + `/{slug}`,
+Frontend zeigt 3 WeatherCards auf `/wetter`, Attribution auf
+`/quellen-attribution` mit Open-Meteo-Block.
 
-- **A** — Domänen-Architektur zuerst (Stations, Observations, Forecasts).
-  Empfohlen wenn wir die Architektur sauber wollen, bevor irgendein
-  Adapter geschrieben wird.
-- **B** — Direkt Open-Meteo als Hello World. Empfohlen wenn wir lernen
-  wollen, wie Wetterdaten in der Praxis reinkommen, bevor wir das große
-  Modell durchdenken.
-- **C** — Pause bis Iteration 1.4 + 1.5 durch sind.
+Architektur-Entscheidungen (B-Punkte aus
+`feature-decisions.md`) — B.1 + B.4 effektiv DECIDED durch 2.1,
+formaler Decisions-Log-Update wird als eigene Doku-PR geplant.
+B.2 (Wetterkarten) und B.3 (Storage für Datasets) bleiben offen.
 
 ---
 
