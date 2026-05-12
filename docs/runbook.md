@@ -503,6 +503,86 @@ die Fallback-Strings („Noch keine aktuelle Beobachtung"). Keine
 weitere Aktion nötig, bis DWD-Adapter (2.2) live ist — dann ist
 Multi-Source-Failover ein eigenes Backlog-Thema.
 
+### 13) "Nach Deploy: API gibt 500 / relation does not exist"
+
+**Symptome**: Direkt nach einem `scripts/deploy.sh production X.Y.Z`
+liefert das Backend 500er auf bisher funktionsfähige Endpoints.
+`/api/v1/ping` ist noch ok (nutzt keine Tabelle), aber
+`/api/v1/locations` oder `/api/v1/locations/{slug}` antworten mit
+`{"title":"internal_error","status":500}`. Backend-Logs zeigen
+SQLSTATE `42P01` und Meldungen wie
+`ERROR: relation "locations" does not exist`.
+
+**Ursache**: Eine neue goose-Migration unter `infra/migrations/` ist
+mit dem Release gebaut/getaggt worden, aber auf wwn-prod noch nicht
+angewendet. Tritt klassisch beim **ersten** Release auf, der eine
+Schema-Änderung mitbringt — passierte konkret bei v0.4.0 am 12. Mai 2026 (Open-Meteo Hello World, erste echte Migration nach
+Setup-Phase).
+
+**Diagnose**:
+
+```bash
+# 1) Aus Public-View direkt verifizieren (production-User reicht):
+curl -s https://api.research.worldweathernews.com/api/v1/locations \
+  | jq .
+# Erwartet bei Schema-Drift:
+# {"title":"internal_error","status":500,"traceId":"..."}
+
+# 2) Auf wwn-prod: Backend-Logs zeigen die genaue Relation:
+ssh deploy@wwn-prod 'docker logs --tail 50 wwn-backend 2>&1 | grep -i "relation"'
+# z. B.: ERROR: relation "locations" does not exist (SQLSTATE 42P01)
+
+# 3) Postgres-State prüfen — fehlt die Tabelle wirklich?
+ssh deploy@wwn-prod 'docker exec wwn-postgres psql -U wwn -d wwn -c "\dt"'
+# Wenn nur goose_db_version (oder gar nichts) auftaucht → Migration fehlt.
+```
+
+**Sofort-Fix (manuell, wie am 12. Mai durchgeführt)**: postgres
+exposed keinen Host-Port — also goose innerhalb des Containers
+laufen lassen.
+
+```bash
+# Auf dem Maintainer-Host (wwn-dev):
+scp $(which goose) deploy@wwn-prod:/tmp/goose
+rsync -av infra/migrations/ deploy@wwn-prod:/tmp/wwn-migrations/
+
+# Auf wwn-prod:
+ssh deploy@wwn-prod
+docker cp /tmp/wwn-migrations wwn-postgres:/tmp/wwn-migrations
+docker cp /tmp/goose wwn-postgres:/tmp/goose
+docker exec wwn-postgres bash -c '
+  /tmp/goose -dir /tmp/wwn-migrations postgres \
+    "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?sslmode=disable" \
+    up
+'
+# Cleanup
+docker exec wwn-postgres rm -rf /tmp/wwn-migrations /tmp/goose
+rm /tmp/goose && rm -rf /tmp/wwn-migrations
+```
+
+Backend muss nicht neu gestartet werden — pgx baut neue Statements
+beim nächsten Query auf. Bei Workern, die asyncpg-prepared-Statements
+cachen (pyworkers), `docker compose restart pyworkers` nach der
+Migration.
+
+**Langfristiger Fix**: Migrations sind seit diesem PR Bestandteil
+des Ansible-Deploys
+(`infra/ansible/roles/app/tasks/main.yml`, Task „Apply database
+migrations via goose-in-postgres-container"). Sie laufen
+automatisch nach `scripts/deploy.sh production X.Y.Z`, zwischen
+„Postgres healthy" und „Backend/Pyworkers starten". Damit ist
+dieses Szenario im Normalbetrieb nicht mehr erreichbar — der
+Sofort-Fix oben bleibt als Notfall-Rezept für den Fall, dass die
+Ansible-Pipeline selbst kaputt ist.
+
+**Smoke-Test nach der Migration**:
+
+```bash
+curl -s https://api.research.worldweathernews.com/api/v1/locations \
+  | jq '.results | length'
+# Erwartet: 3 (Potsdam, Berlin, Hamburg ab v0.4.0).
+```
+
 ---
 
 ## Bekannte Lücken (in andere Sessions / Folge-PRs verschoben)

@@ -3,6 +3,10 @@
 # vars_prompt im deploy.yml-Playbook übersteuert pro-Service-Versions.
 versions: "{{ default_versions }}"
 
+# goose-Binary auf dem App-Host. Spiegelt den Pin in .mise.toml — Drift
+# zwischen Dev und Prod würde Migration-Bugs auf einer Seite verstecken.
+goose_version: "3.22.1"
+
 # Liste der Secret-Files (im Repo), die nach /opt/wwn/.env.<name> entschlüsselt
 # werden. `name` ist der Suffix nach .env.; `src` ist relativer Pfad unter
 # `secrets_dir` (group_vars/all.yml).
