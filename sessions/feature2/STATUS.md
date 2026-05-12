@@ -37,10 +37,9 @@ Vier B-Punkte aus `sessions/feature1/feature-decisions.md` Abschnitt B:
 
 ### Iteration 2.1 — Open-Meteo Hello World
 
-Status: ✅ Done (Branch `feat/iteration-2-1-open-meteo`, PR steht aus)
+Status: ✅ Done — gemerged (PR #69), v0.4.0 → v0.4.2 live auf wwn-prod
 Datum: 2026-05-12
-Geplanter Tag: **v0.4.0** (Track-1-Tag-Schema fortgesetzt — siehe
-Konflikt-Note unten)
+Tags: **v0.4.0** (Iteration-Release) → **v0.4.1** (Folge-PR, partial deploy) → **v0.4.2** (Hotfix, vollständig live).
 
 **Commits auf dem Branch (9 plus Branch-Setup):**
 
@@ -89,8 +88,43 @@ nach Track-1-Iter-1.3a auf v0.3.1 steht und sich für Track-2-
 Iterationen sinnvoll fortsetzt.
 
 **Akzeptanzkriterien:** siehe `prompt-iteration-2-1.md` — alle
-erfüllt außer (a) Lighthouse-Run (Maintainer-Task im Browser), (b)
-PR-Erstellung + Merge + Tag v0.4.0 (post-Schritt-9-Review).
+erfüllt außer (a) Lighthouse-Run (Maintainer-Task im Browser).
+
+**Post-Merge-Verlauf (12. Mai 2026):**
+
+1. **v0.4.0** (PR #69, Iteration 2.1) released; Deploy auf wwn-prod
+   ergab 500 auf `/api/v1/locations` (`relation "locations" does not
+exist`). Ursache: Ansible-Deploy hatte keinen `goose up`-Step
+   — die neue Migration kam nie auf prod an. Manueller Fix:
+   `docker cp` von goose-Binary + Migrations in `wwn-postgres`,
+   `docker exec` der Migration als Hot-Fix.
+
+2. **PR #70** (Folge-PR, chore): zwei Themen gebündelt:
+   (a) Ansible-Deploy-Migrationen automatisiert (App-Rolle staged
+   goose-Binary, läuft im postgres-Container);
+   (b) Runbook §13 dokumentiert das post-deploy-500-Pattern;
+   (c) Site-Logo + Favicon-Set (eagle-PNG, 256x256 im Header +
+   favicon.ico/16/32/180/192/512 im static/).
+   Gemerged als v0.4.1.
+
+3. **v0.4.1-Deploy scheiterte** am cleanup-rm: timescaledb-ha:pg16
+   attached `docker exec` als `postgres`-User; der konnte das
+   root-owned `/tmp/goose` (per `docker cp` gestaged) wegen
+   /tmp-sticky-bit nicht löschen → Ansible-Task failed → Start-
+   full-stack-Task übersprungen → App-Container blieben auf v0.4.0.
+   Migration selbst war successful (`goose: migrated to version: 1`).
+
+4. **PR #71** (Hotfix): `docker exec -u 0` für Goose + cleanup-rm.
+   Gemerged als v0.4.2, deployed erfolgreich. Container alle v0.4.2,
+   `/api/v1/locations` antwortet mit 3 Locations, Berlin liefert
+   frisches `current` (9°C @ 09:30Z), Favicons + Logo live.
+
+**Lessons learned in Memory + CLAUDE.md übernommen:**
+
+- `docker cp` + `docker exec`-Pattern: ALWAYS `-u 0`, weil docker
+  exec den Container-Default-User attached und root-owned Staged-
+  Files in /tmp wegen sticky-bit nicht löschbar sind. (Memory:
+  `feedback_docker_exec_default_user.md`.)
 
 **Bekannt-offen, in `docs/backlog.md` dokumentiert:**
 
@@ -111,8 +145,8 @@ Geplanter Tag: **v0.2.0**
 
 **Voraussetzungen:**
 
-- [ ] Iteration 2.1 gemerged und v0.4.0 live
-- [ ] Worker-Pattern aus 2.1 erprobt (lessons learned eingearbeitet)
+- [x] Iteration 2.1 gemerged und v0.4.2 live
+- [x] Worker-Pattern aus 2.1 erprobt (lessons learned eingearbeitet)
 - [ ] DWD-OpenData-Recherche durchgeführt (siehe Plan-Skizze)
 - [ ] Konkrete Stations-Auswahl mit Maintainer abgestimmt
 - [ ] Übergabe-Prompt ausgearbeitet (`prompt-iteration-2-2.md`)
@@ -158,8 +192,9 @@ GRIB-Dateien, mehrere GB pro Modelllauf)
 ```
 v0.0.5      Security-Triage post-v0.0.4               ✅ 2026-05-12
                 ↓
-v0.4.0      Iteration 2.1 (Open-Meteo Hello World)    🟡 Branch fertig
-                                                          (PR + Tag steht aus)
+v0.4.0      Iteration 2.1 (Open-Meteo Hello World)    ✅ 2026-05-12
+v0.4.1      Ansible-migrate + Logo (PR #70)           ⚠️ partial (cleanup-fail)
+v0.4.2      Hotfix docker-exec -u 0 (PR #71)          ✅ 2026-05-12 live
                 ↓
 v0.5.0      Iteration 2.2 (DWD-Adapter)               ⏳ nach 2.1
                 ↓
