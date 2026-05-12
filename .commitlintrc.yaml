@@ -5,10 +5,16 @@ rules:
     - 2
     - always
     - [feat, fix, chore, docs, refactor, test, perf, ci, style, build, revert]
-  scope-enum:
-    - 1
-    - always
-    - [backend, frontend, pyworkers, infra, api, ci, deps, docs, root, db, test]
+  # scope-enum bewusst disabled: in Mono-Repo mit Iterations-Branches
+  # tauchen sinnvolle Scopes auf wie `(2.1)`, `(2.2)`, `(db)`, `(test)` —
+  # eine starre Allow-List ist zu eng. Type-enum (feat/fix/chore/...) reicht
+  # als Disziplin-Anker. wagoid-Action behandelt Level-1-Warnings als
+  # Failure trotz failOnWarnings:false.
+  scope-enum: [0]
+  # subject-case bewusst disabled: Proper Nouns wie "Open-Meteo-Worker"
+  # oder "WeatherCard" sind in Subjects legitim und werden vom
+  # config-conventional-Default als start-case verboten.
+  subject-case: [0]
   # Body- und Footer-Lines werden bewusst nicht auf 100 chars limitiert.
   # Wir nutzen multi-`-m`-Flags für strukturierte Commit-Messages mit
   # bewusst lang gehaltenen Absatz-Zeilen, die GitHub-Web und `gh pr view`
