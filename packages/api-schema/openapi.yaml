@@ -76,6 +76,17 @@ paths:
             pattern: "^[a-z0-9-]+$"
             minLength: 1
             maxLength: 100
+        - name: source
+          in: query
+          required: false
+          description: |
+            Wählt die Datenquelle für `current` und `forecast`. Default-Logik
+            wenn nicht gesetzt: `dwd` falls die Location eine DWD-Station hat,
+            sonst `open-meteo`. Quellen, für die keine Daten in der DB liegen,
+            liefern `current = null` bzw. leeres `forecast`-Array.
+          schema:
+            type: string
+            enum: [dwd, open-meteo]
       responses:
         "200":
           description: Location detail mit current und forecast
@@ -130,7 +141,23 @@ components:
           description: IANA timezone, z.B. Europe/Berlin
         source:
           type: string
-          description: Datenquelle, z.B. "open-meteo"
+          description: Default-Datenquelle (Legacy-Feld aus 2.1; nutze `availableSources`).
+        altitudeM:
+          type: integer
+          description: Stations-Höhe über Normalnull in Metern (falls bekannt).
+        dwdStationId:
+          type: string
+          description: |
+            WMO-Synop-Kennung der DWD-Station für diese Location, falls eine
+            verknüpft ist. Wird zum Abruf aus opendata.dwd.de/.../poi/ benutzt.
+        availableSources:
+          type: array
+          items:
+            type: string
+          description: |
+            Liste aller Datenquellen, für die diese Location aktuell
+            Observations in der DB hat (z.B. `["dwd", "open-meteo"]`).
+            Leeres Array, wenn noch nichts geschrieben wurde.
       required: [id, slug, name, country, latitude, longitude, timezone, source]
 
     Observation:
@@ -154,6 +181,16 @@ components:
           minimum: 0
           maximum: 360
           description: Windrichtung in Grad (0 = N, 90 = O). Fehlt, wenn Quelle null liefert.
+        pressure:
+          type: number
+          description: |
+            Luftdruck in hPa, auf Meereshöhe reduziert (MSL). Fehlt, wenn
+            Quelle null liefert (z.B. DWD-Hochgebirgsstationen >2000 m).
+        humidity:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Relative Luftfeuchte in %. Fehlt, wenn Quelle null liefert.
         source:
           type: string
         fetchedAt:

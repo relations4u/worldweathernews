@@ -78,8 +78,19 @@ export interface components {
             longitude: number;
             /** @description IANA timezone, z.B. Europe/Berlin */
             timezone: string;
-            /** @description Datenquelle, z.B. "open-meteo" */
+            /** @description Default-Datenquelle (Legacy-Feld aus 2.1; nutze `availableSources`). */
             source: string;
+            /** @description Stations-Höhe über Normalnull in Metern (falls bekannt). */
+            altitudeM?: number;
+            /** @description WMO-Synop-Kennung der DWD-Station für diese Location, falls eine
+             *     verknüpft ist. Wird zum Abruf aus opendata.dwd.de/.../poi/ benutzt.
+             *      */
+            dwdStationId?: string;
+            /** @description Liste aller Datenquellen, für die diese Location aktuell
+             *     Observations in der DB hat (z.B. `["dwd", "open-meteo"]`).
+             *     Leeres Array, wenn noch nichts geschrieben wurde.
+             *      */
+            availableSources?: string[];
         };
         /** @description Eine Messung (current oder historisch). */
         Observation: {
@@ -93,6 +104,12 @@ export interface components {
             windSpeed?: number;
             /** @description Windrichtung in Grad (0 = N, 90 = O). Fehlt, wenn Quelle null liefert. */
             windDirection?: number;
+            /** @description Luftdruck in hPa, auf Meereshöhe reduziert (MSL). Fehlt, wenn
+             *     Quelle null liefert (z.B. DWD-Hochgebirgsstationen >2000 m).
+             *      */
+            pressure?: number;
+            /** @description Relative Luftfeuchte in %. Fehlt, wenn Quelle null liefert. */
+            humidity?: number;
             source: string;
             /** Format: date-time */
             fetchedAt: string;
@@ -215,7 +232,14 @@ export interface operations {
     };
     getLocationDetail: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Wählt die Datenquelle für `current` und `forecast`. Default-Logik
+                 *     wenn nicht gesetzt: `dwd` falls die Location eine DWD-Station hat,
+                 *     sonst `open-meteo`. Quellen, für die keine Daten in der DB liegen,
+                 *     liefern `current = null` bzw. leeres `forecast`-Array.
+                 *      */
+                source?: "dwd" | "open-meteo";
+            };
             header?: never;
             path: {
                 slug: string;
