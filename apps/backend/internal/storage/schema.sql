@@ -53,3 +53,30 @@ CREATE TABLE forecasts (
 
 CREATE INDEX idx_forecasts_location_forecast_for
     ON forecasts (location_id, forecast_for DESC);
+
+-- ------------------------------------------------------------
+-- From: infra/migrations/0002_dwd_poi_stations_and_variables.sql
+-- ------------------------------------------------------------
+
+
+-- Erweitere observations-PK um source, damit DWD und Open-Meteo parallel
+-- für dieselbe (location_id, observed_at) speichern können, ohne sich zu
+-- überschreiben. observed_at bleibt drin, deshalb akzeptiert TimescaleDB
+-- die neue PK auf der Hypertable.
+ALTER TABLE observations DROP CONSTRAINT observations_pkey;
+ALTER TABLE observations ADD PRIMARY KEY (location_id, source, observed_at);
+
+-- locations: dwd_station_id (Schlüssel für POI-CSV-Fetch) + altitude_m
+-- (Frontend zeigt Höhe für Klimakontrast-Stationen).
+ALTER TABLE locations
+    ADD COLUMN dwd_station_id TEXT,
+    ADD COLUMN altitude_m     INTEGER;
+
+CREATE INDEX idx_locations_dwd_station_id
+    ON locations (dwd_station_id)
+    WHERE dwd_station_id IS NOT NULL;
+
+-- observations: pressure (hPa MSL) + humidity (% relative).
+ALTER TABLE observations
+    ADD COLUMN pressure DOUBLE PRECISION,
+    ADD COLUMN humidity DOUBLE PRECISION;

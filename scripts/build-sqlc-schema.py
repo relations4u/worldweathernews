@@ -98,6 +98,8 @@ def is_skippable(stmt: str) -> bool:
         up = s.upper()
         if up.startswith("INSERT"):
             return True
+        if up.startswith("UPDATE"):
+            return True
         if up.startswith("DELETE"):
             return True
         if up.startswith("SELECT CREATE_HYPERTABLE"):
