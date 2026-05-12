@@ -37,25 +37,70 @@ Vier B-Punkte aus `sessions/feature1/feature-decisions.md` Abschnitt B:
 
 ### Iteration 2.1 — Open-Meteo Hello World
 
-Status: ⏳ Geplant (Voraussetzung erfüllt seit v0.0.5)
-Übergabe-Prompt: `prompt-iteration-2-1.md` (542 Zeilen, 9 Schritte)
-Geschätzte Dauer: 3-4 Tage
-Geplanter Tag: **v0.1.0** (erstes Feature-Release)
+Status: ✅ Done (Branch `feat/iteration-2-1-open-meteo`, PR steht aus)
+Datum: 2026-05-12
+Geplanter Tag: **v0.4.0** (Track-1-Tag-Schema fortgesetzt — siehe
+Konflikt-Note unten)
 
-**Voraussetzungen:**
+**Commits auf dem Branch (9 plus Branch-Setup):**
 
-- [x] Security-Triage-PR gemerged (PR #67, v0.0.5 live seit 12. Mai)
-- [x] Konzept (B.1, B.4) entschieden
-- [x] Übergabe-Prompt geschrieben
+1. `82fab20` — feat(db): erste Migration für Open-Meteo Locations,
+   Observations, Forecasts (Schritt 2)
+2. `6925b12` — feat(backend): sqlc-Pipeline für locations/
+   observations/forecasts (Schritt 3)
+3. `0abb927` — feat(pyworkers): Open-Meteo-Worker, current 10 min
+   und hourly 60 min (Schritt 4)
+4. `3822113` — feat(backend): /api/v1/locations list + /{slug}
+   detail mit current + forecast (Schritt 5)
+5. `b1cf7db` — feat(frontend): /wetter route mit WeatherCard für
+   drei Open-Meteo-Städte (Schritt 6)
+6. `7f1d65a` — docs(frontend): Open-Meteo-Block auf
+   /quellen-attribution (Schritt 7)
+7. `d17c8e3` — test(pyworkers): tests für open_meteo parser +
+   HTTP-Layer (Schritt 8)
+8. (folgt) — docs(2.1): data-sources + runbook + CLAUDE +
+   backlog + STATUS-Updates (Schritt 9)
 
-**Offene Klärungs-Fragen für Implementations-Start:**
+**Getroffene Implementations-Entscheidungen:**
 
-- Scheduling-Wahl: W1 (APScheduler im Worker-Container) bevorzugt,
-  finale Entscheidung im Implementations-Schritt 4
-- Frontend-Position: Startseite erweitern vs eigene `/wetter`-Route
-  — Entscheidung mit Maintainer
+- **Scheduling**: W1 (APScheduler im Worker-Container, in-Memory-
+  State). W3-Migration (PostgresJobStore) im Backlog.
+- **Frontend-Position**: eigene Route `/wetter` (CSR-only via
+  `ssr=false`; SSR-Upgrade über separaten Internal-API-Hostname im
+  Backlog).
+- **Search-Endpoint-Konflikt**: bisheriger Search-Stub auf
+  `/api/v1/locations` durch das neue List-All ersetzt. Search wird
+  eigene Iteration (siehe `docs/backlog.md` → Locations-Suche).
+- **OpenAPI-Nullable-Frage**: oapi-codegen v2.4.1 kennt 3.1's
+  type-Array nicht, redocly verbietet 3.0's `nullable` in 3.1-Specs.
+  Lösung: kein Nullable-Marker; optionale Felder bleiben
+  required:false → oapi-codegen erzeugt `*float32`-Pointer.
+- **sqlc-Schema-Input**: Pre-Processing-Skript
+  `scripts/build-sqlc-schema.py` baut `apps/backend/internal/
+storage/schema.sql` aus den goose-Up-Sections in
+  `infra/migrations/`. Generated, committed, von `make gen-check`
+  validiert.
 
-**Akzeptanzkriterien:** siehe `prompt-iteration-2-1.md`
+**Tag-Konflikt-Note:** Der ursprüngliche Übergabe-Prompt schlug
+`v0.1.0` als Tag-Namen vor. `v0.1.0` ist aber bereits am 8. Mai für
+Track 1 Iteration 1.1 vergeben („first feature-phase release").
+Maintainer-Entscheidung 12. Mai: **v0.4.0**, weil das Tag-Schema
+nach Track-1-Iter-1.3a auf v0.3.1 steht und sich für Track-2-
+Iterationen sinnvoll fortsetzt.
+
+**Akzeptanzkriterien:** siehe `prompt-iteration-2-1.md` — alle
+erfüllt außer (a) Lighthouse-Run (Maintainer-Task im Browser), (b)
+PR-Erstellung + Merge + Tag v0.4.0 (post-Schritt-9-Review).
+
+**Bekannt-offen, in `docs/backlog.md` dokumentiert:**
+
+- W3 Persistent-Job-Store für APScheduler
+- SSR-Upgrade für `/wetter` (Internal-API-Hostname)
+- Daily-Aggregate-Tabelle + Era5-Historie (Klima-Iteration)
+- testcontainers-Postgres für Backend-Handler-Tests
+- Lighthouse-CI für `/wetter`
+- mdsvex-Konvertierung der hardcoded Compliance-Pages
+- EN-Übersetzung von `/quellen-attribution`
 
 ### Iteration 2.2 — DWD-Adapter
 
@@ -66,7 +111,7 @@ Geplanter Tag: **v0.2.0**
 
 **Voraussetzungen:**
 
-- [ ] Iteration 2.1 gemerged und v0.1.0 live
+- [ ] Iteration 2.1 gemerged und v0.4.0 live
 - [ ] Worker-Pattern aus 2.1 erprobt (lessons learned eingearbeitet)
 - [ ] DWD-OpenData-Recherche durchgeführt (siehe Plan-Skizze)
 - [ ] Konkrete Stations-Auswahl mit Maintainer abgestimmt
@@ -113,19 +158,25 @@ GRIB-Dateien, mehrere GB pro Modelllauf)
 ```
 v0.0.5      Security-Triage post-v0.0.4               ✅ 2026-05-12
                 ↓
-v0.1.0      Iteration 2.1 (Open-Meteo Hello World)    ⏳ ~16. Mai 2026
+v0.4.0      Iteration 2.1 (Open-Meteo Hello World)    🟡 Branch fertig
+                                                          (PR + Tag steht aus)
                 ↓
-v0.2.0      Iteration 2.2 (DWD-Adapter)               ⏳ ~22. Mai 2026
+v0.5.0      Iteration 2.2 (DWD-Adapter)               ⏳ nach 2.1
                 ↓
-v0.3.0      Iteration 2.3 (Stations-Map)              ⏳ ~28. Mai 2026
+v0.6.0      Iteration 2.3 (Stations-Map)              ⏳ nach 2.2
                 ↓
 Konzept-Session vor Track-2-Fortsetzung:
   - B.2 Wetterkarten-Strategie
   - B.3 Storage für große Datasets
   - EUMETSAT-Lizenz-Status für Phase 1
                 ↓
-v0.4.0+     2.4 / 2.5 / 2.6 nach Konzept-Session       ⏳ Juni 2026+
+v0.7.0+     2.4 / 2.5 / 2.6 nach Konzept-Session       ⏳ später
 ```
+
+Tag-Numbering-Note: ursprünglicher Prompt schlug v0.1.0–v0.3.0 für
+Track 2 vor. Diese Tags sind aber bereits durch Track 1 vergeben
+(v0.1.0 für 1.1, v0.2.0 für 1.2, v0.3.0 für 1.3a — siehe
+`git tag --list`). Neue Reihe fortgeführt ab v0.4.0.
 
 Daten sind Schätzungen, kein Commitment. Iteration startet wenn
 Voraussetzungen erfüllt sind, nicht nach Kalender.

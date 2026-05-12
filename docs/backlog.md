@@ -140,12 +140,80 @@ Security`. Browser akzeptieren nur das erste, Doppelung ist
 write`-Permission wieder rein). Bis dahin SARIF manuell ziehen,
     wenn Trivy rot wird — Hinweis in beiden Workflow-Files vorhanden.
 
+## Datenquellen / Worker (post-Iteration-2.1)
+
+- **APScheduler-Persistent-Job-Store (W3)** — aktuell W1: APScheduler
+  läuft im Worker-Container mit in-Memory-Job-State. Container-Restart
+  vergisst alle Job-Run-History. Migration zu W3 (PostgresJobStore)
+  bringt Persistent-State; sinnvoll wenn Jobs für Klima-Backfills
+  o. ä. nicht idempotent wiederholbar sind. Code-Stelle:
+  `apps/pyworkers/pyworkers/__main__.py` (scheduler-Instanziierung).
+- **Daily-Aggregate-Tabelle** — `observations`-Rohdaten alle 15 min
+  wachsen schnell. Für Klima-Features brauchen wir Tages-Aggregate
+  (min/max/mean Temperatur, Niederschlagssumme, …) als eigene
+  Hypertable mit Materialized-View oder Continuous-Aggregate
+  (TimescaleDB-Feature). Trigger: erste Klima-Iteration.
+- **Era5-/Reanalyse-Historie** — für „Wo lag dieser Tag im
+  Klima-Mittel?" brauchen wir mehrjährige Tagesreihen. Quellen:
+  ERA5 (Copernicus), DWD-Climate-Data-Center. Eigene Iteration,
+  Storage-Bedarf separat einschätzen (B.3 aus
+  `sessions/feature1/feature-decisions.md`).
+- **Daten-Caching im Backend** — `/api/v1/locations/{slug}` führt
+  drei Queries pro Request aus. Bei höherem Traffic Redis-Cache
+  vor dem Pool sinnvoll. Aktuell unnötig (3 Locations, Forschungs-
+  Phase). Folge-Iteration, wenn Frontend mehr Locations zeigt.
+- **Worker-Health-Probe** — pyworkers hat aktuell nur einen
+  HTTP-Healthcheck auf Port 9100 (Prometheus-Endpoint). Eine
+  semantische „letzter Open-Meteo-Fetch erfolgreich"-Probe (z. B.
+  als `/health/data` mit Schwellwert für Age der jüngsten
+  `fetched_at`) wäre für externe Uptime-Checker nützlich.
+
+## Frontend (post-Iteration-2.1)
+
+- **SSR für `/wetter`** — aktuell `ssr = false`, weil
+  `PUBLIC_API_BASE_URL` für Browser-Konsum gesetzt ist (api.localhost
+  / api.research.…) und der SSR-Frontend-Container den Host nicht
+  zwingend selbst auflöst. Lösung: separates
+  `WWN_API_BASE_URL_INTERNAL` für Server-Side-fetches im Frontend-
+  Container (z. B. `http://backend:8080` in compose-Network).
+  Code-Stelle: `apps/frontend/src/lib/api/client.ts` plus
+  `apps/frontend/src/routes/wetter/+page.ts`.
+- **mdsvex-Konvertierung der hardcoded Compliance-Pages** —
+  `/impressum`, `/datenschutz`, `/barrierefreiheit`,
+  `/quellen-attribution`, `/about`, `/kontakt` sind aktuell
+  hardcoded `+page.svelte` (DE-only, Erbe aus Iteration 1.1). Für
+  EN-Übersetzungen sinnvoll: nach
+  `apps/frontend/src/content/pages/{de,en}/<slug>.md` umziehen,
+  analog zu `/methodik` (Iteration 1.2 hat das Pattern). Trigger:
+  erste echte EN-Übersetzungsanforderung.
+- **Lighthouse-CI für `/wetter`** und andere Top-Pages — aktuell
+  manuelle Lighthouse-Runs durch Maintainer. Folge-PR: Lighthouse-CI
+  in GitHub Actions integrieren, Score-Baseline einfrieren.
+
+## Backend-Tests (post-Iteration-2.1)
+
+- **Handler-Tests gegen testcontainers-Postgres** — aktuell testet
+  `apps/backend/internal/http/handler/handler_test.go` nur den
+  nil-Pool-Fallback-Pfad. Real-DB-Integration-Tests bräuchten
+  testcontainers-go (oder eine Test-Postgres-Fixture mit
+  `goose up` + Seed). Code-Stelle:
+  `apps/backend/internal/http/handler/api.go`.
+- **Backend-Snapshot/Contract-Tests gegen die OpenAPI-Spec** —
+  oapi-codegen prüft, dass Handler die Strict-Interface
+  implementieren, aber nicht, dass die JSON-Bodies tatsächlich
+  zum Schema passen. PR-Idee: Test, der einen Mock-Server gegen
+  die Spec laufen lässt und JSON-Schema-Validation auf Response-
+  Bodies macht.
+
 ## Produkt / Features (gehören eigentlich nicht hier rein, aber als Reminder)
 
-- **Erste Datenquelle integrieren** — Open-Meteo ist die Phase-1-Wahl.
-- **Locations-Suche** real machen (Geocoding, DB-Schema, Endpoint, UI).
+- **Locations-Suche** real machen (Geocoding, DB-Schema, Endpoint,
+  UI). Search-Op war in Iteration 2.1 aus der OpenAPI entfernt, weil
+  die Stelle für List-All gebraucht wurde. Eigene Iteration mit
+  Geocoding-Provider (Open-Meteo geocoding-API ist eine Option).
 - **Authentifizierung** (Sessions oder OAuth/OIDC).
-- **Karten-Komponente** mit MapLibre.
+- **Karten-Komponente** mit MapLibre (siehe
+  `sessions/feature2/plan-iteration-2-3.md`).
 - **Transactional-Mail-Provider** wählen (Postmark / Brevo / SES /
   eigener SMTP).
 
