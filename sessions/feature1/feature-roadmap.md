@@ -1,6 +1,6 @@
 # Feature-Phase — Roadmap und Vorgehens-Schritte
 
-Stand: 11. Mai 2026 (Implementation-Fortschritt eingearbeitet)
+Stand: 12. Mai 2026 (post-Iteration-2.1, v0.4.2 live)
 Maintainer: Heinz W. Richter <hwr@relations4u.de>
 
 Dieses Dokument hält fest, **wie wir vorgehen**. Konkrete Schritte,
@@ -27,12 +27,13 @@ Track 3 startet, sobald Track 2 die erste Datenquelle (Open-Meteo) live hat.
 - Wetterdaten ohne Frontend = unsichtbare API
 - Agenten ohne Datenbasis = keine sinnvollen Outputs
 
-**Aktueller Stand (Stand 11. Mai 2026):**
+**Aktueller Stand (Stand 12. Mai 2026):**
 
 Track 1 ist bei Iteration 1.3a fertig — Sveltia läuft mit Text-Edit,
 Image-Upload bewusst pausiert bis Iteration 1.3b (Image-Pipeline).
-Track 2 kann starten, sobald 1.4 (Blog) angegangen wird oder
-Maintainer früher loslegen will (1.3b ist nicht zwingend für Track 2).
+Track 2 Iteration 2.1 (Open-Meteo Hello World) ist v0.4.2 live —
+drei Locations mit current + 24h-Forecast auf `/wetter`. Track 2
+Iteration 2.2 (DWD-Adapter) ist als nächstes dran.
 
 ---
 
@@ -565,16 +566,47 @@ das wider.)
 
 ### Iteration 2.1 — Open-Meteo als Hello World (3-4 Tage)
 
-**Vorbedingung:** Track 1 Iteration 1.3 abgeschlossen
-(Pipeline-Setup als Pattern bewiesen)
+**Status: ✅ Done 2026-05-12 (PR #69, v0.4.0 → v0.4.1 → v0.4.2 live)**
 
-**Schritte:** TBD nach Track 2 Detail-Diskussion
+**Was geliefert wurde:**
 
-**Offene Punkte (siehe feature-decisions.md):**
+- DB-Schema: `locations`, `observations` (Hypertable), `forecasts`
+  (Hypertable) mit 3 seeded Locations (Potsdam, Berlin, Hamburg)
+- Python-Worker: APScheduler-basiert, current alle 10 Min,
+  hourly Forecast alle 60 Min
+- Backend-Endpoints: `/api/v1/locations` (List) und
+  `/api/v1/locations/{slug}` (Detail mit current + 24h Forecast)
+- Frontend: `/wetter`-Route mit drei WeatherCards
+- Attribution: Open-Meteo-Block auf `/quellen-attribution`,
+  Footer-Snippet auf `/wetter`
 
-- B.1 Open-Meteo zuerst oder direkt DWD
-- B.3 Storage-Strategie für große Datasets
-- B.4 Lizenz-Bestätigung
+**Realisierte Entscheidungen (siehe Tranche 8 in
+`feature-decisions.md`):**
+
+- B.5 (Scheduling): W1 — APScheduler in-Memory im Worker-Container
+- B.6 (Frontend-Position): eigene Route `/wetter`, aktuell CSR-only
+- A.20 (OpenAPI): keine `nullable`-Marker, Pointer via `required: false`
+- A.21 (sqlc-Schema): Pre-Processing aus goose-Migrations
+- A.22 (Deploy): Ansible-staged goose-Migration als Pflicht-Step
+
+**Lessons aus Post-Merge-Verlauf:**
+
+- v0.4.0: erst-deploy failed weil Migration nicht im Deploy-Step
+  → Hotfix in PR #70 (v0.4.1)
+- v0.4.1: Cleanup failed wegen `/tmp` sticky-bit + postgres-User
+  → Hotfix in PR #71 (v0.4.2) mit `docker exec -u 0`
+- v0.4.2: stabil, drei Locations antworten, Berlin liefert frisches
+  current (9°C @ 09:30Z am 12. Mai 2026)
+
+**Backlog-Themen aus 2.1 (siehe `docs/backlog.md`):**
+
+- W3 Persistent-Job-Store für APScheduler
+- SSR-Upgrade für `/wetter` via Internal-API-Hostname
+- Daily-Aggregate-Tabelle + Era5-Historie (Klima-Iteration)
+- testcontainers-Postgres für Backend-Handler-Tests
+- Lighthouse-CI für `/wetter`
+- mdsvex-Konvertierung der hardcoded Compliance-Pages
+- EN-Übersetzung von `/quellen-attribution`
 
 ---
 
@@ -661,7 +693,7 @@ sollten nicht vergessen werden:
 
 ### Track 2
 
-- [ ] Iteration 2.1 — Open-Meteo (TBD nach Konzept-Diskussion)
+- [x] Iteration 2.1 — Open-Meteo ✅ 2026-05-12 (v0.4.2, PR #69+#70+#71)
 - [ ] Iteration 2.2 — DWD Stations
 - [ ] Iteration 2.3 — DWD MOSMIX
 - [ ] Iteration 2.4 — Satellitenbilder

@@ -655,6 +655,8 @@ Diese Fragen sind im Verlauf der Setup-Phase entschieden worden:
   Go-Service. Track 3 LLM-Calls sind davon **nicht** betroffen —
   Cloud-LLM-API-Aufrufe sind keine Compute-Hosting-Frage. Volle
   Regel als A.19 in `sessions/feature1/feature-decisions.md`.
+- Worker-Scheduling-Pattern (W1 als Default)
+- Frontend-Position: eigene Route pro Feature
 
 ---
 
@@ -1203,6 +1205,10 @@ für Feature-Sessions wird aufgebaut, sobald wir dort ankommen.
   **Edge-/Cache-Schichten** vor self-hosted Origins sind okay
   (kein kritischer Pfad). Volle Regel als A.19 in
   `sessions/feature1/feature-decisions.md` dokumentiert.
+- docker exec ohne -u 0
+- OpenAPI 3.1 ohne nullable
+- sqlc-Schema via Pre-Processing
+- DB-Migrations als Pflicht-Deploy-Step
 
 ---
 
@@ -1369,3 +1375,4 @@ fehlt: vorschlagen, mit Begründung. Maintainer entscheidet, ob es rein kommt.
   Konsequenz: Iteration 1.3b (Image-Pipeline) wird als Container
   geplant, nicht als CF-Worker. Volle Regel als A.19 in
   `sessions/feature1/feature-decisions.md`.
+  **2026-05-12 (Konsolidierung post-Iteration-2.1)**

@@ -1,6 +1,6 @@
 # Feature-Phase — Decisions Log
 
-Stand: 11. Mai 2026 (Implementation-Stand v0.0.4, Track 1 fast komplett)
+Stand: 12. Mai 2026 (post-Iteration-2.1, v0.4.2 live)
 Maintainer: Heinz W. Richter <hwr@relations4u.de>
 
 Dieses Dokument hält atomar fest, **was entschieden** ist. Begründungen kurz.
@@ -515,36 +515,240 @@ Daten-Lizenzen und Quellenangaben. Pflicht-Inhalt:
 
 Plus: ähnlicher Hinweis im Footer mit Link zur Page.
 
+### A.20 — OpenAPI 3.1 ohne `nullable`-Marker
+
+[DECIDED 2026-05-12, aus Iteration 2.1] Optionale/nullable Felder in
+OpenAPI-Schemas werden über **`required: false` plus Pointer-Typen
+in Go** ausgedrückt — **nicht** über das OpenAPI-3.0-`nullable`-Keyword
+und auch nicht über OpenAPI-3.1-`type: [string, "null"]`-Arrays.
+
+Hintergrund (aus 2.1-Implementation):
+
+- oapi-codegen v2.4.1 kennt OpenAPI-3.1 `type: [string, "null"]`-Arrays
+  nicht und erzeugt fehlerhaften Go-Code
+- redocly verbietet OpenAPI-3.0 `nullable: true` in 3.1-Specs
+- Ausweg: optionale Felder bleiben `required: false`; oapi-codegen
+  generiert dann automatisch `*float32`-/`*string`-/`*time.Time`-
+  Pointer-Felder in den Go-Structs
+
+Konsequenz für alle künftigen OpenAPI-Schema-Definitionen:
+
+- **Nullable-Marker NICHT verwenden** — weder 3.0- noch 3.1-Syntax
+- Optionalität über `required`-Listen ausdrücken
+- Bei wirklich-nullable-Bedeutung im JSON: Custom-`MarshalJSON`/
+  `UnmarshalJSON` in den Generated-Types oder Wrapper-Layer
+- Re-Evaluation, sobald oapi-codegen OpenAPI-3.1 vollständig supportet
+  (Tracking: github.com/oapi-codegen/oapi-codegen issues)
+
+### A.21 — sqlc-Schema-Input via Pre-Processing aus goose-Migrations
+
+[DECIDED 2026-05-12, aus Iteration 2.1] sqlc liest sein DB-Schema
+nicht direkt aus den goose-Up-Migrations, sondern aus einer
+generierten Datei `apps/backend/internal/storage/schema.sql`. Diese
+wird von `scripts/build-sqlc-schema.py` aus den `+goose Up`-Sections
+in `infra/migrations/` extrahiert und konkateniert.
+
+Workflow:
+
+1. Migration in `infra/migrations/NNN_*.sql` schreiben
+2. `make sqlc-schema` (Pre-Processing-Skript)
+3. `make sqlc-generate` (sqlc) erzeugt typsichere Go-Funktionen
+4. `make gen-check` verifiziert, dass Generated-Files committed sind
+
+Begründung gegen Alternativen:
+
+- **sqlc direkt mit Migrations-Liste**: sqlc kann das technisch
+  (config.yaml: `schema: ["migrations/*.sql"]`), aber goose-Down-Sections
+  würden Schema-Inhalt verwirren — `+goose Up`/`Down`-Marker sind
+  goose-spezifisch
+- **Schema duplizieren** (manuell pflegen): wartungsanfällig
+- **Test-DB-Spinner mit `pg_dump`**: zu langsam für jeden Codegen-Run
+
+Generated-Files-Policy: `schema.sql` ist **committed** im Repo, nicht
+gitignored. Drift wird per `make gen-check` in CI gefangen.
+
+### A.22 — DB-Migrations als Pflicht-Deploy-Step
+
+[DECIDED 2026-05-12, aus Iteration 2.1 Hotfix-Pattern] DB-Schema-
+Migrations sind **integraler Teil des Ansible-Deploys**, nicht
+optional/manuell. Konkret:
+
+- Ansible-App-Rolle staged das `goose`-Binary in den postgres-
+  Container vor `docker compose up`
+- `docker exec` der Migration läuft mit `-u 0` (root), weil sticky-bit
+  in `/tmp` sonst Cleanup-Failures bei docker-cp-staged Files
+  verursacht (siehe „Häufige Fallen" in CLAUDE.md)
+- Cleanup der staged Files nach erfolgreicher Migration
+
+Pattern hat sich in 2.1 nicht-trivial entwickelt:
+
+- v0.4.0-Deploy schlug fehl mit `relation "locations" does not exist`
+  (Migration nicht ausgeführt) → Hotfix per `docker cp` + `docker exec`
+- v0.4.1-Deploy schlug fehl beim Cleanup (sticky-bit) → erneuter Hotfix
+  mit `-u 0` Flag
+- v0.4.2-Deploy lief sauber durch — Pattern jetzt stabil
+
+Konsequenz für 2.2 und alle Folge-Iterationen mit DB-Schema-Änderung:
+**Migration automatisch beim Deploy**, kein manueller Schritt nötig.
+Akzeptanzkriterium für alle Schema-ändernden Iterationen: Deploy auf
+wwn-prod muss ohne manuelle Migrations-Schritte funktionieren.
+
 ---
 
 ## B — Wetterdaten-Import
 
 ### B.1 — Erste Datenquelle (Architektur-Härtetest)
 
-[OPEN 2026-05-07] Open-Meteo als Hello World, oder direkt DWD?
-Empfehlung: Open-Meteo zuerst (REST/JSON, kein Auth, simpel),
-trainiert das Worker → DB → API → Frontend Pattern. Dann DWD als
-zweite Quelle, schon mit erprobter Pipeline.
+[DECIDED 2026-05-11] **Open-Meteo zuerst, als Hello World für die
+Worker → DB → API → Frontend-Pipeline.**
+
+Begründung: REST/JSON-API, kein Auth, kein Aggregations-Vorprozessieren
+nötig, einfachste Datenquelle zum Pattern-Aufbau. DWD als zweite Quelle
+in Iteration 2.2 mit der erprobten Pipeline.
+
+**Scope für Iteration 2.1:**
+
+- **Locations**: drei Städte initial — Potsdam, Berlin, Hamburg.
+  Potsdam als Maintainer-Lokal, Berlin als Hauptstadt-Referenz,
+  Hamburg als zweite Klimazone (Küste). Erweiterung zu „Top-N
+  deutsche Städte" kommt mit Locations-Suche (eigene spätere
+  Iteration).
+- **Variablen** (4): Temperatur, Niederschlag, Windgeschwindigkeit,
+  Windrichtung. Genug für „typischer Wetter-Schnappschuss", erweiterbar
+  ohne Schema-Migration (Open-Meteo liefert alle weiteren Variablen
+  im selben Request).
+- **Frequenzen** (2): `current` (Single-Datapoint „jetzt") plus
+  `hourly` (24h Forecast). `daily` und Tagesaggregate kommen mit
+  Klima-Features.
+- **Historie**: KEINE in Iteration 2.1. Open-Meteo Archive-API
+  (Era5-basiert) ist frei verfügbar und kommt mit der ersten
+  Klima-Iteration. Forecast-Pattern erstmal sauber aufbauen.
+- **Storage**: Postgres + TimescaleDB-Hypertables. Keine S3-/Blob-
+  Storage-Komplexität. Open-Meteo-Daten sind nicht groß genug.
+  Schema-Skizze:
+  - `locations` (kleine reguläre Tabelle: id, name, lat, lon, slug)
+  - `observations` (Hypertable, time-partitioned, station_id +
+    variable + value + timestamp)
+  - `forecasts` (Hypertable, time-partitioned, plus `run_at` column
+    für Forecast-Generations)
+- **Worker-Frequenz**: TBD im Implementations-Prompt (Vorschlag:
+  current alle 10 Min, hourly-Forecast alle 60 Min)
+- **Attribution**: „Daten von Open-Meteo.com, CC BY 4.0" auf
+  jeder Page als Footer-Snippet, plus zentrale Detail-Page auf
+  `/quellen-attribution` (siehe A.15 + B.4)
 
 ### B.2 — Wetterkarten-Strategie
 
-[OPEN 2026-05-07] Selbst rendern (ICON-Daten + Cartopy → PNG, hoher
-Aufwand, hohe Kontrolle) oder externe Services einbinden (windy.com,
-Ventusky, DWD NinJo via iframe, niedriger Aufwand, Lizenz-Themen).
-Frage an Maintainer.
+[POSTPONED 2026-05-11] Verschoben in eine spätere 2.x-Konzept-Diskussion,
+nachdem Iteration 2.1 (Open-Meteo) live ist und die Daten-Pipeline-
+Architektur erprobt ist.
+
+Ursprünglich [OPEN 2026-05-07] Selbst rendern (ICON-Daten + Cartopy →
+PNG, hoher Aufwand, hohe Kontrolle) oder externe Services einbinden
+(windy.com, Ventusky, DWD NinJo via iframe, niedriger Aufwand,
+Lizenz-Themen). Drei Optionen werden bei B.2-Wiederaufnahme bewertet:
+
+- K1: Selbst rendern (volle Kontrolle, hoher Initial-Aufwand)
+- K2: Externe einbinden (sofort verfügbar, Lizenz-/Cookie-Themen)
+- K3: Hybrid — eigene Stations-Visualisierungen, externe Modell-Karten
+  als Outbound-Link (kein Embed)
 
 ### B.3 — Storage für große Datasets
 
-[OPEN 2026-05-07] GRIB-Modelldaten und Radar passen nicht in Postgres
-(zu groß). S3-kompatibel nötig: Hetzner Storage Box jetzt einrichten,
-oder MinIO als VM auf demselben Proxmox-Host?
+[POSTPONED 2026-05-11] Für Iteration 2.1 nicht relevant — Open-Meteo-
+Daten passen in Postgres+TimescaleDB. Wird mit Iteration 2.4
+(Satellitenbilder) und 2.5 (Radar) wieder aufgenommen, wo echte
+GB-Mengen an Binärdaten anfallen.
+
+Ursprüngliche Optionen bleiben dokumentiert: Hetzner Storage Box,
+MinIO-VM auf eigenem Proxmox, oder direkt-Nutzung des bereits
+vorhandenen Hetzner-Object-Storage-Buckets (A.13).
 
 ### B.4 — Daten-Lizenzen
 
-[OPEN 2026-05-07] DWD: GeoNutzV CC-BY mit Quellenangabe — bestätigen.
-EUMETSAT: free für nicht-kommerzielle Nutzung — Forschungs-Phase OK?
-Open-Meteo: CC-BY-4.0 — bestätigen. Konkrete Attribution-Anforderungen
-werden in `docs/attribution.md` dokumentiert.
+[DECIDED 2026-05-11] Lizenz-Status pro Quelle bestätigt, Attribution-
+Pattern für Iteration 2.1 festgelegt:
+
+- **Open-Meteo**: CC-BY-4.0. Attribution: „Daten von Open-Meteo.com,
+  CC BY 4.0" auf jeder Page mit Open-Meteo-Daten als Footer-Snippet,
+  plus Detail-Eintrag auf `/quellen-attribution`.
+- **DWD**: GeoNutzV (funktional CC-BY-äquivalent für offene Geodaten).
+  Wording: „Datenbasis: Deutscher Wetterdienst, eigene Bearbeitung".
+  Wird in Iteration 2.2 (DWD) relevant.
+- **EUMETSAT**: free für non-commercial, kommerziell lizenzpflichtig.
+  Für Forschungs-Phase okay, aber Status wird bei Iteration 2.4
+  (Satellitenbilder) erneut geprüft — nicht jetzt.
+
+Attribution-Strategie:
+
+- **Anzeige-Pflicht**: Footer-Link „Datenquellen" auf jeder Page
+- **Inhalt-Pflicht**: Detail-Page `/quellen-attribution` mit allen
+  Lizenz-Texten
+- Konkrete Strings landen in `messages/de.json` und `messages/en.json`
+  (Paraglide), nicht hardcoded — damit Updates an die Quellen-Liste
+  ohne Code-Changes möglich sind.
+
+### B.5 — Worker-Scheduling-Pattern
+
+[DECIDED 2026-05-12, aus Iteration 2.1] **W1 — APScheduler im
+Worker-Container, in-Memory-Job-State** ist Default-Pattern für
+Phase 1 aller Datenquellen-Worker.
+
+Konkret in Iteration 2.1 erprobt: APScheduler läuft im `pyworkers`-
+Container, scheduled `fetch_current` alle 10 Min und `fetch_hourly`
+alle 60 Min. Container-Restart vergisst Job-Run-History, was für
+idempotente Fetcher (current/hourly mit overwrite-on-conflict) okay
+ist — beim Restart läuft der nächste scheduled Run, kein Backfill-
+Bedarf.
+
+**Migration zu W3** (PostgresJobStore mit Persistent-State) ist
+Backlog-Punkt und kommt, wenn:
+
+- Jobs nicht-idempotent werden (z.B. Klima-Backfills mit historischer
+  Reihenfolge-Abhängigkeit)
+- Job-Run-History zu Observability/Audit-Zwecken nötig wird
+- Multi-Replica-Setup mit Coordination-Bedarf entsteht
+
+Aktuell keine dieser Bedingungen aktiv. W1 bleibt für 2.2 (DWD),
+2.3, etc.
+
+**Verworfene Alternativen** (siehe Vergleich in 2.1-Übergabe-Prompt):
+
+- **W2 — Separater Cron-Container** (z.B. mcuadros/ofelia oder
+  systemd-Timer): zweites Tool, zwei Stellen für Job-Definition.
+- **W3 — APScheduler + PostgresJobStore**: jetzt overkill, später
+  drop-in-Migration ohne Schema-Bruch.
+
+### B.6 — Frontend-Position für Daten-Features
+
+[DECIDED 2026-05-12, aus Iteration 2.1] **Eigene Route pro Feature**,
+nicht Hero-Erweiterungen der Startseite.
+
+Konkret in Iteration 2.1: Wetter-Cards landeten auf `/wetter` als
+eigene SvelteKit-Route, nicht als Block auf `/`. Die Startseite bleibt
+Compliance-/Mission-/Editorial-Fokussiert.
+
+Begründung:
+
+- Klare URL pro Feature (`/wetter`, später `/karte`, `/klima`, `/blog`)
+- Separates Caching/SSR-Verhalten je Route ohne Side-Effects auf
+  andere Pages
+- Bessere Code-Organization: feature-spezifische Components,
+  Loader, Tests in eigenem Route-Verzeichnis
+- Vortrag-/Navigations-fähig: klare Sitebar-Einträge
+
+Implementations-Detail aus 2.1: `/wetter` ist aktuell `ssr = false`,
+weil das Frontend-Container das Backend nur über die Public-URL
+kennt (`PUBLIC_API_BASE_URL`). SSR-Upgrade per Internal-API-Hostname
+ist Backlog-Punkt — Architektur-Entscheidung als solche bleibt B.6
+unberührt.
+
+Verworfene Alternativen:
+
+- **Sammel-Page mit allen Features als Sections**: schwer zu
+  cachen, schwer zu skalieren, schwer zu navigieren.
+- **Modal/Drawer-Overlays auf Startseite**: gleicher Nachteil plus
+  schlechtes SEO.
 
 ---
 
@@ -739,3 +943,83 @@ Repos auf wwn-handover, später Move-Entscheidung pro File.
   audit + pip-audit Findings, govulncheck Exit 3 (False-Positives
   vermutet). Backlog-PR #64 dokumentiert die Triage. Workflow läuft,
   aber Alarme aktuell rauschend.
+
+- 2026-05-11 (Tranche 7) — Track 2 Einstieg, drei B-Punkte aus
+  Konzept-Session entschieden:
+
+  **B.1 (Erste Datenquelle) DECIDED**: Open-Meteo zuerst (REST/JSON,
+  kein Auth). Iteration-2.1-Scope festgelegt: drei Städte (Potsdam,
+  Berlin, Hamburg), vier Variablen (Temperatur, Niederschlag,
+  Windgeschwindigkeit, Windrichtung), zwei Frequenzen (current +
+  hourly 24h), keine Historie in 2.1. Storage: Postgres+TimescaleDB-
+  Hypertables, kein S3. Schema-Skizze für `locations`,
+  `observations`, `forecasts` dokumentiert.
+
+  **B.2 (Wetterkarten) POSTPONED**: bewusst verschoben in spätere
+  2.x-Konzept-Diskussion, nach Iteration 2.1. Drei Optionen
+  (K1 selbst rendern / K2 extern / K3 hybrid) bleiben als
+  Diskussions-Material dokumentiert.
+
+  **B.3 (Storage für Datasets) POSTPONED**: für 2.1 nicht relevant
+  (TimescaleDB reicht). Wiederaufnahme mit 2.4 (Satellitenbilder)
+  und 2.5 (Radar). Hetzner-Object-Storage aus A.13 ist verfügbar
+  und wäre der Default, wenn dann relevant.
+
+  **B.4 (Daten-Lizenzen) DECIDED**: Status pro Quelle bestätigt
+  (Open-Meteo CC-BY-4.0, DWD GeoNutzV, EUMETSAT non-commercial).
+  Attribution-Pattern: Footer-Link auf jeder Page erfüllt Anzeige-
+  Pflicht, Detail-Page `/quellen-attribution` erfüllt Inhalt-Pflicht.
+  Attribution-Strings in Paraglide-Messages, nicht hardcoded.
+  EUMETSAT-Status wird erst bei Iteration 2.4 erneut geprüft.
+
+  **Track 2 Status: 4 von 4 B-Punkten in Iteration-2.1-Scope geklärt
+  (2 DECIDED, 2 POSTPONED). Implementation-Übergabe-Prompt
+  `prompt-iteration-2-1.md` bereit für Claude Code.**
+
+- 2026-05-12 (Tranche 8) — Iteration 2.1 (Open-Meteo Hello World)
+  durch (v0.4.0/v0.4.1/v0.4.2 live). Fünf neue Architektur-/Pattern-
+  Entscheidungen aus der Implementation:
+
+  **B.5 (Worker-Scheduling) DECIDED**: W1 — APScheduler im
+  Worker-Container, in-Memory-Job-State — als Default-Pattern für
+  alle Datenquellen-Worker in Phase 1. W3 (PostgresJobStore) als
+  Migration-Pfad, wenn Jobs nicht-idempotent werden oder
+  Job-Run-History für Audit nötig.
+
+  **B.6 (Frontend-Position) DECIDED**: Eigene Route pro Feature
+  (`/wetter`, später `/karte`, `/klima`), nicht Hero-Erweiterungen
+  der Startseite. Aktuell `ssr = false` weil
+  `PUBLIC_API_BASE_URL` browser-orientiert ist — SSR-Upgrade per
+  Internal-API-Hostname im Backlog, betrifft B.6 nicht.
+
+  **A.20 (OpenAPI 3.1 ohne nullable) DECIDED**: oapi-codegen kennt
+  3.1 `type: [..., "null"]`-Arrays nicht, redocly verbietet
+  3.0 `nullable`. Lösung: optionale Felder bleiben `required: false`
+  → oapi-codegen erzeugt Pointer-Felder in den Go-Structs.
+
+  **A.21 (sqlc-Schema-Input) DECIDED**: `scripts/build-sqlc-schema.py`
+  baut `apps/backend/internal/storage/schema.sql` aus den
+  `+goose Up`-Sections in `infra/migrations/`. Generated-File ist
+  committed, `make gen-check` verifiziert Drift.
+
+  **A.22 (DB-Migrations als Deploy-Step) DECIDED**: Ansible-App-Rolle
+  staged `goose`-Binary in postgres-Container, führt Migration vor
+  `docker compose up` aus, mit `-u 0` für sticky-bit-Cleanup.
+  Pattern stabil seit v0.4.2 (post-Hotfix-Tranche).
+
+  **Tag-Schema-Korrektur**: Track 2 Iterations-Tags starten bei
+  **v0.4.0**, nicht v0.1.0 — Track-1-Iterationen hatten v0.1.0,
+  v0.2.0, v0.3.0 bereits belegt. Tag-Schema ist fortlaufend
+  v0.X.Y über alle Tracks, keine Track-spezifische Re-
+  Initialisierung. (Spätere Iterationen: 2.2→v0.5.0, 2.3→v0.6.0,
+  etc.)
+
+  **Track 1 Backlog-Punkt eröffnet**: SSR-Upgrade für `/wetter`
+  via separater Internal-API-Hostname (in `apps/frontend/`
+  Compose-Network-Auflösung). Code-Stelle:
+  `apps/frontend/src/lib/api/client.ts` plus
+  `apps/frontend/src/routes/wetter/+page.ts`.
+
+  Track 2 Status: **4 von 4 B-Punkten für 2.1-Scope geklärt
+  (B.1, B.4 DECIDED, B.2, B.3 POSTPONED), plus zwei post-hoc
+  B-Punkte aus Implementation (B.5 Scheduling, B.6 Frontend-Position)**.
