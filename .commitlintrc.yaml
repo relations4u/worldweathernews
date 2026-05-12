@@ -9,3 +9,14 @@ rules:
     - 1
     - always
     - [backend, frontend, pyworkers, infra, api, ci, deps, docs, root, db, test]
+  # Body- und Footer-Lines werden bewusst nicht auf 100 chars limitiert.
+  # Wir nutzen multi-`-m`-Flags für strukturierte Commit-Messages mit
+  # bewusst lang gehaltenen Absatz-Zeilen, die GitHub-Web und `gh pr view`
+  # eh re-wrappen. Das default 100-char-Limit aus config-conventional ist
+  # für Setups gedacht, in denen `git log` raw im Terminal gelesen wird.
+  body-max-line-length: [0]
+  footer-max-line-length: [0]
+  # Header-Length auf 100 Zeichen — config-conventional default ist 72,
+  # was bei zweisprachigen Subjects mit Scope schnell knapp wird
+  # (z. B. "feat(db): erste Migration für Open-Meteo Locations + ...").
+  header-max-length: [2, "always", 100]
