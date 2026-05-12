@@ -104,8 +104,17 @@ gen-check: ## Prüft, ob generierter Code aktuell ist (für CI)
 		apps/frontend/src/lib/api/types.gen.ts \
 		|| (echo "Generated code is out of date. Run 'make gen' and commit." && exit 1)
 
-migrate: ## DB-Migrations anwenden
-	@echo "Wird in Session 4/9 implementiert."
+migrate: ## DB-Migrations anwenden (alle pending)
+	bash scripts/migrate.sh up
+
+migrate-status: ## DB-Migrations-Status anzeigen
+	bash scripts/migrate.sh status
+
+migrate-down: ## Letzte DB-Migration zurückrollen
+	bash scripts/migrate.sh down
+
+migrate-reset: ## Alle DB-Migrations zurückrollen
+	bash scripts/migrate.sh reset
 
 release: ## Neuen Release-Tag erstellen (interaktiv) und pushen
 	bash scripts/release.sh
