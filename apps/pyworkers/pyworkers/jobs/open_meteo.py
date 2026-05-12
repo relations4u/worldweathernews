@@ -33,7 +33,10 @@ OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 SOURCE = "open-meteo"
 ATTRIBUTION = "Daten von Open-Meteo.com, CC BY 4.0"
 
-CURRENT_VARIABLES = "temperature_2m,precipitation,wind_speed_10m,wind_direction_10m"
+CURRENT_VARIABLES = (
+    "temperature_2m,precipitation,wind_speed_10m,wind_direction_10m,"
+    "pressure_msl,relative_humidity_2m"
+)
 HOURLY_VARIABLES = "temperature_2m,precipitation,wind_speed_10m,wind_direction_10m"
 
 HTTP_TIMEOUT_SECONDS = 10.0
@@ -58,6 +61,8 @@ ObservationRow = tuple[
     float | None,  # precipitation
     float | None,  # wind_speed
     int | None,  # wind_direction
+    float | None,  # pressure (hPa, surface)
+    float | None,  # humidity (% relative)
     str,  # source
 ]
 
@@ -124,6 +129,8 @@ def parse_current(data: dict[str, Any], location: Location) -> ObservationRow:
         _as_float(current.get("precipitation")),
         _as_float(current.get("wind_speed_10m")),
         _as_int(current.get("wind_direction_10m")),
+        _as_float(current.get("pressure_msl")),
+        _as_float(current.get("relative_humidity_2m")),
         SOURCE,
     )
 
@@ -172,9 +179,9 @@ def _as_int(v: Any) -> int | None:
 OBSERVATION_INSERT = """
 INSERT INTO observations
     (location_id, observed_at, temperature, precipitation,
-     wind_speed, wind_direction, source, fetched_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-ON CONFLICT (location_id, observed_at) DO NOTHING
+     wind_speed, wind_direction, pressure, humidity, source, fetched_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+ON CONFLICT (location_id, source, observed_at) DO NOTHING
 """
 
 FORECAST_INSERT = """
