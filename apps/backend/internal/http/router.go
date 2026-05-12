@@ -51,7 +51,7 @@ func NewRouter(cfg *config.Config, deps handler.Deps, log *slog.Logger, m *obser
 	}
 
 	// OpenAPI-generierte Routen unter /api/v1/.
-	apiHandler := handler.NewAPIHandler()
+	apiHandler := handler.NewAPIHandler(deps.DB)
 	strictHandler := api.NewStrictHandler(apiHandler, nil)
 	api.HandlerFromMux(strictHandler, r)
 

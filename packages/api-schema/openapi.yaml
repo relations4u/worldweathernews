@@ -21,6 +21,8 @@ tags:
     description: System-Endpunkte (Health, Metrics)
   - name: locations
     description: Geographische Orte
+  - name: weather
+    description: Wetterdaten (aktuelle Werte und Vorhersagen)
 
 # Default: all endpoints are public. Override per operation if needed.
 security: []
@@ -41,28 +43,12 @@ paths:
 
   /api/v1/locations:
     get:
-      operationId: searchLocations
+      operationId: listLocations
       tags: [locations]
-      summary: Search locations by query string
-      parameters:
-        - name: q
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 2
-            maxLength: 100
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 50
-            default: 10
+      summary: List all active locations
       responses:
         "200":
-          description: List of matching locations
+          description: List of active locations
           content:
             application/json:
               schema:
@@ -72,9 +58,33 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Location"
-                required: [results]
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                  attribution:
+                    type: string
+                required: [results, attribution]
+
+  /api/v1/locations/{slug}:
+    get:
+      operationId: getLocationDetail
+      tags: [locations, weather]
+      summary: Get location with latest observation and 24h-forecast
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]+$"
+            minLength: 1
+            maxLength: 100
+      responses:
+        "200":
+          description: Location detail mit current und forecast
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocationDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
 components:
   schemas:
@@ -92,11 +102,15 @@ components:
       type: object
       properties:
         id:
+          type: integer
+          format: int64
+        slug:
           type: string
-          format: uuid
+          pattern: "^[a-z0-9-]+$"
+          description: URL-safe key, z.B. "potsdam"
         name:
           type: string
-        countryCode:
+        country:
           type: string
           minLength: 2
           maxLength: 2
@@ -113,8 +127,79 @@ components:
           maximum: 180
         timezone:
           type: string
-          description: IANA timezone, e.g. Europe/Berlin
-      required: [id, name, countryCode, latitude, longitude]
+          description: IANA timezone, z.B. Europe/Berlin
+        source:
+          type: string
+          description: Datenquelle, z.B. "open-meteo"
+      required: [id, slug, name, country, latitude, longitude, timezone, source]
+
+    Observation:
+      type: object
+      description: Eine Messung (current oder historisch).
+      properties:
+        observedAt:
+          type: string
+          format: date-time
+        temperature:
+          type: number
+          description: Temperatur in °C (2 m über Grund). Fehlt, wenn Quelle null liefert.
+        precipitation:
+          type: number
+          description: Niederschlag in mm. Fehlt, wenn Quelle null liefert.
+        windSpeed:
+          type: number
+          description: Windgeschwindigkeit in km/h (10 m über Grund). Fehlt, wenn Quelle null liefert.
+        windDirection:
+          type: integer
+          minimum: 0
+          maximum: 360
+          description: Windrichtung in Grad (0 = N, 90 = O). Fehlt, wenn Quelle null liefert.
+        source:
+          type: string
+        fetchedAt:
+          type: string
+          format: date-time
+      required: [observedAt, source, fetchedAt]
+
+    ForecastEntry:
+      type: object
+      description: Ein stündlicher Vorhersage-Datenpunkt.
+      properties:
+        forecastFor:
+          type: string
+          format: date-time
+        temperature:
+          type: number
+        precipitation:
+          type: number
+        windSpeed:
+          type: number
+        windDirection:
+          type: integer
+          minimum: 0
+          maximum: 360
+        runAt:
+          type: string
+          format: date-time
+          description: Zeitpunkt des Forecast-Runs (alle Einträge eines Calls teilen dasselbe runAt).
+      required: [forecastFor, runAt]
+
+    LocationDetail:
+      type: object
+      properties:
+        location:
+          $ref: "#/components/schemas/Location"
+        current:
+          $ref: "#/components/schemas/Observation"
+          description: Letzte Messung. Fehlt, wenn noch keine Beobachtung vorliegt.
+        forecast:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForecastEntry"
+          description: Stündliche Forecast-Einträge für die nächsten 24 h (kann leer sein).
+        attribution:
+          type: string
+      required: [location, forecast, attribution]
 
     Problem:
       description: |
