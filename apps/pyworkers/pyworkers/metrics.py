@@ -30,6 +30,12 @@ OPEN_METEO_FETCHES_TOTAL: Counter = Counter(
     ["kind", "status"],
 )
 
+DWD_FETCHES_TOTAL: Counter = Counter(
+    "wwn_dwd_fetches_total",
+    "Total DWD POI fetches, labeled by status (ok|error|empty).",
+    ["status"],
+)
+
 
 def start_metrics_server(port: int) -> None:
     """Startet den Prometheus-HTTP-Server auf dem angegebenen Port."""
