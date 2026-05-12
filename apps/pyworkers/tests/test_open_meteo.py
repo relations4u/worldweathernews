@@ -48,6 +48,8 @@ def test_parse_current_extracts_observation_with_local_time() -> None:
             "precipitation": 0.0,
             "wind_speed_10m": 11.5,
             "wind_direction_10m": 245,
+            "pressure_msl": 1013.2,
+            "relative_humidity_2m": 67,
         }
     }
     row = open_meteo.parse_current(data, loc)
@@ -58,6 +60,8 @@ def test_parse_current_extracts_observation_with_local_time() -> None:
         0.0,
         11.5,
         245,
+        1013.2,
+        67.0,
         "open-meteo",
     )
 
@@ -71,10 +75,30 @@ def test_parse_current_handles_null_values() -> None:
             "precipitation": None,
             "wind_speed_10m": None,
             "wind_direction_10m": None,
+            "pressure_msl": None,
+            "relative_humidity_2m": None,
         }
     }
     row = open_meteo.parse_current(data, loc)
-    assert row[2:6] == (None, None, None, None)
+    assert row[2:8] == (None, None, None, None, None, None)
+
+
+def test_parse_current_handles_missing_optional_fields() -> None:
+    """Quelle liefert nur die 4 Kern-Variablen — Druck/Feuchte fehlen als Keys."""
+    loc = _make_location()
+    data = {
+        "current": {
+            "time": "2026-05-12T09:00",
+            "temperature_2m": 7.4,
+            "precipitation": 0.0,
+            "wind_speed_10m": 9.7,
+            "wind_direction_10m": 243,
+        }
+    }
+    row = open_meteo.parse_current(data, loc)
+    # pressure und humidity bleiben None, wenn die Keys fehlen
+    assert row[6] is None
+    assert row[7] is None
 
 
 def test_parse_current_is_deterministic() -> None:
@@ -86,6 +110,8 @@ def test_parse_current_is_deterministic() -> None:
             "precipitation": 0.0,
             "wind_speed_10m": 9.7,
             "wind_direction_10m": 243,
+            "pressure_msl": 1013.2,
+            "relative_humidity_2m": 67,
         }
     }
     assert open_meteo.parse_current(data, loc) == open_meteo.parse_current(data, loc)
@@ -174,7 +200,12 @@ async def test_fetch_current_passes_correct_query_params() -> None:
     assert "open-meteo.com" in url
     assert "latitude=52.3906" in url
     assert "longitude=13.0645" in url
-    assert "current=temperature_2m%2Cprecipitation%2Cwind_speed_10m%2Cwind_direction_10m" in url
+    # current-Liste umfasst die vier 2.1-Variablen plus pressure_msl +
+    # relative_humidity_2m (Schritt 6). pressure_msl statt surface_pressure
+    # für Konsistenz mit DWDs MSL-reduziertem Druck.
+    assert "current=" in url
+    assert "pressure_msl" in url
+    assert "relative_humidity_2m" in url
     assert "timezone=Europe%2FBerlin" in url
     assert data["current"]["temperature_2m"] == 1.0
 
