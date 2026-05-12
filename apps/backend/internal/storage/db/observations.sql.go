@@ -13,7 +13,7 @@ import (
 
 const getLatestObservation = `-- name: GetLatestObservation :one
 SELECT observed_at, temperature, precipitation, wind_speed, wind_direction,
-       source, fetched_at
+       pressure, humidity, source, fetched_at
 FROM observations
 WHERE location_id = $1
 ORDER BY observed_at DESC
@@ -26,6 +26,8 @@ type GetLatestObservationRow struct {
 	Precipitation pgtype.Float8      `json:"precipitation"`
 	WindSpeed     pgtype.Float8      `json:"wind_speed"`
 	WindDirection pgtype.Int4        `json:"wind_direction"`
+	Pressure      pgtype.Float8      `json:"pressure"`
+	Humidity      pgtype.Float8      `json:"humidity"`
 	Source        string             `json:"source"`
 	FetchedAt     pgtype.Timestamptz `json:"fetched_at"`
 }
@@ -39,6 +41,51 @@ func (q *Queries) GetLatestObservation(ctx context.Context, locationID int64) (G
 		&i.Precipitation,
 		&i.WindSpeed,
 		&i.WindDirection,
+		&i.Pressure,
+		&i.Humidity,
+		&i.Source,
+		&i.FetchedAt,
+	)
+	return i, err
+}
+
+const getLatestObservationBySource = `-- name: GetLatestObservationBySource :one
+SELECT observed_at, temperature, precipitation, wind_speed, wind_direction,
+       pressure, humidity, source, fetched_at
+FROM observations
+WHERE location_id = $1 AND source = $2
+ORDER BY observed_at DESC
+LIMIT 1
+`
+
+type GetLatestObservationBySourceParams struct {
+	LocationID int64  `json:"location_id"`
+	Source     string `json:"source"`
+}
+
+type GetLatestObservationBySourceRow struct {
+	ObservedAt    pgtype.Timestamptz `json:"observed_at"`
+	Temperature   pgtype.Float8      `json:"temperature"`
+	Precipitation pgtype.Float8      `json:"precipitation"`
+	WindSpeed     pgtype.Float8      `json:"wind_speed"`
+	WindDirection pgtype.Int4        `json:"wind_direction"`
+	Pressure      pgtype.Float8      `json:"pressure"`
+	Humidity      pgtype.Float8      `json:"humidity"`
+	Source        string             `json:"source"`
+	FetchedAt     pgtype.Timestamptz `json:"fetched_at"`
+}
+
+func (q *Queries) GetLatestObservationBySource(ctx context.Context, arg GetLatestObservationBySourceParams) (GetLatestObservationBySourceRow, error) {
+	row := q.db.QueryRow(ctx, getLatestObservationBySource, arg.LocationID, arg.Source)
+	var i GetLatestObservationBySourceRow
+	err := row.Scan(
+		&i.ObservedAt,
+		&i.Temperature,
+		&i.Precipitation,
+		&i.WindSpeed,
+		&i.WindDirection,
+		&i.Pressure,
+		&i.Humidity,
 		&i.Source,
 		&i.FetchedAt,
 	)

@@ -142,6 +142,43 @@ write`-Permission wieder rein). Bis dahin SARIF manuell ziehen,
 
 ## Datenquellen / Worker (post-Iteration-2.1)
 
+- **DWD MOSMIX-Forecast-Pfad (Iteration 2.2b)** — POI liefert nur
+  aktuelle Beobachtungen. Stunden-/Tages-Forecasts kommen aus MOSMIX
+  als KMZ/KML-Files. Eigene Folge-Iteration, weil KML-Parsing
+  zusätzliche Komplexität bringt und MOSMIX-Stations nicht 1:1 auf
+  POI-Stations passen. Vorgesehener Tag: v0.5.1. Endpoint:
+  https://opendata.dwd.de/weather/local_forecasts/mos/.
+- **Quellen-Vergleich-UI** — `/wetter` zeigt aktuell nur die
+  Default-Source pro Card (DWD wenn verfügbar, sonst OM). Open-Meteo-
+  Daten sind in der DB, aber nur per `?source=open-meteo`-URL-Param
+  erreichbar. Folge-Iteration: Toggle pro Stadt-Card oder
+  Side-by-Side-Vergleich, plus Klima-bewusste „warum unterscheiden
+  sich die Quellen?"-Erklärung. Trigger: wenn echte Vergleichs-
+  Diskussionen aufkommen (Citizen-Science-Phase).
+- **DWD-CDC-Historie für Klima-Iteration** — POI ist nur „die letzten
+  ~24 h". Mehrjährige Stationsreihen kommen aus
+  https://opendata.dwd.de/climate_environment/CDC/ (CDC-Archive). Andere
+  Format-Familie (gepackte ZIP-Archive mit Stations-Metadaten), eigene
+  Iteration. Voraussetzung für Klima-Anomalie-Features. Hinweis: CDC-
+  Stations-IDs sind nicht identisch mit den WMO-Synop-IDs aus POI —
+  beim Mapping ist die DWD-Stationsliste maßgeblich.
+- **Automatic Multi-Source-Failover für `current`** — wenn DWD für
+  eine Stadt-Location nichts mehr liefert (24-h-Lücke), könnte das
+  Backend transparent auf Open-Meteo fallback'en, statt
+  `current = null` zurückzugeben. Aktuell expliziter Quellen-Switch
+  per Param. Code-Stelle: `resolveSource` in
+  `apps/backend/internal/http/handler/api.go`.
+- **DWD-Station-Liste aus POI dynamisch importieren** — aktuell hat
+  jede Location ihre `dwd_station_id` per Migration eingetragen. Ein
+  optionales Seeding-Skript könnte `https://opendata.dwd.de/.../poi/`
+  einlesen, mit den DWD-Stationsmetadaten (Name, Lat/Lon, Höhe)
+  joinen und Vorschläge für `locations`-Einträge generieren.
+  Sinnvoll, wenn die Stations-Liste über 20-30 hinauswächst.
+- **OpenAPI-Strict-Enum-Validation** — `?source=foo` liefert 200
+  statt 400, weil der oapi-codegen-Strict-Server Enum-Werte nicht
+  hart prüft. Bug-Workaround: silent fallback liefert sinnvolle
+  Defaults. Folge-PR: kin-openapi-Middleware vor den Handler hängen
+  oder manuelle Param-Validation im Handler.
 - **APScheduler-Persistent-Job-Store (W3)** — aktuell W1: APScheduler
   läuft im Worker-Container mit in-Memory-Job-State. Container-Restart
   vergisst alle Job-Run-History. Migration zu W3 (PostgresJobStore)

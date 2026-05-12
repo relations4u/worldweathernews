@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	GetForecastNext24h(ctx context.Context, locationID int64) ([]GetForecastNext24hRow, error)
 	GetLatestObservation(ctx context.Context, locationID int64) (GetLatestObservationRow, error)
+	GetLatestObservationBySource(ctx context.Context, arg GetLatestObservationBySourceParams) (GetLatestObservationBySourceRow, error)
 	GetLocationBySlug(ctx context.Context, slug string) (GetLocationBySlugRow, error)
 	ListActiveLocations(ctx context.Context) ([]ListActiveLocationsRow, error)
 }

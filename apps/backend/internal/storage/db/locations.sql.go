@@ -7,23 +7,35 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getLocationBySlug = `-- name: GetLocationBySlug :one
-SELECT id, slug, name, country, latitude, longitude, timezone, source
-FROM locations
-WHERE slug = $1 AND active = TRUE
+SELECT
+    l.id, l.slug, l.name, l.country, l.latitude, l.longitude,
+    l.timezone, l.source, l.dwd_station_id, l.altitude_m,
+    COALESCE(
+        (SELECT array_agg(DISTINCT o.source ORDER BY o.source)
+         FROM observations o WHERE o.location_id = l.id),
+        ARRAY[]::TEXT[]
+    )::TEXT[] AS available_sources
+FROM locations l
+WHERE l.slug = $1 AND l.active = TRUE
 `
 
 type GetLocationBySlugRow struct {
-	ID        int64   `json:"id"`
-	Slug      string  `json:"slug"`
-	Name      string  `json:"name"`
-	Country   string  `json:"country"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Timezone  string  `json:"timezone"`
-	Source    string  `json:"source"`
+	ID               int64       `json:"id"`
+	Slug             string      `json:"slug"`
+	Name             string      `json:"name"`
+	Country          string      `json:"country"`
+	Latitude         float64     `json:"latitude"`
+	Longitude        float64     `json:"longitude"`
+	Timezone         string      `json:"timezone"`
+	Source           string      `json:"source"`
+	DwdStationID     pgtype.Text `json:"dwd_station_id"`
+	AltitudeM        pgtype.Int4 `json:"altitude_m"`
+	AvailableSources []string    `json:"available_sources"`
 }
 
 func (q *Queries) GetLocationBySlug(ctx context.Context, slug string) (GetLocationBySlugRow, error) {
@@ -38,26 +50,39 @@ func (q *Queries) GetLocationBySlug(ctx context.Context, slug string) (GetLocati
 		&i.Longitude,
 		&i.Timezone,
 		&i.Source,
+		&i.DwdStationID,
+		&i.AltitudeM,
+		&i.AvailableSources,
 	)
 	return i, err
 }
 
 const listActiveLocations = `-- name: ListActiveLocations :many
-SELECT id, slug, name, country, latitude, longitude, timezone, source
-FROM locations
-WHERE active = TRUE
-ORDER BY name
+SELECT
+    l.id, l.slug, l.name, l.country, l.latitude, l.longitude,
+    l.timezone, l.source, l.dwd_station_id, l.altitude_m,
+    COALESCE(
+        (SELECT array_agg(DISTINCT o.source ORDER BY o.source)
+         FROM observations o WHERE o.location_id = l.id),
+        ARRAY[]::TEXT[]
+    )::TEXT[] AS available_sources
+FROM locations l
+WHERE l.active = TRUE
+ORDER BY l.name
 `
 
 type ListActiveLocationsRow struct {
-	ID        int64   `json:"id"`
-	Slug      string  `json:"slug"`
-	Name      string  `json:"name"`
-	Country   string  `json:"country"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Timezone  string  `json:"timezone"`
-	Source    string  `json:"source"`
+	ID               int64       `json:"id"`
+	Slug             string      `json:"slug"`
+	Name             string      `json:"name"`
+	Country          string      `json:"country"`
+	Latitude         float64     `json:"latitude"`
+	Longitude        float64     `json:"longitude"`
+	Timezone         string      `json:"timezone"`
+	Source           string      `json:"source"`
+	DwdStationID     pgtype.Text `json:"dwd_station_id"`
+	AltitudeM        pgtype.Int4 `json:"altitude_m"`
+	AvailableSources []string    `json:"available_sources"`
 }
 
 func (q *Queries) ListActiveLocations(ctx context.Context) ([]ListActiveLocationsRow, error) {
@@ -78,6 +103,9 @@ func (q *Queries) ListActiveLocations(ctx context.Context) ([]ListActiveLocation
 			&i.Longitude,
 			&i.Timezone,
 			&i.Source,
+			&i.DwdStationID,
+			&i.AltitudeM,
+			&i.AvailableSources,
 		); err != nil {
 			return nil, err
 		}

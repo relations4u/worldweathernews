@@ -506,6 +506,7 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 | Migrations-Wrapper             | `scripts/migrate.sh` (`make migrate*`)                                                         |
 | Worker-Jobs                    | `apps/pyworkers/pyworkers/jobs/`                                                               |
 | Open-Meteo-Worker              | `apps/pyworkers/pyworkers/jobs/open_meteo.py`                                                  |
+| DWD-POI-Worker                 | `apps/pyworkers/pyworkers/jobs/dwd.py`                                                         |
 | Frontend-Routes                | `apps/frontend/src/routes/`                                                                    |
 | Wetter-Route                   | `apps/frontend/src/routes/wetter/` (CSR-only, siehe ssr=false-Note)                            |
 | WeatherCard-Component          | `apps/frontend/src/lib/components/WeatherCard.svelte`                                          |
@@ -538,16 +539,22 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 
 ## Externe Datenquellen
 
-**Aktiv (Stand Iteration 2.1):**
+**Aktiv (Stand Iteration 2.2):**
 
+- **DWD POI** (opendata.dwd.de) — GeoNutzV, kein API-Key. Sechs
+  Stationen (Potsdam, Berlin, Hamburg, Brocken, Zugspitze, Helgoland),
+  sechs Variablen (T, Niederschlag, Wind-Speed/Direction, Druck,
+  Feuchte), halbstündliches Polling. Default-Source für alle drei
+  Stadt-Slugs. Details in `docs/data-sources.md`.
 - **Open-Meteo** (open-meteo.com) — CC-BY-4.0, EU-basiert, kein API-Key.
-  Drei Locations (Potsdam, Berlin, Hamburg), vier Variablen, current
-  10-min-Polling + hourly 60-min-Polling. Details in
-  `docs/data-sources.md`.
+  Drei Stadt-Locations (Potsdam, Berlin, Hamburg), sechs Variablen,
+  current 10-min + hourly 60-min. Per `?source=open-meteo`-Param
+  erreichbar; in 2.2 Backfill für pressure_msl + relative_humidity_2m.
 
 **Geplant für spätere Iterationen:**
 
-- **DWD** (Deutscher Wetterdienst) — OpenData, MOSMIX, ICON-Modelle (Iteration 2.2)
+- **DWD MOSMIX / ICON** — Forecast-Pfade ergänzend zu POI
+  (Iteration 2.2b und Klima-Folge)
 - **NOAA** (USA) — National Weather Service API
 - **Met Office** (UK), **JMA** (Japan), **Météo-France** etc. — phasenweise
 - **EUMETSAT** — Satellitenbilder

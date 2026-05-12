@@ -3,13 +3,14 @@
 import asyncio
 import signal
 from contextlib import suppress
+from datetime import UTC, datetime
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from pyworkers.config import load_settings
-from pyworkers.jobs import heartbeat, open_meteo
+from pyworkers.jobs import dwd, heartbeat, open_meteo
 from pyworkers.logging import configure_logging
 from pyworkers.metrics import start_metrics_server
 from pyworkers.observability import init_tracing, instrument_libraries
@@ -76,6 +77,21 @@ async def main_async() -> None:
             coalesce=True,
         )
 
+    if settings.dwd_enabled:
+        # DWD-POI publiziert alle 30 Min — Worker zieht halbstündlich nach.
+        # next_run_time=now: erster Lauf beim Container-Start, damit nach
+        # einem Deploy nicht bis zu 30 Min gewartet wird, bis Daten in der
+        # DB sind. APScheduler in-memory (B.5), bei Restart vergessen.
+        scheduler.add_job(
+            dwd.run_poi,
+            args=[pool],
+            trigger=IntervalTrigger(seconds=settings.dwd_poi_interval_seconds),
+            id="dwd_poi",
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(UTC),
+        )
+
     scheduler.start()
     log.info(
         "scheduler_started",
@@ -83,6 +99,8 @@ async def main_async() -> None:
         open_meteo_enabled=settings.open_meteo_enabled,
         open_meteo_current_interval_seconds=settings.open_meteo_current_interval_seconds,
         open_meteo_hourly_interval_seconds=settings.open_meteo_hourly_interval_seconds,
+        dwd_enabled=settings.dwd_enabled,
+        dwd_poi_interval_seconds=settings.dwd_poi_interval_seconds,
     )
 
     stop_event = asyncio.Event()

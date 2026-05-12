@@ -21,17 +21,19 @@ type Forecast struct {
 }
 
 type Location struct {
-	ID        int64              `json:"id"`
-	Slug      string             `json:"slug"`
-	Name      string             `json:"name"`
-	Country   string             `json:"country"`
-	Latitude  float64            `json:"latitude"`
-	Longitude float64            `json:"longitude"`
-	Timezone  string             `json:"timezone"`
-	Source    string             `json:"source"`
-	Active    bool               `json:"active"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID           int64              `json:"id"`
+	Slug         string             `json:"slug"`
+	Name         string             `json:"name"`
+	Country      string             `json:"country"`
+	Latitude     float64            `json:"latitude"`
+	Longitude    float64            `json:"longitude"`
+	Timezone     string             `json:"timezone"`
+	Source       string             `json:"source"`
+	Active       bool               `json:"active"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	DwdStationID pgtype.Text        `json:"dwd_station_id"`
+	AltitudeM    pgtype.Int4        `json:"altitude_m"`
 }
 
 type Observation struct {
@@ -43,4 +45,6 @@ type Observation struct {
 	WindDirection pgtype.Int4        `json:"wind_direction"`
 	Source        string             `json:"source"`
 	FetchedAt     pgtype.Timestamptz `json:"fetched_at"`
+	Pressure      pgtype.Float8      `json:"pressure"`
+	Humidity      pgtype.Float8      `json:"humidity"`
 }

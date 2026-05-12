@@ -7,12 +7,27 @@
 
 	const current = $derived(detail.current);
 
-	// Niederschlags-Summe der nächsten 24 h aus dem Forecast.
+	// Niederschlags-Summe der nächsten 24 h aus dem Forecast (DWD hat keinen
+	// Forecast in 2.2 → die Summe ist 0; das Feld wird trotzdem angezeigt,
+	// damit das Layout zwischen DWD- und OM-Cards konsistent bleibt).
 	const precipitationNext24h = $derived(
 		detail.forecast.reduce<number>(
 			(sum, f) => sum + (typeof f.precipitation === 'number' ? f.precipitation : 0),
 			0
 		)
+	);
+
+	// Höhe wird nur angezeigt, wenn sie nennenswert ist — Tiefland-Stationen
+	// ergänzen keinen Mehrwert mit "11 m". Schwelle wie in plan-iteration-2-2.md.
+	const showAltitude = $derived(
+		typeof detail.location.altitudeM === 'number' && detail.location.altitudeM > 100
+	);
+
+	// Source-Label für das Badge oben rechts — kommt von der current-Quelle
+	// (wo die tatsächlich angezeigten Daten herstammen), nicht aus
+	// location.source (das ist Legacy aus 2.1).
+	const sourceLabel = $derived(
+		current?.source === 'dwd' ? m.weather_source_dwd() : m.weather_source_open_meteo()
 	);
 
 	// Kompass-Kurzform der Windrichtung (DE/EN identisch, ist Standard-Notation).
@@ -35,9 +50,26 @@
 	class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
 	aria-labelledby={`weather-card-${detail.location.slug}`}
 >
-	<h2 id={`weather-card-${detail.location.slug}`} class="text-xl font-semibold text-slate-900">
-		{detail.location.name}
-	</h2>
+	<div class="flex items-start justify-between gap-2">
+		<div>
+			<h2 id={`weather-card-${detail.location.slug}`} class="text-xl font-semibold text-slate-900">
+				{detail.location.name}
+			</h2>
+			{#if showAltitude}
+				<p class="mt-0.5 text-xs text-slate-500">
+					{detail.location.altitudeM} m
+				</p>
+			{/if}
+		</div>
+		{#if current}
+			<span
+				class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+				title={current.source}
+			>
+				{sourceLabel}
+			</span>
+		{/if}
+	</div>
 
 	{#if current}
 		<div class="mt-4 flex items-baseline gap-2">
@@ -64,6 +96,16 @@
 					—
 				{/if}
 			</dd>
+
+			{#if typeof current.pressure === 'number'}
+				<dt class="text-slate-600">{m.weather_pressure()}</dt>
+				<dd class="text-slate-900">{current.pressure.toFixed(1)} hPa</dd>
+			{/if}
+
+			{#if typeof current.humidity === 'number'}
+				<dt class="text-slate-600">{m.weather_humidity()}</dt>
+				<dd class="text-slate-900">{current.humidity.toFixed(0)} %</dd>
+			{/if}
 		</dl>
 
 		<p class="mt-4 text-xs text-slate-500">

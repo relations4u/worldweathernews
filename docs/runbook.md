@@ -497,11 +497,14 @@ asyncio.run(main())
 - **Schema-Drift**: nach Migration ohne Worker-Restart können die
   asyncpg-Prepared-Statements ungültig sein. Worker-Restart.
 
-**Rollback / Workaround**: Open-Meteo ist die einzige aktive Daten-
-quelle (Stand Iteration 2.1). Wenn sie ausfällt, zeigt das Frontend
-die Fallback-Strings („Noch keine aktuelle Beobachtung"). Keine
-weitere Aktion nötig, bis DWD-Adapter (2.2) live ist — dann ist
-Multi-Source-Failover ein eigenes Backlog-Thema.
+**Rollback / Workaround**: Open-Meteo ist seit Iteration 2.2 nicht
+mehr die einzige Quelle. Für die drei Stadt-Slugs (berlin, hamburg,
+potsdam) liefert auch DWD aktuelle Werte; die Backend-API wählt
+DWD als Default. Wenn Open-Meteo ausfällt, betrifft das primär die
+24-h-Stundenvorhersage (DWD hat 2.2 noch keinen Forecast-Pfad).
+Brocken / Helgoland / Zugspitze sind DWD-only — OM-Ausfall berührt
+sie nicht. Automatisches Multi-Source-Failover für `current` ist
+weiterhin Backlog-Thema.
 
 ### 13) "Nach Deploy: API gibt 500 / relation does not exist"
 
@@ -580,8 +583,100 @@ Ansible-Pipeline selbst kaputt ist.
 ```bash
 curl -s https://api.research.worldweathernews.com/api/v1/locations \
   | jq '.results | length'
-# Erwartet: 3 (Potsdam, Berlin, Hamburg ab v0.4.0).
+# Erwartet: 6 (Berlin, Brocken, Hamburg, Helgoland, Potsdam, Zugspitze
+# ab v0.5.0); 3 vor 2.2.
 ```
+
+### 14) "DWD-POI-Worker liefert keine Daten"
+
+**Symptome**: `/api/v1/locations/{slug}` antwortet mit `current: null`
+für eine DWD-Location, oder das `observedAt` ist deutlich älter als
+60 min (DWD-POI publiziert halbstündlich, eine halbe Stunde
+Verzögerung ist normal — über 1 h ist verdächtig). `?source=dwd` für
+eine OM-+-DWD-Stadt liefert auch keine Werte.
+
+**Diagnose-Reihenfolge** (von DB nach Quelle):
+
+```bash
+# 1) DB-Stand pro DWD-Station prüfen
+docker exec wwn-postgres psql -U wwn -d wwn -c \
+  "SELECT l.slug, l.dwd_station_id,
+          MAX(o.observed_at) AS latest,
+          NOW() - MAX(o.fetched_at) AS age
+   FROM locations l
+   LEFT JOIN observations o
+     ON o.location_id = l.id AND o.source = 'dwd'
+   WHERE l.dwd_station_id IS NOT NULL
+   GROUP BY l.id, l.slug, l.dwd_station_id
+   ORDER BY l.slug;"
+# age > 90 min: Worker-Pipeline steht. age NULL: noch nie gepersistet
+# (frische Location? Worker disabled?). Einzelne Stations betroffen:
+# DWD-POI-File für diese station_id prüfen (Schritt 4).
+
+# 2) Pyworkers-Container gesund + DWD-Job läuft?
+docker logs --since 5m wwn-pyworkers 2>&1 | grep -E \
+  "scheduler_started|dwd_poi|dwd_fetches" | tail -20
+# Erwartet: 'scheduler_started' mit dwd_enabled=true und alle 30 min
+# 'dwd_poi_persisted'-Logs für jede Station.
+
+# 3) Metrik-Counter prüfen (wenn Prometheus läuft)
+# wwn_dwd_fetches_total{status="error"} steigt → siehe Worker-Logs
+# wwn_dwd_fetches_total{status="empty"} steigt → CSV ist da, aber
+#   Parser findet keine Daten-Rows (Header-Format geändert? Station
+#   hat keine recent observations?)
+# wwn_dwd_fetches_total{status="ok"} stagniert → Scheduler firet nicht.
+
+# 4) DWD-POI-File für eine konkrete Station prüfen
+curl -sI "https://opendata.dwd.de/weather/weather_reports/poi/10384-BEOB.csv"
+# 200 + content-length ~7000: alles ok. 404: Station nicht (mehr) in
+# der DWD-POI-Liste — gegen
+# https://opendata.dwd.de/weather/weather_reports/poi/ abgleichen.
+# 5xx oder Timeout: DWD-File-Server-Outage (selten, kein Status-Page).
+
+# 5) Worker manuell triggern (umgeht Scheduler-Frage)
+docker exec wwn-pyworkers /app/.venv/bin/python -c '
+import asyncio, os, asyncpg
+from pyworkers.jobs.dwd import run_poi
+
+async def main():
+    pool = await asyncpg.create_pool(dsn=os.environ["WWN_PY_DATABASE_URL"])
+    await run_poi(pool)
+    await pool.close()
+
+asyncio.run(main())'
+# Schreibt für alle aktiven DWD-Locations je ~25 Rows; bei Fehlern
+# erscheint der Stack-Trace im Container-Log.
+```
+
+**Häufigste Ursachen**:
+
+- **Station ist aus dem POI-Verzeichnis verschwunden**: DWD rotiert
+  seine POI-Liste gelegentlich. `dwd_station_id` per Hotfix-Migration
+  auf eine sinnvolle Ersatz-Station ändern, oder Location auf
+  `active = FALSE` setzen.
+- **Header-Format geändert**: DWD ändert sehr selten die englischen
+  Variablen-Namen in Zeile 1. Sichtbar als `status="empty"`-Metrik
+  oder als `temperature=None`-Felder. Parser-Mapping in
+  `apps/pyworkers/pyworkers/jobs/dwd.py` (`DWD_COL_*` Konstanten)
+  abgleichen mit aktuellem CSV-Header.
+- **Worker-Container läuft alte Code-Version**: nach Code-Update
+  ohne Container-Restart greift watchfiles nicht zuverlässig.
+  `docker compose restart pyworkers` forciert frischen Start.
+- **DB-Connection-Problem**: asyncpg-Pool-Acquire-Fehler in den
+  Logs. Worker-Restart fixt es meist; sonst Postgres prüfen.
+- **PK-Mismatch nach Migration**: wenn jemand `observations` per
+  Hand-Migration anfasst und den PK auf `(location_id, observed_at)`
+  zurücksetzt, scheitert der DWD-Upsert mit
+  `InvalidColumnReferenceError: there is no unique or exclusion
+constraint matching the ON CONFLICT specification`. Die korrekte
+  PK ist `(location_id, source, observed_at)` seit Migration 0002.
+
+**Rollback / Workaround**: für die drei Stadt-Slugs gibt es
+Open-Meteo als Fallback (`?source=open-meteo`). Frontend zeigt für
+diese drei dann OM-Daten mit OM-Source-Badge. Für Brocken /
+Helgoland / Zugspitze gibt es bei DWD-Ausfall keinen Fallback —
+Frontend zeigt „Noch keine aktuelle Beobachtung". Wartebenachrichtigung
+auf Statusseite reicht in der Forschungs-Phase.
 
 ---
 

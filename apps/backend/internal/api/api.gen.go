@@ -22,6 +22,12 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
+// Defines values for GetLocationDetailParamsSource.
+const (
+	Dwd       GetLocationDetailParamsSource = "dwd"
+	OpenMeteo GetLocationDetailParamsSource = "open-meteo"
+)
+
 // ForecastEntry Ein stündlicher Vorhersage-Datenpunkt.
 type ForecastEntry struct {
 	ForecastFor   time.Time `json:"forecastFor"`
@@ -36,17 +42,29 @@ type ForecastEntry struct {
 
 // Location defines model for Location.
 type Location struct {
+	// AltitudeM Stations-Höhe über Normalnull in Metern (falls bekannt).
+	AltitudeM *int `json:"altitudeM,omitempty"`
+
+	// AvailableSources Liste aller Datenquellen, für die diese Location aktuell
+	// Observations in der DB hat (z.B. `["dwd", "open-meteo"]`).
+	// Leeres Array, wenn noch nichts geschrieben wurde.
+	AvailableSources *[]string `json:"availableSources,omitempty"`
+
 	// Country ISO 3166-1 alpha-2
-	Country   string  `json:"country"`
-	Id        int64   `json:"id"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Name      string  `json:"name"`
+	Country string `json:"country"`
+
+	// DwdStationId WMO-Synop-Kennung der DWD-Station für diese Location, falls eine
+	// verknüpft ist. Wird zum Abruf aus opendata.dwd.de/.../poi/ benutzt.
+	DwdStationId *string `json:"dwdStationId,omitempty"`
+	Id           int64   `json:"id"`
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	Name         string  `json:"name"`
 
 	// Slug URL-safe key, z.B. "potsdam"
 	Slug string `json:"slug"`
 
-	// Source Datenquelle, z.B. "open-meteo"
+	// Source Default-Datenquelle (Legacy-Feld aus 2.1; nutze `availableSources`).
 	Source string `json:"source"`
 
 	// Timezone IANA timezone, z.B. Europe/Berlin
@@ -67,12 +85,19 @@ type LocationDetail struct {
 
 // Observation Eine Messung (current oder historisch).
 type Observation struct {
-	FetchedAt  time.Time `json:"fetchedAt"`
+	FetchedAt time.Time `json:"fetchedAt"`
+
+	// Humidity Relative Luftfeuchte in %. Fehlt, wenn Quelle null liefert.
+	Humidity   *float32  `json:"humidity,omitempty"`
 	ObservedAt time.Time `json:"observedAt"`
 
 	// Precipitation Niederschlag in mm. Fehlt, wenn Quelle null liefert.
 	Precipitation *float32 `json:"precipitation,omitempty"`
-	Source        string   `json:"source"`
+
+	// Pressure Luftdruck in hPa, auf Meereshöhe reduziert (MSL). Fehlt, wenn
+	// Quelle null liefert (z.B. DWD-Hochgebirgsstationen >2000 m).
+	Pressure *float32 `json:"pressure,omitempty"`
+	Source   string   `json:"source"`
 
 	// Temperature Temperatur in °C (2 m über Grund). Fehlt, wenn Quelle null liefert.
 	Temperature *float32 `json:"temperature,omitempty"`
@@ -103,6 +128,18 @@ type Problem struct {
 // NotFound Problem details object as per RFC 7807.
 type NotFound = Problem
 
+// GetLocationDetailParams defines parameters for GetLocationDetail.
+type GetLocationDetailParams struct {
+	// Source Wählt die Datenquelle für `current` und `forecast`. Default-Logik
+	// wenn nicht gesetzt: `dwd` falls die Location eine DWD-Station hat,
+	// sonst `open-meteo`. Quellen, für die keine Daten in der DB liegen,
+	// liefern `current = null` bzw. leeres `forecast`-Array.
+	Source *GetLocationDetailParamsSource `form:"source,omitempty" json:"source,omitempty"`
+}
+
+// GetLocationDetailParamsSource defines parameters for GetLocationDetail.
+type GetLocationDetailParamsSource string
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// List all active locations
@@ -110,7 +147,7 @@ type ServerInterface interface {
 	ListLocations(w http.ResponseWriter, r *http.Request)
 	// Get location with latest observation and 24h-forecast
 	// (GET /api/v1/locations/{slug})
-	GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string)
+	GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string, params GetLocationDetailParams)
 	// Connectivity check
 	// (GET /api/v1/ping)
 	Ping(w http.ResponseWriter, r *http.Request)
@@ -128,7 +165,7 @@ func (_ Unimplemented) ListLocations(w http.ResponseWriter, r *http.Request) {
 
 // Get location with latest observation and 24h-forecast
 // (GET /api/v1/locations/{slug})
-func (_ Unimplemented) GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string) {
+func (_ Unimplemented) GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string, params GetLocationDetailParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -175,8 +212,19 @@ func (siw *ServerInterfaceWrapper) GetLocationDetail(w http.ResponseWriter, r *h
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetLocationDetailParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "source", r.URL.Query(), &params.Source)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetLocationDetail(w, r, slug)
+		siw.Handler.GetLocationDetail(w, r, slug, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -348,7 +396,8 @@ func (response ListLocations200JSONResponse) VisitListLocationsResponse(w http.R
 }
 
 type GetLocationDetailRequestObject struct {
-	Slug string `json:"slug"`
+	Slug   string `json:"slug"`
+	Params GetLocationDetailParams
 }
 
 type GetLocationDetailResponseObject interface {
@@ -458,10 +507,11 @@ func (sh *strictHandler) ListLocations(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetLocationDetail operation middleware
-func (sh *strictHandler) GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string) {
+func (sh *strictHandler) GetLocationDetail(w http.ResponseWriter, r *http.Request, slug string, params GetLocationDetailParams) {
 	var request GetLocationDetailRequestObject
 
 	request.Slug = slug
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetLocationDetail(ctx, request.(GetLocationDetailRequestObject))
@@ -510,33 +560,41 @@ func (sh *strictHandler) Ping(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"xvASAAA=",
+	"H4sIAAAAAAAC/7RY23LcuBH9lS5kUzWq5VwkO97VpPZBtizbFcl2JCeuikepwRA9JHZAgMZFs5JLf+MP",
+	"yFOe/BT9WArgfUjZci4PKg1JoNF9+nYan0isslxJlNaQ+Sei0eRKGgwPr5U9UU4y/ztW0qK0/ifNc8Fj",
+	"armS01yrlcDsx1+Nkv6biVPMqP/1g8Y1mZPfTZsDpsVXM31b7CK3t7cRYWhizXMvjszJORrldIwglYV1",
+	"ON0vKnd6wSdKY0yNfS6tvvYvugKecwnG3n2RTPA4RQ1/VTpFbWiC42NqUeZObuyERCTXKkdteWHsuhR7",
+	"onT5mFFL5oRRi2PLMyQRsdc5kjkxVnOZkFsvAmOec0uLwz9VK6TLVqj9Cu3kke1r+TfkNigCDA1UJo3P",
+	"nTQwokIgPOfS6rvPCQJyiQaeUSEMWOQCJTBqDIoVQhC/5615mMIWsxw1tU7joLpbLtkx1xhXBmX0N565",
+	"jMwfPZlFJOOyeJrVsrm0mDSbL3JENiDaQ4EfHdf+64cO2hVIl7VMtfoVY+tFnqq4xrbrLyost47hWR/c",
+	"i8IfZvzy7p8pwt2XFWp47fER0gkBXMIZWtQSRuuA6go3VMoCx75Z9IpyQVcCL0Jkmv6Bp9xYBO82DSHG",
+	"PjoUAmUE67svGhhH/2cQKnOAbqxfspBvVgb1VaGvV4x5EU8hpRZGN5OnE1h+WBC2ZQsSwYKoHOU4Q4tq",
+	"QS6Xe5OFPEXUaOBIa3odwRalBKniFCSPU2sgQROnmuMKJWydZjhZSBIRbjEzLS+1AqR4Qb08/xwrN5xn",
+	"ry7ewKP9J0/G+0BFntLxAYl8tJyiTGxK5gchWlpPvaPYlpWeesX68t+fvRlfXEuVj/+EUjqZFNC8Px6X",
+	"m2psW7hGUDjUp8xCXqHeyLsv+doCN3YC77lmcOMyOFpptwbqDHhAGbV0wrZswnA6mUymueJTWKF09sYW",
+	"cPVU56xTI7i0Tx4Pxo6gRZR2S4pyK4EFXEU6HbZza3zYZFeTmULJ5CGi9n/uyAqPPWGSZjjofiNc0vfF",
+	"X85Px4auETZ4HUEIywXJlTWMZgviSym1Pp/InPz9Ax3fzMaH48sffxhCrqju/SOOcU2dsONW+sDoFBMa",
+	"X49PULDgrYPJ/h/B+wVhuZuVy3b2tuKZZ3ij5MCJr45eH0H1ubTqufM1ZvoUteADjt8pYpyRErES0SZd",
+	"Wp5vu66lTw3F18reMVrKxUDxs1bzldvpOo3VsdO67NZf68Ot4uN3VUV5qKLWDbVpVk2HqqucvPscp8ai",
+	"hIPHkMLIl1UQiBoMchk8VJeerynW7fEDZUm0+sLXBNX9Y9d3tYCW2VEH1yG/tAEbYh4IZ2iML1aj0gWg",
+	"fNlKubFKcxOnewPMA22cIitowsPaeOoyzrgdKMvn6APvCuHUre0aXZxa9H3l9xM4wVTYskf8uciw0A4F",
+	"xzXqQImaKjIb7vZNCVEBiu9Tu0eXurq/5shQmzgVNPE6Z9mDlO6plmvvBD2Q8x4Upl288eLTtzQC6tZw",
+	"FnpoGsiCRuZuOGoLo7OL072OAgs5oEHZpn1jeqniNMEV14kxhY0oYeFms0d4MJvNINvrtJNG4aYofouw",
+	"dc15V3/09vzrH89gdABZSXheaCfZ3n+GYI8G7vRmLpn2BMNHOpfwQlMGoxn8Aq8jOPT/3+x9X7x9L7vs",
+	"6xOYjl/Dkw1y69XaZNMURvuz/wEkO9WjFfy196JWIg/VjrdcJufleNWv6BkaP6L4n/gbzXLhN+dKJoNN",
+	"TdMYX7GBgNnRs5LabBnUrBzHeriWH4CFNmSg2ALUQI4azk+ewU8/z34qgrprDqsbV587SWOpvCfcfd44",
+	"0xk8/nB42AqNUJj6wWG5Ffck0L1YVXK8toF8+AazUs7OV4LKTXumcpp/kw0UKtQm9IG+DcavVTVO0ziU",
+	"zoKLka3Sgm2R2hS1xK0hEXFakDlJrc3NfDrdXTCJVUZ68/PLd+/ewtHbV0VPHtozgaMwX0oWBlAEJy1q",
+	"WE5pzqdX+9Nl4U/BYywjtdTw3dPjFtQ9hf2pJCJXqE2hymyyP5mFVpGjpDknc/IovAp8MQ1erg6t2nF4",
+	"mWAARoXaVo4HYcY6rVdF3ZuKg9nsK5cU/cuJ72NTGo0Txf3Ig9hLQzp2ictOyFSCv0U8+tckHg1Qa6Bx",
+	"aPYNfOGyxGUZ9TNbsYwK0V8XEUsT02ZChlz6zT2PTD95int7r2NeoN2hq96/mvoxVfsTPhHuVfY+r4jy",
+	"vKLNDRpWO4xaLmqNkhUZqZ8fPnDcRr1ecfc5FTaw1fasEdJlWZK2JTjJYFkRw+UEqvHkVCV8s5DFnO07",
+	"oJ+w0d7YOSzZli3L+dNLr2d9P4x2BteU2mghjZLGwrIZ6ZeTshm17w02xW6vaet6QHBMUEYLWXQsWWsO",
+	"v4ROtoTVzXYSmDealiHjcE9Q3gF4ND46DNNK5ZWqlTV+QOnL7gc/rZOodQHRCtMa7Mv/Mi0fklRljA3l",
+	"RAV40Xwg4xYqWLw/a55/G5HHs8f3HVhbMK3vP7tJ9QJtnUiw5TYFQS36fGymA6CSwcHjdNwaLvoJF5Gy",
+	"fnZTL/do3pdunkaQ/yPOHZoygHLgJF1AnikpPVW84vYa4hTjTctac20sZt5Av8ezprIo9J0ngOEVCpVn",
+	"3op2/5tPPTYTj5xIVXDhAFdhLi5Hum7n9FuHu+dlrWdv4g1qj5suOXqJVNg0gjO0msdmr5U1hYl9nV6g",
+	"SjTNUz/4IbzRFptNrZLdr1HoqxsLST8qrwoR3qMO3Zq1rrRlS40qlm4vb/8dAAD//4DgD7LXFwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

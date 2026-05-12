@@ -5,7 +5,7 @@ Pflege diese Datei am Ende jeder Iteration. Format analog zu
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-12
+Stand: 2026-05-12 (Iteration 2.2 lokal fertig, PR offen)
 
 ---
 
@@ -136,20 +136,95 @@ exist`). Ursache: Ansible-Deploy hatte keinen `goose up`-Step
 - mdsvex-Konvertierung der hardcoded Compliance-Pages
 - EN-Übersetzung von `/quellen-attribution`
 
-### Iteration 2.2 — DWD-Adapter
+### Iteration 2.2 — DWD-Adapter (POI-Observations)
 
-Status: ⏳ Geplant (Plan-Skizze fertig, Übergabe-Prompt nach 2.1)
+Status: 🟡 Lokal fertig, PR ausstehend
+Datum: 2026-05-12
+Geplanter Tag: **v0.5.0** (fortgeführt vom 2.1-Schema, siehe Tag-Note unten)
 Plan-Skizze: `plan-iteration-2-2.md`
-Geschätzte Dauer: 4-6 Tage (DWD-Format-Komplexität)
-Geplanter Tag: **v0.2.0**
+Übergabe-Prompt: `prompt-iteration-2-2.md`
 
-**Voraussetzungen:**
+**Commits auf dem Branch `feat/iteration-2-2-dwd-poi` (9):**
 
-- [x] Iteration 2.1 gemerged und v0.4.2 live
-- [x] Worker-Pattern aus 2.1 erprobt (lessons learned eingearbeitet)
-- [ ] DWD-OpenData-Recherche durchgeführt (siehe Plan-Skizze)
-- [ ] Konkrete Stations-Auswahl mit Maintainer abgestimmt
-- [ ] Übergabe-Prompt ausgearbeitet (`prompt-iteration-2-2.md`)
+1. `afc3a63` — feat(db): migration 0002 für DWD-POI stations +
+   observations-Spalten (locations +dwd_station_id/altitude_m, observations
+   +pressure/humidity, PK auf (location_id, source, observed_at), 3 neue
+   Klimakontrast-Locations Brocken/Zugspitze/Helgoland)
+2. `6484b13` — feat(backend): sqlc-Queries + Schema für DWD-POI +
+   Druck/Feuchte (neue Query `GetLatestObservationBySource`,
+   `available_sources` als COALESCE-Array)
+3. `0ee3e52` — feat(pyworkers): DWD-POI-Worker mit 6 Stationen
+   (fetch + parse + persist mit `ON CONFLICT … DO UPDATE`)
+4. `9fee0fb` — feat(pyworkers): DWD-POI Scheduler-Job alle 30 Min
+   mit initial-run-on-startup
+5. `9101fea` — feat(pyworkers): Open-Meteo um Druck + Feuchte
+   erweitern, PK-Anpassung (pressure_msl + relative_humidity_2m,
+   ON CONFLICT auf neue PK)
+6. `f94ce88` — feat(backend): API erweitert um source-Param,
+   altitudeM, availableSources, pressure, humidity
+7. `54306a1` — feat(frontend): /wetter zeigt 6 Cards mit
+   Source-Badge, Druck, Feuchte, Höhe (Paraglide DE+EN)
+8. `0b57697` — docs(frontend): /quellen-attribution erweitert um
+   DWD-Block (GeoNutzV)
+9. `6952209` — test(2.2): DWD-Parser, backend resolveSource,
+   OM-Tests an neue Tuple-Shape angepasst
+10. (folgt) — docs(2.2): data-sources + runbook + backlog + STATUS
+
+**Getroffene Implementations-Entscheidungen:**
+
+- **DWD-Station-IDs** sind 5-stellige **WMO-Synop-Kennungen**, nicht
+  DWD-Legacy/CDC-IDs. Die Plan-Skizze hatte CDC-IDs gelistet (03342,
+  00078, 05792, 02115) — die POI-Endpoint kennt sie nicht. Korrekte
+  POI-IDs: Potsdam 10379, Berlin 10384, Hamburg 10147, Brocken 10454,
+  Zugspitze 10961, Helgoland 10015. Migration 0002 wurde noch vor
+  PR-Erstellung per `git commit --amend` korrigiert.
+- **`observations`-PK** erweitert auf `(location_id, source,
+observed_at)`. Sonst hätten DWD und Open-Meteo sich gegenseitig
+  überschrieben. TimescaleDB akzeptiert die neue PK, weil
+  `observed_at` weiterhin enthalten ist.
+- **Open-Meteo `pressure_msl` statt `surface_pressure`** für
+  MSL-Konsistenz mit DWD. Ohne diese Korrektur klafften Berlin-Werte
+  um ~5 hPa zwischen den Quellen.
+- **`is_skippable` im sqlc-Schema-Builder** filtert jetzt auch
+  UPDATE-Statements (vorher nur INSERT/DELETE). Migration 0002 hat
+  UPDATE-Statements für die Stadt-Locations, die ohne den Fix in
+  `apps/backend/internal/storage/schema.sql` geleakt wären.
+- **Source-Default-Logik**: `?source=`-Param gewinnt; ohne Param
+  ist DWD Default, wenn `dwd_station_id` an der Location hängt;
+  sonst Open-Meteo. Frontend zeigt entsprechend die DWD-Variante
+  für alle Stadt-Slugs.
+- **Forecast-Pfad**: nur Open-Meteo. DWD-MOSMIX kommt als 2.2b.
+- **Zugspitze hat keinen MSL-Druck** (DWD reduziert nicht für
+  Stationen > ~2000 m). Parser liefert `pressure=None`,
+  WeatherCard lässt die Druck-Zeile weg.
+
+**Tag-Konflikt-Note (analog zu 2.1):** Plan-Skizze schlug `v0.2.0`,
+das ist aber bereits für Track-1-Iter-1.2 vergeben. Neue Schiene
+ab v0.4.0 (2.1) → v0.5.0 (2.2).
+
+**Test-Stand:**
+
+- 22 pyworkers-Tests grün (8 OM + 12 DWD + 2 heartbeat)
+- Backend handler-Tests grün inkl. neuer resolveSource-Coverage
+- Frontend vitest 5/5 grün, svelte-check 0 Errors
+- E2E live gegen Dev-Stack: `http://api.localhost` liefert 6
+  Locations mit allen neuen Feldern; `/locations/berlin` default
+  → DWD; `?source=open-meteo` → OM + 24h-Forecast; brocken-only-DWD
+  hat `current=null` für `?source=open-meteo`; zugspitze liefert
+  `pressure` field omitted; unknown-slug → 404.
+
+**Bekannt-offen** (in `docs/backlog.md` dokumentiert):
+
+- MOSMIX-Forecast-Pfad als Iteration 2.2b (v0.5.1)
+- Quellen-Vergleich-UI (Toggle pro Card / Side-by-side)
+- DWD-CDC-Historie für Klima-Iteration
+- Automatic Multi-Source-Failover für `current`
+- OpenAPI-Strict-Enum-Validation (`?source=foo` liefert 200 statt 400)
+- DWD-Station-Liste dynamisch importieren
+
+**Browser-Smoke verbleibt auf Maintainer:** Mobile-Layout der 6 Cards,
+Lighthouse-Score, visuelle Bestätigung Source-Badge / Höhe-Anzeige /
+Druck-Feuchte-Zeilen.
 
 ### Iteration 2.3 — Stations-Map mit MapLibre
 
@@ -160,7 +235,7 @@ Geplanter Tag: **v0.3.0**
 
 **Voraussetzungen:**
 
-- [ ] Iteration 2.2 gemerged und v0.2.0 live
+- [ ] Iteration 2.2 gemerged und v0.5.0 live
 - [ ] Tile-Quelle entschieden (siehe Plan-Skizze: OSM / Stadiamaps /
       MapTiler)
 - [ ] Cookie-Banner-Implikationen für externe Tile-Quelle geprüft
@@ -196,7 +271,7 @@ v0.4.0      Iteration 2.1 (Open-Meteo Hello World)    ✅ 2026-05-12
 v0.4.1      Ansible-migrate + Logo (PR #70)           ⚠️ partial (cleanup-fail)
 v0.4.2      Hotfix docker-exec -u 0 (PR #71)          ✅ 2026-05-12 live
                 ↓
-v0.5.0      Iteration 2.2 (DWD-Adapter)               ⏳ nach 2.1
+v0.5.0      Iteration 2.2 (DWD-POI-Adapter)           🟡 lokal fertig, PR offen
                 ↓
 v0.6.0      Iteration 2.3 (Stations-Map)              ⏳ nach 2.2
                 ↓

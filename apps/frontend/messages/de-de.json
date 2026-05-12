@@ -23,12 +23,16 @@
 	"page_last_updated": "Letzte Aktualisierung",
 	"nav_weather": "Wetter",
 	"weather_page_title": "Wetter",
-	"weather_page_lead": "Aktuelle Wetterdaten und 24-Stunden-Vorhersage für ausgewählte Städte. Datenbasis: Open-Meteo.",
+	"weather_page_lead": "Aktuelle Stationsbeobachtungen und 24-Stunden-Vorhersage für ausgewählte Standorte in Deutschland. Datenquellen: DWD und Open-Meteo.",
 	"weather_no_locations": "Derzeit keine Wetterdaten verfügbar.",
 	"weather_no_data": "Noch keine aktuelle Beobachtung vorliegend.",
 	"weather_precipitation_24h": "Niederschlag 24 h",
 	"weather_wind_speed": "Wind",
 	"weather_wind_direction": "Richtung",
+	"weather_pressure": "Luftdruck",
+	"weather_humidity": "Luftfeuchte",
 	"weather_observed_at": "Messzeitpunkt",
+	"weather_source_dwd": "DWD",
+	"weather_source_open_meteo": "Open-Meteo",
 	"weather_attribution_link": "Quellen & Attribution"
 }

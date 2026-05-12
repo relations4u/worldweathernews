@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     open_meteo_current_interval_seconds: int = Field(default=600, ge=60)
     open_meteo_hourly_interval_seconds: int = Field(default=3600, ge=60)
 
+    # DWD POI Worker (deutsche Stationsbeobachtungen, halbstündlich)
+    dwd_enabled: bool = True
+    dwd_poi_interval_seconds: int = Field(default=1800, ge=60)
+
     # Tracing (OTLP gRPC → Tempo). Endpoint ist host:port ohne Schema.
     tracing_enabled: bool = False
     tracing_endpoint: str = "tempo:4317"
