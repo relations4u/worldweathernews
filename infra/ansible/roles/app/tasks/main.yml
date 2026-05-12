@@ -14,6 +14,7 @@
   loop:
     - "{{ app_dir }}"
     - "{{ app_dir }}/postgres-init"
+    - "{{ app_dir }}/migrations"
 
 - name: Render compose.prod.yml with version pins
   ansible.builtin.template:
@@ -27,6 +28,17 @@
   ansible.posix.synchronize:
     src: "{{ playbook_dir }}/../../compose/postgres-init/"
     dest: "{{ app_dir }}/postgres-init/"
+    delete: true
+    rsync_opts:
+      - "--chmod=D0755,F0644"
+
+- name: Stage goose migrations on host
+  # Wird gleich per `docker cp` in den postgres-Container kopiert; deshalb
+  # nicht direkt nach /opt/wwn — sondern in ein dediziertes Unterverzeichnis,
+  # damit ein versehentliches `delete: true` die App-Konfig nicht trifft.
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../../migrations/"
+    dest: "{{ app_dir }}/migrations/"
     delete: true
     rsync_opts:
       - "--chmod=D0755,F0644"
@@ -51,7 +63,61 @@
   become: true
   become_user: "{{ deploy_user }}"
 
-- name: Start application stack
+# === Migrations ====================================================
+# Beim v0.4.0-Deploy am 12. Mai 2026 hat das fehlende `goose up` einen
+# API-500 verursacht (relation "locations" does not exist) — siehe
+# docs/runbook.md Szenario 13. Postgres exposed keinen Host-Port,
+# darum läuft goose innerhalb des wwn-postgres-Containers gegen
+# 127.0.0.1:5432 mit dem Container-internen POSTGRES_PASSWORD.
+
+- name: Ensure goose binary on app host
+  ansible.builtin.get_url:
+    url: "https://github.com/pressly/goose/releases/download/v{{ goose_version }}/goose_linux_x86_64"
+    dest: /usr/local/bin/goose
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Start data services (postgres, redis) before migrations
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}"
+    files:
+      - "{{ docker_compose_file }}"
+    services:
+      - postgres
+      - redis
+    state: present
+    pull: never
+    wait: true
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Apply database migrations via goose-in-postgres-container
+  # Workaround spiegelt den manuellen Fix vom 12. Mai: goose-Binary und
+  # Migrations werden per `docker cp` in den postgres-Container gestaged,
+  # dort gegen 127.0.0.1 ausgeführt, anschliessend wieder entfernt.
+  # POSTGRES_USER/PASSWORD/DB stammen aus der Container-Env (SOPS-Secret),
+  # tauchen also nicht im Ansible-Log auf.
+  ansible.builtin.shell: |
+    set -euo pipefail
+    docker cp {{ app_dir }}/migrations wwn-postgres:/tmp/wwn-migrations
+    docker cp /usr/local/bin/goose wwn-postgres:/tmp/goose
+    docker exec wwn-postgres bash -c '
+      /tmp/goose -dir /tmp/wwn-migrations postgres \
+        "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?sslmode=disable" \
+        up
+    '
+    docker exec wwn-postgres rm -rf /tmp/wwn-migrations /tmp/goose
+  args:
+    executable: /bin/bash
+  # goose ist idempotent (no-op bei gleichem DB-Zustand); wir markieren den
+  # Task trotzdem als changed, damit das Ansible-Reporting zeigt, dass die
+  # Migration gelaufen ist.
+  changed_when: true
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Start full application stack
   community.docker.docker_compose_v2:
     project_src: "{{ app_dir }}"
     files:
