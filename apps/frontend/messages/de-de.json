@@ -20,5 +20,15 @@
 	"callout_info": "Hinweis",
 	"callout_warning": "Achtung",
 	"callout_note": "Notiz",
-	"page_last_updated": "Letzte Aktualisierung"
+	"page_last_updated": "Letzte Aktualisierung",
+	"nav_weather": "Wetter",
+	"weather_page_title": "Wetter",
+	"weather_page_lead": "Aktuelle Wetterdaten und 24-Stunden-Vorhersage für ausgewählte Städte. Datenbasis: Open-Meteo.",
+	"weather_no_locations": "Derzeit keine Wetterdaten verfügbar.",
+	"weather_no_data": "Noch keine aktuelle Beobachtung vorliegend.",
+	"weather_precipitation_24h": "Niederschlag 24 h",
+	"weather_wind_speed": "Wind",
+	"weather_wind_direction": "Richtung",
+	"weather_observed_at": "Messzeitpunkt",
+	"weather_attribution_link": "Quellen & Attribution"
 }

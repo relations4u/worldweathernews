@@ -20,5 +20,15 @@
 	"callout_info": "Info",
 	"callout_warning": "Warning",
 	"callout_note": "Note",
-	"page_last_updated": "Last updated"
+	"page_last_updated": "Last updated",
+	"nav_weather": "Weather",
+	"weather_page_title": "Weather",
+	"weather_page_lead": "Current weather data and 24-hour forecast for selected cities. Data source: Open-Meteo.",
+	"weather_no_locations": "No weather data currently available.",
+	"weather_no_data": "No recent observation available yet.",
+	"weather_precipitation_24h": "Precipitation 24 h",
+	"weather_wind_speed": "Wind",
+	"weather_wind_direction": "Direction",
+	"weather_observed_at": "Observed at",
+	"weather_attribution_link": "Sources & Attribution"
 }

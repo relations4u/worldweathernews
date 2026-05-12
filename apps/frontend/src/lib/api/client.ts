@@ -4,7 +4,15 @@ import type { components } from './types.gen';
 
 export type PingResponse = components['schemas']['PingResponse'];
 export type Location = components['schemas']['Location'];
+export type Observation = components['schemas']['Observation'];
+export type ForecastEntry = components['schemas']['ForecastEntry'];
+export type LocationDetail = components['schemas']['LocationDetail'];
 export type Problem = components['schemas']['Problem'];
+
+export type LocationsListResponse = {
+	results: Location[];
+	attribution: string;
+};
 
 export class ApiError extends Error {
 	constructor(
@@ -16,17 +24,21 @@ export class ApiError extends Error {
 	}
 }
 
+type Fetch = typeof globalThis.fetch;
+
 interface RequestOptions extends RequestInit {
 	timeout?: number;
+	fetch?: Fetch;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-	const { timeout = 10_000, ...init } = options;
+	const { timeout = 10_000, fetch: customFetch, ...init } = options;
+	const doFetch: Fetch = customFetch ?? globalThis.fetch;
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), timeout);
 
 	try {
-		const response = await fetch(`${PUBLIC_API_BASE_URL}${path}`, {
+		const response = await doFetch(`${PUBLIC_API_BASE_URL}${path}`, {
 			...init,
 			signal: controller.signal,
 			headers: {
@@ -55,11 +67,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 	}
 }
 
-export function ping(): Promise<PingResponse> {
-	return request<PingResponse>('/api/v1/ping');
+export function ping(options?: RequestOptions): Promise<PingResponse> {
+	return request<PingResponse>('/api/v1/ping', options);
 }
 
-export function searchLocations(q: string, limit = 10): Promise<{ results: Location[] }> {
-	const params = new URLSearchParams({ q, limit: String(limit) });
-	return request<{ results: Location[] }>(`/api/v1/locations?${params}`);
+export function listLocations(options?: RequestOptions): Promise<LocationsListResponse> {
+	return request<LocationsListResponse>('/api/v1/locations', options);
+}
+
+export function getLocationDetail(slug: string, options?: RequestOptions): Promise<LocationDetail> {
+	return request<LocationDetail>(`/api/v1/locations/${encodeURIComponent(slug)}`, options);
 }

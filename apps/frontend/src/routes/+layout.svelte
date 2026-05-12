@@ -43,6 +43,7 @@
 			</a>
 
 			<nav aria-label="Hauptnavigation" class="flex items-center gap-4 text-sm text-slate-600">
+				<a href={resolve('/wetter')} class="hover:text-slate-900">{m.nav_weather()}</a>
 				<a href={resolve('/about')} class="hover:text-slate-900">{m.nav_about()}</a>
 				<a href={resolve('/kontakt')} class="hover:text-slate-900">{m.nav_contact()}</a>
 				<LocaleSwitcher />
