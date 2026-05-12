@@ -6,11 +6,37 @@
 		Diese Seite listet alle eingebundenen Datenquellen mit Lizenz, Zugriffs-Pfad und Datenstand.
 	</p>
 
-	<div class="mt-6 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-		<strong class="font-semibold text-slate-900">Stand der Forschungs-Phase:</strong>
-		Es sind noch keine externen Datenquellen produktiv eingebunden. Diese Seite wird mit der Integration
-		der ersten Quellen (Open-Meteo, DWD) in Iteration 2 schrittweise befüllt.
-	</div>
+	<h2 class="mt-8 text-xl font-semibold text-slate-900">Aktive Datenquellen</h2>
+
+	<article class="mt-4 rounded-md border border-slate-200 p-4">
+		<h3 class="text-lg font-semibold text-slate-900">Open-Meteo</h3>
+		<dl class="mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm text-slate-600">
+			<dt class="font-medium text-slate-900">API</dt>
+			<dd>
+				<a
+					href="https://open-meteo.com/en/docs"
+					rel="noopener noreferrer"
+					class="underline hover:text-slate-900">open-meteo.com</a
+				>
+			</dd>
+			<dt class="font-medium text-slate-900">Lizenz</dt>
+			<dd>
+				<a
+					href="https://creativecommons.org/licenses/by/4.0/"
+					rel="noopener noreferrer"
+					class="underline hover:text-slate-900">CC BY 4.0</a
+				>
+			</dd>
+			<dt class="font-medium text-slate-900">Attribution</dt>
+			<dd>„Daten von Open-Meteo.com, CC BY 4.0"</dd>
+			<dt class="font-medium text-slate-900">Genutzte Variablen</dt>
+			<dd>temperature_2m, precipitation, wind_speed_10m, wind_direction_10m</dd>
+			<dt class="font-medium text-slate-900">Aktualität</dt>
+			<dd>Current alle 10 min, Stundenvorhersage (24 h) alle 60 min</dd>
+			<dt class="font-medium text-slate-900">Eingebunden seit</dt>
+			<dd>Iteration 2.1 (Mai 2026)</dd>
+		</dl>
+	</article>
 
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">Geplante Datenquellen</h2>
 	<p class="mt-3 text-slate-600">
@@ -20,12 +46,8 @@
 
 	<ul class="mt-3 list-disc space-y-2 pl-6 text-slate-600">
 		<li>
-			<strong class="text-slate-900">Open-Meteo</strong> — open-meteo.com, EU-basiert, CC-BY-4.0 für historische
-			Daten, kein API-Key erforderlich
-		</li>
-		<li>
 			<strong class="text-slate-900">Deutscher Wetterdienst (DWD)</strong> — OpenData-Portal, MOSMIX,
-			ICON-Modelle, CC-BY-4.0
+			ICON-Modelle, CC-BY-4.0 (Iteration 2.2)
 		</li>
 		<li>
 			<strong class="text-slate-900">NOAA / National Weather Service</strong> — USA, Public Domain
