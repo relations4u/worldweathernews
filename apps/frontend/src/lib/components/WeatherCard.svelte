@@ -2,6 +2,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
 	import type { LocationDetail } from '$lib/api/client';
+	import { compass } from '$lib/wind';
 
 	let { detail }: { detail: LocationDetail } = $props();
 
@@ -29,13 +30,6 @@
 	const sourceLabel = $derived(
 		current?.source === 'dwd' ? m.weather_source_dwd() : m.weather_source_open_meteo()
 	);
-
-	// Kompass-Kurzform der Windrichtung (DE/EN identisch, ist Standard-Notation).
-	function compass(deg: number | null | undefined): string {
-		if (typeof deg !== 'number') return '—';
-		const dirs = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
-		return dirs[Math.round(deg / 45) % 8];
-	}
 
 	function formatTime(iso: string): string {
 		const locale = getLocale() === 'en' ? 'en-GB' : 'de-DE';
