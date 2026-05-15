@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import * as m from '$lib/paraglide/messages';
 	import WeatherCard from '$lib/components/WeatherCard.svelte';
+	import StationsMap from '$lib/components/StationsMap.svelte';
 
 	let { data } = $props();
 </script>
@@ -18,6 +19,9 @@
 	{#if data.details.length === 0}
 		<p class="mt-8 text-slate-600">{m.weather_no_locations()}</p>
 	{:else}
+		<div class="mt-8">
+			<StationsMap details={data.details} />
+		</div>
 		<div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each data.details as detail (detail.location.slug)}
 				<WeatherCard {detail} />

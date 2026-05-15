@@ -5,7 +5,7 @@ Pflege diese Datei am Ende jeder Iteration. Format analog zu
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-12 (Iteration 2.2 v0.5.0 live auf wwn-prod)
+Stand: 2026-05-15 (Iteration 2.3 lokal fertig, PR ausstehend; 2.2 v0.5.0 live)
 
 ---
 
@@ -260,13 +260,56 @@ löschen.
 
 ### Iteration 2.3 — Stations-Map mit MapLibre
 
-Status: ⏳ Bereit (alle Voraussetzungen erfüllt, Übergabe-Prompt
-submission-ready — Start nach Maintainer-Freigabe)
+Status: 🟡 Lokal fertig auf `feat/iteration-2-3-stations-map`, PR ausstehend
+Datum: 2026-05-15
 Plan-Skizze: `plan-iteration-2-3.md`
 Übergabe-Prompt: `prompt-iteration-2-3.md`
-Geschätzte Dauer: 3-4 Tage
 Geplanter Tag: **v0.6.0** (nicht v0.3.0 — die v0.1.0–v0.3.0-Tags sind
 durch Track 1 vergeben, siehe Tag-Roadmap unten)
+
+**Commits auf dem Branch `feat/iteration-2-3-stations-map` (6):**
+
+1. `d035b98` — build(frontend): maplibre-gl@5.24.0 exakt gepinnt,
+   beide Lockfiles via Standalone-Re-Sync-Workflow synchron
+2. `bf7fea4` — refactor(frontend): `lib/config/map.ts` (zentrale
+   OpenFreeMap-Style-URL) + `lib/wind.ts` (compass extrahiert +
+   `windArrowRotationDeg` +180°), WeatherCard nutzt geteilten Helper
+3. `69a40f5` — feat(frontend): `StationsMap.svelte` — lazy
+   maplibre-gl+CSS in onMount (Q6/S1), leerer SSR-Wrapper, Marker
+   mit Temp-Label + Wind-Pfeil, Popup Phase-1-Set (DOM-API, XSS-safe),
+   4 neue Paraglide-Keys DE+EN
+4. `a5bcc2b` — feat(frontend): StationsMap als Hero auf `/wetter`
+   (N2), Loader unverändert; Lazy-Chunk verifiziert (maplibre als
+   separater 1003 KB Chunk, nicht im Entry)
+5. `061d8ed` — docs(frontend): OpenFreeMap-Attribution +
+   Datenschutz-§5 + backlog.md (3 Einträge) + data-sources.md
+6. (folgt) — test(2.3): wind-Helper Vitest + CLAUDE.md/STATUS-Updates
+   - eslint resolve()-Fix für interne Links
+
+**Getroffene Implementations-Entscheidungen:**
+
+- **Kein Backend-/Schema-Eingriff**: `/api/v1/locations` liefert
+  `latitude`/`longitude` bereits typisiert; der `/wetter`-Loader
+  reicht `details: LocationDetail[]` mit `.location` + `.current`
+  durch. Die Karte konsumiert denselben Datensatz — kein N+1 über
+  das Card-Maß hinaus, kein `/map-overview` (Backlog).
+- **Detail-Link**: kein `/wetter/[slug]`-Route vorhanden; Popup-Link
+  springt zum In-Page-Anker `#weather-card-<slug>` (von WeatherCard
+  gesetzt) — passt zu N2 (Karte Hero, Cards darunter).
+- **Wind-Pfeil**: keine wiederverwendbare Pfeil-Logik in WeatherCard
+  vorhanden (nur `compass()`-Text). Neuer Helper `windArrowRotationDeg`
+  (+180°, vom Maintainer bestätigt), `compass()` mitgeteilt nach
+  `lib/wind.ts`.
+- **maplibre-gl-Pin**: exakt `5.24.0` (kein Caret), bewusste
+  Abweichung von der `^`-Konvention der Nachbar-Deps für
+  deterministisches GPU-Rendering.
+- **Lazy-Verifikation**: maplibre landet als separater ~1 MB Chunk,
+  nicht im Entry-/Default-Bundle (Q6 erfüllt, im Build verifiziert).
+
+**Akzeptanzkriterien:** alle erfüllt außer (a) Lighthouse-Run und
+(b) Mobile-Pinch/Touch-Smoke — beides Maintainer-Browser-Tasks nach
+Deploy, analog zum 2.1/2.2-Muster. `svelte-check` 0/0, `lint` grün,
+12/12 Vitest grün, Build grün.
 
 **Voraussetzungen:**
 
@@ -326,7 +369,7 @@ v0.4.2      Hotfix docker-exec -u 0 (PR #71)          ✅ 2026-05-12 live
                 ↓
 v0.5.0      Iteration 2.2 (DWD-POI-Adapter, PR #73)   ✅ 2026-05-12 live
                 ↓
-v0.6.0      Iteration 2.3 (Stations-Map)              ⏳ nach 2.2
+v0.6.0      Iteration 2.3 (Stations-Map)              🟡 lokal fertig, PR offen
                 ↓
 Konzept-Session vor Track-2-Fortsetzung:
   - B.2 Wetterkarten-Strategie

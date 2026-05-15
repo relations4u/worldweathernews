@@ -215,6 +215,24 @@ write`-Permission wieder rein). Bis dahin SARIF manuell ziehen,
   Container (z. B. `http://backend:8080` in compose-Network).
   Code-Stelle: `apps/frontend/src/lib/api/client.ts` plus
   `apps/frontend/src/routes/wetter/+page.ts`.
+- **Self-hosted OpenFreeMap-Stack** — Iteration 2.3 nutzt die
+  öffentliche OpenFreeMap-Instanz (`tiles.openfreemap.org`), bewusst
+  als client-seitige, nicht backend-kritische Abhängigkeit (A.19
+  Edge-/Cache-Ausnahme). Backup-Pfad falls die Public-Instanz
+  unzuverlässig wird: eigenen OpenFreeMap-Stack hosten (Planetiler +
+  Planet-Tiles, >100 GB Storage — auf dem aktuellen Proxmox nicht
+  tragbar, eigene Iteration). Wechsel ist ein Ein-Zeilen-Change in
+  `apps/frontend/src/lib/config/map.ts`.
+- **`/api/v1/map-overview` gebündelter Endpoint** — `/wetter` lädt
+  Locations + pro Slug ein `getLocationDetail` (N+1). Die Karte
+  konsumiert denselben Datensatz, erzeugt also keine zusätzlichen
+  Requests. Wird die Location-Liste größer, ist ein gebündelter
+  Endpoint (alle Locations inkl. `current` in einem Call) sinnvoll.
+  Verwandt mit „Daten-Caching im Backend" oben.
+- **Marker-Clustering auf der Stationskarte** — Phase 1 zeigt 6
+  Marker ohne Clustering (genügt). Bei deutlich mehr Stationen
+  (Klima-Iterationen, dynamischer DWD-Stations-Import) MapLibre-
+  Clustering oder den nativen Pfeil-Layer (W3) ergänzen.
 - **mdsvex-Konvertierung der hardcoded Compliance-Pages** —
   `/impressum`, `/datenschutz`, `/barrierefreiheit`,
   `/quellen-attribution`, `/about`, `/kontakt` sind aktuell

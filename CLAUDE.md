@@ -510,6 +510,9 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 | Frontend-Routes                | `apps/frontend/src/routes/`                                                                    |
 | Wetter-Route                   | `apps/frontend/src/routes/wetter/` (CSR-only, siehe ssr=false-Note)                            |
 | WeatherCard-Component          | `apps/frontend/src/lib/components/WeatherCard.svelte`                                          |
+| StationsMap-Component          | `apps/frontend/src/lib/components/StationsMap.svelte` (MapLibre, lazy in onMount)              |
+| Karten-Config (Tile-URL)       | `apps/frontend/src/lib/config/map.ts` (zentraler Wechselpunkt der Tile-Quelle)                 |
+| Wind-Helfer (compass/Pfeil)    | `apps/frontend/src/lib/wind.ts` (geteilt: WeatherCard + StationsMap)                           |
 | Frontend-API-Client            | `apps/frontend/src/lib/api/client.ts`                                                          |
 | Frontend-Default-Env           | `apps/frontend/.env` (committed!)                                                              |
 | OpenAPI-Schema                 | `packages/api-schema/openapi.yaml`                                                             |

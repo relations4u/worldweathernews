@@ -34,5 +34,9 @@
 	"weather_observed_at": "Observed at",
 	"weather_source_dwd": "DWD",
 	"weather_source_open_meteo": "Open-Meteo",
+	"weather_precipitation_now": "Precipitation",
+	"weather_detail_link": "View details",
+	"weather_map_loading": "Loading map …",
+	"weather_map_label": "Map of weather stations",
 	"weather_attribution_link": "Sources & Attribution"
 }
