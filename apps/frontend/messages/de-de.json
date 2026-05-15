@@ -34,5 +34,9 @@
 	"weather_observed_at": "Messzeitpunkt",
 	"weather_source_dwd": "DWD",
 	"weather_source_open_meteo": "Open-Meteo",
+	"weather_precipitation_now": "Niederschlag",
+	"weather_detail_link": "Details ansehen",
+	"weather_map_loading": "Karte wird geladen …",
+	"weather_map_label": "Karte der Wetterstationen",
 	"weather_attribution_link": "Quellen & Attribution"
 }
