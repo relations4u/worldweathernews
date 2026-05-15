@@ -5,7 +5,7 @@ Pflege diese Datei am Ende jeder Iteration. Format analog zu
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-12 (Iteration 2.2 lokal fertig, PR offen)
+Stand: 2026-05-12 (Iteration 2.2 v0.5.0 live auf wwn-prod)
 
 ---
 
@@ -138,9 +138,9 @@ exist`). Ursache: Ansible-Deploy hatte keinen `goose up`-Step
 
 ### Iteration 2.2 — DWD-Adapter (POI-Observations)
 
-Status: 🟡 Lokal fertig, PR ausstehend
+Status: ✅ Done — gemerged (PR #73, Squash `a21a6bb`), **v0.5.0** live auf wwn-prod
 Datum: 2026-05-12
-Geplanter Tag: **v0.5.0** (fortgeführt vom 2.1-Schema, siehe Tag-Note unten)
+Tag: **v0.5.0** (fortgeführt vom 2.1-Schema, siehe Tag-Note unten)
 Plan-Skizze: `plan-iteration-2-2.md`
 Übergabe-Prompt: `prompt-iteration-2-2.md`
 
@@ -226,6 +226,38 @@ ab v0.4.0 (2.1) → v0.5.0 (2.2).
 Lighthouse-Score, visuelle Bestätigung Source-Badge / Höhe-Anzeige /
 Druck-Feuchte-Zeilen.
 
+**Post-Deploy-Verlauf (12. Mai 2026):**
+
+1. **Tag v0.5.0** gesetzt + signiert direkt auf dem Squash-Commit
+   `a21a6bb`; Release-Pipeline grün (~3 Min, 6 Jobs: meta, build
+   backend/frontend/pyworkers/cms-auth, GitHub-Release).
+2. **`bash scripts/deploy.sh production 0.5.0`** sauber durchgelaufen:
+   12 OK / 6 changed / 0 failed. Migration 0002 wurde **automatisch**
+   im postgres-Container ausgeführt (A.22-Akzeptanz erfüllt — kein
+   manueller `docker cp`-Schritt mehr nötig). Alle vier wwn-Container
+   `healthy` auf `:0.5.0`.
+3. **Production-Smoke** (https://api.research.worldweathernews.com):
+   - `/api/v1/locations` liefert 6 Einträge mit altitudeM, dwdStationId,
+     availableSources
+   - `/locations/berlin` default → DWD: T=7.1 P=1007.2 H=93
+   - `/locations/berlin?source=open-meteo` → OM mit 24h-Forecast
+   - `/locations/zugspitze` → T=-11.7 P=null (>2000m) H=95 altM=2964
+   - Frontend `/wetter` 200
+
+**Transient-Issue post-deploy (nicht eskaliert):**
+
+Die jüngste OM-Row für Berlin/Hamburg/Potsdam wurde **vor dem Deploy**
+vom alten Worker geschrieben (mit `pressure=NULL, humidity=NULL`).
+`ON CONFLICT (location_id, source, observed_at) DO NOTHING` blockiert
+das Update auf den gleichen `observed_at`. `?source=open-meteo` zeigt
+deshalb für ~10-15 Min nach Deploy `pressure=null, humidity=null` — bis
+die nächste 15-min-OM-Boundary einen frischen Insert mit den neuen
+Feldern auslöst. Auf dem Default-Pfad (DWD) merkt der User davon nichts.
+Self-resolving. Wenn das bei Folge-Iterationen mit Schema-Updates für
+existierende Hypertables wieder auftritt: entweder warten oder die
+jüngsten N Rows der betroffenen `(location_id, source)`-Paare einmal
+löschen.
+
 ### Iteration 2.3 — Stations-Map mit MapLibre
 
 Status: ⏳ Geplant (Plan-Skizze fertig, Übergabe-Prompt nach 2.2)
@@ -271,7 +303,7 @@ v0.4.0      Iteration 2.1 (Open-Meteo Hello World)    ✅ 2026-05-12
 v0.4.1      Ansible-migrate + Logo (PR #70)           ⚠️ partial (cleanup-fail)
 v0.4.2      Hotfix docker-exec -u 0 (PR #71)          ✅ 2026-05-12 live
                 ↓
-v0.5.0      Iteration 2.2 (DWD-POI-Adapter)           🟡 lokal fertig, PR offen
+v0.5.0      Iteration 2.2 (DWD-POI-Adapter, PR #73)   ✅ 2026-05-12 live
                 ↓
 v0.6.0      Iteration 2.3 (Stations-Map)              ⏳ nach 2.2
                 ↓
