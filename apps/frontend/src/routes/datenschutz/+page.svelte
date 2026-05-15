@@ -121,7 +121,7 @@
 			dabei wird — wie bei jeder HTTP-Anfrage — die IP-Adresse an den Kachel-Server übermittelt.
 			OpenFreeMap setzt keine Cookies und betreibt kein Tracking. Es werden keine weiteren
 			personenbezogenen Daten übertragen. Details und Lizenz in der
-			<a href="/quellen-attribution" class="underline hover:text-slate-900"
+			<a href={resolve('/quellen-attribution')} class="underline hover:text-slate-900"
 				>Quellen- und Attributionsübersicht</a
 			>.
 		</li>

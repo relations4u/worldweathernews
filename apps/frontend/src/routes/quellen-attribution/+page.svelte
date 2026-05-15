@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { resolve } from '$app/paths';
+</script>
+
 <section class="mx-auto max-w-3xl px-4 py-8">
 	<h1 class="text-3xl font-bold tracking-tight text-slate-900">Quellen und Attribution</h1>
 
@@ -150,7 +154,7 @@
 			<dd>
 				Setzt keine Cookies und kein Tracking. Beim Laden der Kacheln wird — wie bei jeder
 				HTTP-Anfrage — die IP-Adresse des Browsers an den Kachel-Server übertragen. Siehe <a
-					href="/datenschutz"
+					href={resolve('/datenschutz')}
 					class="underline hover:text-slate-900">Datenschutzerklärung</a
 				>.
 			</dd>
