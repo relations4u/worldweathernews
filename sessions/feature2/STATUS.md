@@ -260,18 +260,39 @@ löschen.
 
 ### Iteration 2.3 — Stations-Map mit MapLibre
 
-Status: ⏳ Geplant (Plan-Skizze fertig, Übergabe-Prompt nach 2.2)
+Status: ⏳ Bereit (alle Voraussetzungen erfüllt, Übergabe-Prompt
+submission-ready — Start nach Maintainer-Freigabe)
 Plan-Skizze: `plan-iteration-2-3.md`
+Übergabe-Prompt: `prompt-iteration-2-3.md`
 Geschätzte Dauer: 3-4 Tage
-Geplanter Tag: **v0.3.0**
+Geplanter Tag: **v0.6.0** (nicht v0.3.0 — die v0.1.0–v0.3.0-Tags sind
+durch Track 1 vergeben, siehe Tag-Roadmap unten)
 
 **Voraussetzungen:**
 
-- [ ] Iteration 2.2 gemerged und v0.5.0 live
-- [ ] Tile-Quelle entschieden (siehe Plan-Skizze: OSM / Stadiamaps /
-      MapTiler)
-- [ ] Cookie-Banner-Implikationen für externe Tile-Quelle geprüft
-- [ ] Übergabe-Prompt ausgearbeitet (`prompt-iteration-2-3.md`)
+- [x] Iteration 2.2 gemerged und v0.5.0 live (PR #73, STATUS-PR #74)
+- [x] Tile-Quelle entschieden: **T2 OpenFreeMap** (Liberty-Style,
+      Vector-Tiles, frei, kein Account/Key, cookiefrei). T1 OSM-Raster
+      und T3 MapTiler bewusst verworfen — Begründung in der
+      Plan-Skizze + Tile-Optionen-Analyse vom 15. Mai.
+- [x] Cookie-Banner-Implikationen geprüft: **keine Änderung nötig** —
+      OpenFreeMap setzt keine Cookies (explizit zugesichert), kein
+      Tracking. Datenschutz-Page bekommt nur einen IP-Hinweis-Block.
+- [x] Übergabe-Prompt ausgearbeitet (`prompt-iteration-2-3.md`,
+      T2 fix + Q1–Q6-Defaults eingearbeitet)
+
+**Entscheidungs-Notiz (15. Mai 2026):**
+
+Tile-Quelle als entscheidungsreifer Vergleich (T1/T2/T3) aufbereitet,
+Maintainer hat **T2 OpenFreeMap** gewählt. Self-hosting-Spannung
+(A.19) bewusst akzeptiert: Tile-Serving ist client-seitig und nicht
+backend-kritisch (Karte degradiert nur, Plattform läuft weiter) →
+fällt unter die Edge-/Cache-Ausnahme. Self-hosted OpenFreeMap-Stack
+als Backup-Pfad in `docs/backlog.md` (Storage-Bedarf, eigene spätere
+Iteration). Style-URL wird als zentrale Config-Konstante gehalten,
+damit ein späterer Wechsel ein Ein-Zeilen-Change ist. Q1–Q6 mit den
+Plan-Skizze-Defaults fixiert (N2 / Marker-C / Phase-1-Set / Wind-W2 /
+SSR-S1 / Lazy-Bundle).
 
 ---
 
