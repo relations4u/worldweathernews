@@ -5,7 +5,7 @@ Pflege diese Datei am Ende jeder Iteration. Format analog zu
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-15 (Iteration 2.3 lokal fertig, PR ausstehend; 2.2 v0.5.0 live)
+Stand: 2026-05-15 (Iteration 2.3 v0.6.0 live auf wwn-prod)
 
 ---
 
@@ -260,11 +260,11 @@ löschen.
 
 ### Iteration 2.3 — Stations-Map mit MapLibre
 
-Status: 🟡 Lokal fertig auf `feat/iteration-2-3-stations-map`, PR ausstehend
+Status: ✅ Done — gemerged (PR #76, Squash `530e0e4`), **v0.6.0** live auf wwn-prod
 Datum: 2026-05-15
 Plan-Skizze: `plan-iteration-2-3.md`
 Übergabe-Prompt: `prompt-iteration-2-3.md`
-Geplanter Tag: **v0.6.0** (nicht v0.3.0 — die v0.1.0–v0.3.0-Tags sind
+Tag: **v0.6.0** (nicht v0.3.0 — die v0.1.0–v0.3.0-Tags sind
 durch Track 1 vergeben, siehe Tag-Roadmap unten)
 
 **Commits auf dem Branch `feat/iteration-2-3-stations-map` (6):**
@@ -283,8 +283,8 @@ durch Track 1 vergeben, siehe Tag-Roadmap unten)
    separater 1003 KB Chunk, nicht im Entry)
 5. `061d8ed` — docs(frontend): OpenFreeMap-Attribution +
    Datenschutz-§5 + backlog.md (3 Einträge) + data-sources.md
-6. (folgt) — test(2.3): wind-Helper Vitest + CLAUDE.md/STATUS-Updates
-   - eslint resolve()-Fix für interne Links
+6. `220fa8f` — test(2.3): wind-Helper Vitest (12 Cases) +
+   CLAUDE.md/STATUS-Updates + eslint resolve()-Fix für interne Links
 
 **Getroffene Implementations-Entscheidungen:**
 
@@ -307,9 +307,27 @@ durch Track 1 vergeben, siehe Tag-Roadmap unten)
   nicht im Entry-/Default-Bundle (Q6 erfüllt, im Build verifiziert).
 
 **Akzeptanzkriterien:** alle erfüllt außer (a) Lighthouse-Run und
-(b) Mobile-Pinch/Touch-Smoke — beides Maintainer-Browser-Tasks nach
-Deploy, analog zum 2.1/2.2-Muster. `svelte-check` 0/0, `lint` grün,
-12/12 Vitest grün, Build grün.
+(b) Mobile-Pinch/Touch-Smoke — beides Maintainer-Browser-Tasks,
+analog zum 2.1/2.2-Muster, noch offen. `svelte-check` 0/0, `lint`
+grün, 12/12 Vitest grün, Build grün.
+
+**Post-Deploy-Verlauf (15. Mai 2026):**
+
+1. **Tag v0.6.0** signiert auf dem Squash-Commit `530e0e4` gesetzt,
+   Release-Pipeline gebaut/published (4 Images).
+2. **`bash scripts/deploy.sh production 0.6.0`** durchgelaufen.
+3. **Authoritative Live-Check** (`docker ps` auf wwn-prod
+   10.100.100.21): alle vier wwn-Container auf `:0.6.0`, alle
+   `healthy` (backend, frontend, pyworkers, cms-auth). Keine
+   DB-Migration in 2.3 (kein Schema-Eingriff) — A.22 nicht berührt.
+4. **Public-Smoke:**
+   - `https://research.worldweathernews.com/wetter` → 200
+   - `https://api.research.worldweathernews.com/api/v1/locations`
+     → JSON mit den 6 Locations (lat/lon, availableSources)
+
+**Offen (Maintainer-Browser-Tasks, kein Blocker):** Lighthouse-Run
+auf `/wetter` und Mobile-Pinch/Touch-Smoke der Karte — visuelle
+Bestätigung Marker/Wind-Pfeil/Popup, Lazy-Chunk im Network-Tab.
 
 **Voraussetzungen:**
 
@@ -369,7 +387,7 @@ v0.4.2      Hotfix docker-exec -u 0 (PR #71)          ✅ 2026-05-12 live
                 ↓
 v0.5.0      Iteration 2.2 (DWD-POI-Adapter, PR #73)   ✅ 2026-05-12 live
                 ↓
-v0.6.0      Iteration 2.3 (Stations-Map)              🟡 lokal fertig, PR offen
+v0.6.0      Iteration 2.3 (Stations-Map, PR #76)      ✅ 2026-05-15 live
                 ↓
 Konzept-Session vor Track-2-Fortsetzung:
   - B.2 Wetterkarten-Strategie
