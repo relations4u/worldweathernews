@@ -115,6 +115,16 @@
 			<strong class="text-slate-900">Proton AG</strong> (Schweiz): E-Mail-Provider für Adressen unter
 			@worldweathernews.com. Schweiz gilt nach Art. 45 DSGVO als sicheres Drittland mit Angemessenheitsbeschluss.
 		</li>
+		<li>
+			<strong class="text-slate-900">OpenFreeMap</strong> (EU-basiert): Kartenkachel-Server für die
+			interaktive Stationskarte auf der Wetter-Seite. Die Kacheln werden vom Browser direkt geladen;
+			dabei wird — wie bei jeder HTTP-Anfrage — die IP-Adresse an den Kachel-Server übermittelt.
+			OpenFreeMap setzt keine Cookies und betreibt kein Tracking. Es werden keine weiteren
+			personenbezogenen Daten übertragen. Details und Lizenz in der
+			<a href="/quellen-attribution" class="underline hover:text-slate-900"
+				>Quellen- und Attributionsübersicht</a
+			>.
+		</li>
 	</ul>
 	<p class="mt-3 text-slate-600">
 		Hosting der Plattform selbst läuft auf eigener Infrastruktur in Deutschland. Es findet keine

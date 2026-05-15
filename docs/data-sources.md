@@ -144,6 +144,29 @@ Die Roadmap und Plan-Skizzen liegen unter `sessions/feature2/`.
 
 ---
 
+## Kartenbasis (Geodaten)
+
+Keine Wetter-Datenquelle, der Vollständigkeit halber dokumentiert:
+Die interaktive Stationskarte auf `/wetter` (Iteration 2.3) nutzt
+**OpenFreeMap** (Liberty-Style, `tiles.openfreemap.org`) für die
+Vektor-Kartenkacheln.
+
+| Aspekt       | Wert                                                      |
+| ------------ | --------------------------------------------------------- |
+| Quelle       | OpenFreeMap Public Instance (Vector-Tiles)                |
+| Lizenz       | OpenFreeMap MIT; Kartendaten OpenStreetMap ODbL           |
+| Attribution  | „OpenFreeMap © OpenMapTiles Data from OpenStreetMap"      |
+| Account/Key  | keiner — kostenfrei, kein API-Key                         |
+| Cookies      | keine, kein Tracking (client-seitiger Tile-Abruf, nur IP) |
+| Wechselpunkt | `apps/frontend/src/lib/config/map.ts` (eine zentrale URL) |
+| Eingebunden  | Iteration 2.3 (Mai 2026)                                  |
+
+Entscheidung und Self-hosting-Einordnung (A.19): siehe
+`sessions/feature2/prompt-iteration-2-3.md` und `docs/backlog.md`
+(„Self-hosted OpenFreeMap-Stack").
+
+---
+
 ## Worker-Konfiguration
 
 Frequenzen sind ENV-konfigurierbar (`WWN_PY_OPEN_METEO_*`,

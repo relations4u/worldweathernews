@@ -115,15 +115,53 @@
 	</ul>
 
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">Karten und Geodaten</h2>
-	<ul class="mt-3 list-disc space-y-2 pl-6 text-slate-600">
-		<li>
-			<strong class="text-slate-900">Natural Earth</strong> — Public Domain (geplant für Karten-Basemaps)
-		</li>
-		<li>
-			<strong class="text-slate-900">OpenStreetMap-Daten</strong> — ODbL (geplant, sofern Standort-Karten
-			ergänzt werden)
-		</li>
-	</ul>
+
+	<article class="mt-4 rounded-md border border-slate-200 p-4">
+		<h3 class="text-lg font-semibold text-slate-900">OpenFreeMap (OpenStreetMap-Daten)</h3>
+		<p class="mt-2 text-sm text-slate-600">
+			Die interaktive Stationskarte auf der Wetter-Seite nutzt Vektor-Kartenkacheln von OpenFreeMap
+			(Liberty-Style). Die Kacheln werden vom Browser direkt nachgeladen.
+		</p>
+		<dl class="mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm text-slate-600">
+			<dt class="font-medium text-slate-900">Kachel-Quelle</dt>
+			<dd>
+				<a
+					href="https://openfreemap.org/"
+					rel="noopener noreferrer"
+					class="underline hover:text-slate-900">tiles.openfreemap.org</a
+				>
+			</dd>
+			<dt class="font-medium text-slate-900">Lizenz</dt>
+			<dd>
+				OpenFreeMap unter <a
+					href="https://github.com/hyperknot/openfreemap/blob/main/LICENSE"
+					rel="noopener noreferrer"
+					class="underline hover:text-slate-900">MIT</a
+				>; Kartendaten von
+				<a
+					href="https://www.openstreetmap.org/copyright"
+					rel="noopener noreferrer"
+					class="underline hover:text-slate-900">OpenStreetMap unter ODbL</a
+				>
+			</dd>
+			<dt class="font-medium text-slate-900">Attribution</dt>
+			<dd>„OpenFreeMap © OpenMapTiles Data from OpenStreetMap"</dd>
+			<dt class="font-medium text-slate-900">Datenschutz</dt>
+			<dd>
+				Setzt keine Cookies und kein Tracking. Beim Laden der Kacheln wird — wie bei jeder
+				HTTP-Anfrage — die IP-Adresse des Browsers an den Kachel-Server übertragen. Siehe <a
+					href="/datenschutz"
+					class="underline hover:text-slate-900">Datenschutzerklärung</a
+				>.
+			</dd>
+			<dt class="font-medium text-slate-900">Eingebunden seit</dt>
+			<dd>Iteration 2.3 (Mai 2026)</dd>
+		</dl>
+	</article>
+
+	<p class="mt-3 text-slate-600">
+		<strong class="text-slate-900">Natural Earth</strong> — Public Domain, geplant als ergänzende Karten-Basemap.
+	</p>
 
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">Software</h2>
 	<p class="mt-3 text-slate-600">
