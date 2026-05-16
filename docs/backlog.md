@@ -241,9 +241,16 @@ write`-Permission wieder rein). Bis dahin SARIF manuell ziehen,
   `apps/frontend/src/content/pages/{de,en}/<slug>.md` umziehen,
   analog zu `/methodik` (Iteration 1.2 hat das Pattern). Trigger:
   erste echte EN-Übersetzungsanforderung.
-- **Lighthouse-CI für `/wetter`** und andere Top-Pages — aktuell
-  manuelle Lighthouse-Runs durch Maintainer. Folge-PR: Lighthouse-CI
-  in GitHub Actions integrieren, Score-Baseline einfrieren.
+- **Lighthouse für `/wetter`** und andere Top-Pages — bleibt
+  bewusst ein **manueller Maintainer-Test** (Browser, nach Deploy).
+  Entscheidung 16. Mai 2026: keine CI-Automatisierung in der
+  Forschungs-Phase. Begründung: `/wetter` ist `ssr=false` und holt
+  Daten zur Laufzeit aus der externen API — ein deterministischer
+  CI-Run bräuchte Mock-API + Fixtures + Build-Arg-Override, hoher
+  Aufwand bei geringem Mehrwert gegenüber dem manuellen Post-Deploy-
+  Run. Wiederaufnahme erst, wenn eine SSR-Variante von `/wetter`
+  existiert (siehe „SSR für `/wetter`" oben) oder Perf-Regressionen
+  tatsächlich auftreten.
 
 ## Backend-Tests (post-Iteration-2.1)
 
