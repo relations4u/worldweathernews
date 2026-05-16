@@ -5,7 +5,7 @@ Pflege diese Datei am Ende jeder Iteration. Format analog zu
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-16 (2.3 v0.6.0 live; Konzept-Session 2.4 entschieden, Plan-Skizze offen)
+Stand: 2026-05-16 (2.3 v0.6.0 live; 2.4 Plan-Skizze fertig, Q1–Q7 + Prompt offen)
 
 ---
 
@@ -361,8 +361,8 @@ SSR-S1 / Lazy-Bundle).
 
 ### Iteration 2.4 — Satellitenbilder
 
-Status: ⏳ Konzept **entschieden** (Konzept-Session 16. Mai), Plan-Skizze
-als nächstes
+Status: ⏳ Plan-Skizze fertig (`plan-iteration-2-4.md`, 16. Mai),
+Q1–Q7 + Übergabe-Prompt offen
 Entscheidungen (Details in `sessions/feature1/feature-decisions.md`):
 
 - **B.2 = K3 Hybrid**: EUMETSAT-Imagery selbst via Data-Store-API
@@ -374,8 +374,11 @@ Entscheidungen (Details in `sessions/feature1/feature-decisions.md`):
   kostenfrei/lizenzfrei via Data-Store-API + kostenlose Registrierung,
   Attribution „© EUMETSAT". Maintainer-Task: Account + Credentials
   in SOPS.
-- Offen für die Plan-Skizze: Produkt/Frequenz/Region, Composite-
-  Rendering (Satpy?), MapLibre-Raster-Reprojektion geostationär.
+- Plan-Skizze-Befund: **EUMETView** liefert fertige RGB-Composites
+  (WMS, ~15 min, direkt EPSG:3857) → Pfad A ohne Satpy/pyresample;
+  Roh-SEVIRI+Satpy ist der K1-Evolutionspfad (~2.6). Offen: Q1–Q7
+  (Produkt/Region/Frequenz/Auth/Frontend) — Bauchgefühle in der
+  Skizze, Maintainer-Entscheidung + `prompt-iteration-2-4.md` stehen aus.
 
 ### Iteration 2.5 — Radar
 
