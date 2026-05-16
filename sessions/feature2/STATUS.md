@@ -5,7 +5,7 @@ Pflege diese Datei am Ende jeder Iteration. Format analog zu
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-15 (Iteration 2.3 v0.6.0 live auf wwn-prod)
+Stand: 2026-05-16 (2.3 v0.6.0 live; Konzept-Session 2.4 entschieden, Plan-Skizze offen)
 
 ---
 
@@ -357,22 +357,38 @@ SSR-S1 / Lazy-Bundle).
 
 ---
 
-## Folge-Iterationen (Konzept-Diskussion ausstehend)
+## Folge-Iterationen
 
 ### Iteration 2.4 — Satellitenbilder
 
-Status: ⏳ Konzept offen — braucht B.2-Wiederaufnahme + EUMETSAT-
-Lizenz-Bestätigung
+Status: ⏳ Konzept **entschieden** (Konzept-Session 16. Mai), Plan-Skizze
+als nächstes
+Entscheidungen (Details in `sessions/feature1/feature-decisions.md`):
+
+- **B.2 = K3 Hybrid**: EUMETSAT-Imagery selbst via Data-Store-API
+  holen + als Raster-Layer auf der MapLibre-Karte (aus 2.3) bzw.
+  Bild-Ansicht servieren; Modell-Karten extern nur als Outbound-Link.
+- **B.3 = A.13-Bucket** wiederverwenden (Hetzner OS, < 1–2 GB
+  rollierend); MinIO/Storage-Box-Wahl erst bei 2.6.
+- **EUMETSAT-Lizenz** web-verifiziert: Meteosat-Bildprodukte
+  kostenfrei/lizenzfrei via Data-Store-API + kostenlose Registrierung,
+  Attribution „© EUMETSAT". Maintainer-Task: Account + Credentials
+  in SOPS.
+- Offen für die Plan-Skizze: Produkt/Frequenz/Region, Composite-
+  Rendering (Satpy?), MapLibre-Raster-Reprojektion geostationär.
 
 ### Iteration 2.5 — Radar
 
-Status: ⏳ Konzept offen — braucht B.2-Wiederaufnahme + DWD-Radolan-
-Recherche
+Status: ⏳ Konzept offen — B.2 ist mit der 16.-Mai-Session entschieden
+(K3-Linie gilt analog), offen bleibt die DWD-Radolan-Recherche
+(Format, Update-Frequenz, Reprojektion)
 
 ### Iteration 2.6 — ICON-Modelle (komplette Modellläufe)
 
-Status: ⏳ Konzept offen — braucht B.3-Wiederaufnahme (Storage für
-GRIB-Dateien, mehrere GB pro Modelllauf)
+Status: ⏳ Konzept offen — hier landet (a) der **K1-Evolutionspfad**
+aus B.2 (komplettes Modellfeld-Rendering, ICON+Cartopy) und (b) die
+finale **B.3-Big-Data-Storage-Entscheidung** (MinIO-VM vs. Hetzner
+Storage Box, mehrere GB pro Modelllauf)
 
 ---
 

@@ -639,30 +639,56 @@ in Iteration 2.2 mit der erprobten Pipeline.
 
 ### B.2 — Wetterkarten-Strategie
 
-[POSTPONED 2026-05-11] Verschoben in eine spätere 2.x-Konzept-Diskussion,
-nachdem Iteration 2.1 (Open-Meteo) live ist und die Daten-Pipeline-
-Architektur erprobt ist.
+[DECIDED 2026-05-16, Konzept-Session 2.4] **K3 Hybrid jetzt, K1 (selbst
+rendern) als später dokumentierter Evolutionspfad.**
 
-Ursprünglich [OPEN 2026-05-07] Selbst rendern (ICON-Daten + Cartopy →
-PNG, hoher Aufwand, hohe Kontrolle) oder externe Services einbinden
-(windy.com, Ventusky, DWD NinJo via iframe, niedriger Aufwand,
-Lizenz-Themen). Drei Optionen werden bei B.2-Wiederaufnahme bewertet:
+Vorgeschichte: [POSTPONED 2026-05-11] bis Iteration 2.1 (Open-Meteo)
+live und die Pipeline erprobt war; ursprünglich [OPEN 2026-05-07].
+
+Die drei bewerteten Optionen:
 
 - K1: Selbst rendern (volle Kontrolle, hoher Initial-Aufwand)
 - K2: Externe einbinden (sofort verfügbar, Lizenz-/Cookie-Themen)
-- K3: Hybrid — eigene Stations-Visualisierungen, externe Modell-Karten
-  als Outbound-Link (kein Embed)
+- K3: Hybrid — eigene Daten selbst holen + servieren, externe
+  Modell-Karten als Outbound-Link (kein Embed)
+
+**Entscheidung & Begründung:**
+
+- **K3 für Iteration 2.4 (Satellitenbilder):** EUMETSAT-Imagery selbst
+  über die Data-Store-API holen (Worker-Pattern wie DWD/Open-Meteo)
+  und als Raster-Layer auf der bestehenden MapLibre-Karte (aus 2.3)
+  bzw. dedizierte Bild-Ansicht servieren. Vollwertige Modell-Karten
+  (windy/Ventusky) nur als **Outbound-Link**, kein Embed.
+- **K2 verworfen:** iframe/Embed löst Consent-Pflicht aus (TTDSG §25),
+  bricht den cookiefreien Stand (OpenFreeMap-Entscheidung 2.3) und
+  widerspricht A.19 (Fremd-Compute im kritischen Pfad).
+- **K1 später:** komplettes Modellfeld-Rendering (ICON+Cartopy) ist
+  der schwere Pfad, fällt mit Iteration 2.6 (ICON) zusammen — dort
+  als dokumentierter Evolutionsschritt, nicht in 2.4.
 
 ### B.3 — Storage für große Datasets
 
-[POSTPONED 2026-05-11] Für Iteration 2.1 nicht relevant — Open-Meteo-
-Daten passen in Postgres+TimescaleDB. Wird mit Iteration 2.4
-(Satellitenbilder) und 2.5 (Radar) wieder aufgenommen, wo echte
-GB-Mengen an Binärdaten anfallen.
+[DECIDED 2026-05-16, Konzept-Session 2.4] **Für 2.4 den bereits
+vorhandenen Hetzner-Object-Storage-Bucket (A.13) wiederverwenden;
+die schwere Storage-Wahl (MinIO-VM vs. Storage Box) erst bei
+Iteration 2.6 treffen.**
 
-Ursprüngliche Optionen bleiben dokumentiert: Hetzner Storage Box,
-MinIO-VM auf eigenem Proxmox, oder direkt-Nutzung des bereits
-vorhandenen Hetzner-Object-Storage-Buckets (A.13).
+Vorgeschichte: [POSTPONED 2026-05-11] — für 2.1 (Open-Meteo passt in
+Postgres+TimescaleDB) nicht relevant.
+
+**Entscheidung & Begründung:**
+
+- Satelliten-Imagery ist **nicht** das Multi-GB-GRIB-Problem. Ein
+  Meteosat-Europa-Sektor-Composite ≈ 0,3–2 MB/Frame; rollierendes
+  24-h-Fenster (15-Min-Raster, ~96 Frames) ≈ 30–200 MB; mehrere
+  Produkte/Tage bleiben < 1–2 GB.
+- Der A.13-Bucket (`media-worldweathernews-prod`, Falkenstein,
+  Caddy-proxied, DSGVO-clean) ist bereits provisioniert — kein neues
+  Infra-Teil, konsistent mit A.13/A.19.
+- **MinIO-VM auf Proxmox** und **Hetzner Storage Box** bleiben
+  dokumentierte Optionen, aber erst relevant bei **Iteration 2.6**
+  (ICON-GRIB, mehrere GB pro Modelllauf). Dort wird B.3 für den
+  Big-Data-Fall final entschieden.
 
 ### B.4 — Daten-Lizenzen
 
@@ -675,9 +701,19 @@ Pattern für Iteration 2.1 festgelegt:
 - **DWD**: GeoNutzV (funktional CC-BY-äquivalent für offene Geodaten).
   Wording: „Datenbasis: Deutscher Wetterdienst, eigene Bearbeitung".
   Wird in Iteration 2.2 (DWD) relevant.
-- **EUMETSAT**: free für non-commercial, kommerziell lizenzpflichtig.
-  Für Forschungs-Phase okay, aber Status wird bei Iteration 2.4
-  (Satellitenbilder) erneut geprüft — nicht jetzt.
+- **EUMETSAT**: [UPDATED 2026-05-16, Konzept-Session 2.4] Status
+  web-verifiziert — die alte Note „free non-commercial, kommerziell
+  lizenzpflichtig" ist überholt. Nach dem EUMETSAT-Data-Policy-
+  Streamlining sind die relevanten Meteosat-Bildprodukte
+  **kostenfrei und lizenzfrei** (stündlich ohne Lizenzpflicht,
+  Full-Resolution-15-Min free of charge, 3 h verzögert); die
+  Commercial/Non-Commercial-Unterscheidung ist für diese Produkte
+  praktisch weggefallen. Zugang über die **EUMETSAT-Data-Store-API**
+  (REST) mit **kostenloser Registrierung** (Consumer-Key/Secret →
+  Bearer-Token). Attribution: „© EUMETSAT" — fügt sich ins
+  bestehende `/quellen-attribution`-Pattern ein. Kein Lizenz-Blocker
+  für 2.4. **Maintainer-Hausaufgabe:** EUMETSAT-Account anlegen,
+  API-Credentials in SOPS (`infra/secrets/`) ablegen.
 
 Attribution-Strategie:
 
