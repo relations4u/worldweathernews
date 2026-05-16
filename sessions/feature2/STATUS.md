@@ -5,7 +5,7 @@ Pflege diese Datei am Ende jeder Iteration. Format analog zu
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-16 (2.3 v0.6.0 live; 2.4 Plan-Skizze fertig, Q1–Q7 + Prompt offen)
+Stand: 2026-05-16 (2.3 v0.6.0 live; 2.4 Übergabe-Prompt submission-ready, Start offen)
 
 ---
 
@@ -361,8 +361,15 @@ SSR-S1 / Lazy-Bundle).
 
 ### Iteration 2.4 — Satellitenbilder
 
-Status: ⏳ Plan-Skizze fertig (`plan-iteration-2-4.md`, 16. Mai),
-Q1–Q7 + Übergabe-Prompt offen
+Status: ⏳ Bereit — Übergabe-Prompt submission-ready
+(`prompt-iteration-2-4.md`, 16. Mai), Q1–Q7 per Bauchgefühl fixiert.
+Start nach Maintainer-Freigabe.
+Plan-Skizze: `plan-iteration-2-4.md` · Übergabe-Prompt: `prompt-iteration-2-4.md`
+Q1–Q7-Auflösung: Q1 IR 10.8 (Natural Color Folge-Layer), Q2 Europa-
+Sektor, Q3 15-min/24-h-Fenster, Q4 Auth in Schritt 1 verifizieren,
+**Q5 eigene `/satellit`-Route (B.6 überstimmt das D1-Bauchgefühl)**,
+Q6 `sat/index.json`, Q7 `ssr=false`. Neuer flagged Punkt: S3-Client
+für pyworkers (Dependency) — in Schritt 1 vorschlagen, nicht annehmen.
 Entscheidungen (Details in `sessions/feature1/feature-decisions.md`):
 
 - **B.2 = K3 Hybrid**: EUMETSAT-Imagery selbst via Data-Store-API
