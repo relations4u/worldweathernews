@@ -88,6 +88,44 @@
 		</dl>
 	</article>
 
+	<article class="mt-4 rounded-md border border-slate-200 p-4">
+		<h3 class="text-lg font-semibold text-slate-900">EUMETSAT (Meteosat-Satellitenbilder)</h3>
+		<p class="mt-2 text-sm text-slate-600">
+			Infrarot-Satellitenbilder (10,8 µm) über Europa für die Satelliten-Ansicht. Die Bilder werden
+			server-seitig vom öffentlichen EUMETView-WMS geholt und ausschließlich über
+			<code class="rounded bg-slate-100 px-1 py-0.5 text-xs">media.worldweathernews.com</code>
+			ausgeliefert — keine direkte Verbindung des Browsers zu EUMETSAT.
+		</p>
+		<dl class="mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm text-slate-600">
+			<dt class="font-medium text-slate-900">Dienst</dt>
+			<dd>
+				<a
+					href="https://view.eumetsat.int/"
+					rel="noopener noreferrer"
+					class="underline hover:text-slate-900">EUMETView WMS (view.eumetsat.int)</a
+				>
+			</dd>
+			<dt class="font-medium text-slate-900">Lizenz</dt>
+			<dd>
+				<a
+					href="https://user.eumetsat.int/resources/user-guides/data-registration-and-licensing"
+					rel="noopener noreferrer"
+					class="underline hover:text-slate-900"
+					>EUMETSAT-Datenpolitik — die genutzten Meteosat-Bildprodukte sind kostenfrei und
+					lizenzfrei</a
+				>
+			</dd>
+			<dt class="font-medium text-slate-900">Attribution</dt>
+			<dd>„© EUMETSAT"</dd>
+			<dt class="font-medium text-slate-900">Genutztes Produkt</dt>
+			<dd>Meteosat (0°) High Rate SEVIRI IR 10.8 µm, Europa-Ausschnitt</dd>
+			<dt class="font-medium text-slate-900">Aktualität</dt>
+			<dd>Etwa alle 15 Minuten, rollierendes 24-Stunden-Fenster</dd>
+			<dt class="font-medium text-slate-900">Eingebunden seit</dt>
+			<dd>Iteration 2.4 (Mai 2026)</dd>
+		</dl>
+	</article>
+
 	<h2 class="mt-8 text-xl font-semibold text-slate-900">Geplante Datenquellen</h2>
 	<p class="mt-3 text-slate-600">
 		Die folgenden Quellen sind für die Integration in zukünftigen Iterationen vorgesehen. Endgültige
@@ -105,9 +143,6 @@
 		<li>
 			<strong class="text-slate-900">Met Office (UK), JMA (Japan), Météo-France</strong> — phasenweise,
 			jeweilige Open-Data-Lizenzen
-		</li>
-		<li>
-			<strong class="text-slate-900">EUMETSAT</strong> — Satellitenbilder, Lizenzbedingungen je nach Produkt
 		</li>
 		<li>
 			<strong class="text-slate-900">USGS</strong> — Erdbebendaten, Public Domain

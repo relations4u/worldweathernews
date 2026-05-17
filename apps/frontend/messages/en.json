@@ -22,6 +22,7 @@
 	"callout_note": "Note",
 	"page_last_updated": "Last updated",
 	"nav_weather": "Weather",
+	"nav_satellite": "Satellite",
 	"weather_page_title": "Weather",
 	"weather_page_lead": "Current station observations and 24-hour forecast for selected sites in Germany. Data sources: DWD and Open-Meteo.",
 	"weather_no_locations": "No weather data currently available.",

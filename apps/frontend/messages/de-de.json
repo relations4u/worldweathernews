@@ -22,6 +22,7 @@
 	"callout_note": "Notiz",
 	"page_last_updated": "Letzte Aktualisierung",
 	"nav_weather": "Wetter",
+	"nav_satellite": "Satellit",
 	"weather_page_title": "Wetter",
 	"weather_page_lead": "Aktuelle Stationsbeobachtungen und 24-Stunden-Vorhersage für ausgewählte Standorte in Deutschland. Datenquellen: DWD und Open-Meteo.",
 	"weather_no_locations": "Derzeit keine Wetterdaten verfügbar.",
