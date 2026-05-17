@@ -361,10 +361,11 @@ SSR-S1 / Lazy-Bundle).
 
 ### Iteration 2.4 — Satellitenbilder
 
-Status: 🟡 Lokal fertig auf `feat/iteration-2-4-satellite`, PR ausstehend
+Status: ✅ Done — **v0.7.2 live**, `/satellit` verifiziert
 Datum: 2026-05-17
 Plan-Skizze: `plan-iteration-2-4.md` · Übergabe-Prompt: `prompt-iteration-2-4.md`
-Geplanter Tag: **v0.7.0**
+Tag: **v0.7.2** (v0.7.0 = #82, v0.7.1 = #83 waren unvollständige
+Zwischen-Tags; nur v0.7.2 enthält #82 + #83 + #84 und wurde deployed)
 
 **Commits auf dem Branch `feat/iteration-2-4-satellite` (5):**
 
@@ -400,9 +401,17 @@ Geplanter Tag: **v0.7.0**
 - Plan-Skizze-Annahme „kein Policy-Change" war **falsch**: `sat/`
   brauchte einen Bucket-Policy-Eintrag (in Commit 2 erledigt).
 
-**Maintainer-Tasks vor/bei v0.7.x-Deploy:**
+**Folge-PRs nach #82:**
 
-- [x] **Bucket-Policy auf den Live-Bucket angewendet** (15. Mai, nicht
+- **#83** `fix(pyworkers)` — S3-Config-Namen auf `S3_*`-Schema
+  (`s3_access_key`/`s3_secret_key`), macht das Secret-Wiring zu einem
+  sauberen 1:1-Prefix-Mapping; fixt zugleich den
+  `media-storage.sops.env`→`media-storage.env`-Doku-Bug.
+- **#84** `chore(secrets)` — `WWN_PY_S3_*` in `pyworkers.env` (SOPS).
+
+**Maintainer-Tasks — alle erledigt:**
+
+- [x] **Bucket-Policy auf den Live-Bucket angewendet** (nicht
       auto-deployed; Credentials aus `media-storage.env`-SOPS):
 
   ```
@@ -411,17 +420,33 @@ Geplanter Tag: **v0.7.0**
     --endpoint-url "$S3_ENDPOINT"
   ```
 
-- [ ] **`WWN_PY_S3_ENDPOINT` / `_ACCESS_KEY` / `_SECRET_KEY`** in
-      `infra/secrets/production/pyworkers.env` (SOPS) eintragen —
-      1:1-Prefix-Mapping der `S3_*`-Werte aus `media-storage.env`,
-      **kein** Ansible-/Compose-Code-Change (Container `env_file`d die
-      Datei bereits).
-- [ ] Lighthouse/Mobile-Smoke `/satellit` (Browser, nach Deploy).
-- [ ] `eumetsat.env`: für 2.4 **nicht** nötig — nichts zu tun.
+- [x] **`WWN_PY_S3_ENDPOINT`/`_ACCESS_KEY`/`_SECRET_KEY`/`_REGION`/
+      `_BUCKET`** in `infra/secrets/production/pyworkers.env` (SOPS) —
+      1:1-Prefix-Mapping der `S3_*`-Werte aus `media-storage.env`, **kein**
+      Ansible-/Compose-Change (Container `env_file`d die Datei bereits).
+      Zwei sops-Korrektur-Runden nötig (erst fehlten die Keys, dann
+      doppeltes `S3_`-Segment) — Verifikation lief ausschließlich über
+      Key-Namen, nie über Werte.
+- [x] `eumetsat.env`: für 2.4 **nicht** gebraucht — nichts zu tun.
+- [ ] Lighthouse/Mobile-Smoke `/satellit` (Browser, optional, kein Blocker).
 
-**Verifikation:** pyworkers ruff/mypy-strict clean, **31 pytest**;
+**Verifikation (CI):** pyworkers ruff/mypy-strict clean, **31 pytest**;
 Frontend `svelte-check` 0/0, lint+build grün, **17 Vitest**;
 maplibre lazy (separater Chunk, nicht im Entry).
+
+**Verifikation (live, nach v0.7.2-Deploy 2026-05-17):**
+
+- `https://research.worldweathernews.com/satellit` → HTTP 200
+- `media.worldweathernews.com/sat/ir108/index.json` → 1 Frame,
+  `source=eumetsat`, `© EUMETSAT`, BBOX Europa (−17.97..40.42°E /
+  29.97..69.79°N)
+- Frame-PNG → HTTP 200, `image/png`, 1.14 MB, 1024×1024 RGB
+- Worker greift (`eumetsat_frame_persisted`, kein silent skip);
+  rollierendes 15-Min-Fenster läuft.
+
+Damit ist die Pfad-A-Kette pyworkers → A.13-Bucket → `media.` →
+`/satellit` produktiv. Nächster Evolutionspfad ist K1 (Roh-SEVIRI +
+Satpy, eigene Composites, ~Iteration 2.6) — siehe `docs/backlog.md`.
 
 ### Iteration 2.5 — Radar
 
