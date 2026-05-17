@@ -5,6 +5,7 @@
 	import { getLocale } from '$lib/paraglide/runtime';
 	import { MAP_STYLE_URL, MAP_INITIAL_VIEW } from '$lib/config/map';
 	import type { SatIndex } from '$lib/config/satellite';
+	import { bboxCorners, resolveFrameIndex } from '$lib/satellite';
 	// Reiner Typ-Import — wird vom Compiler gelöscht, landet NICHT im
 	// Bundle. Laufzeit-Lib kommt nur über den dynamischen import() (lazy).
 	import type { Map as MapLibreMap, ImageSource } from 'maplibre-gl';
@@ -27,20 +28,8 @@
 	let playing = $state(false);
 	let timer: ReturnType<typeof setInterval> | undefined;
 
-	const lastIdx = $derived(Math.max(0, index.frames.length - 1));
-	const frameIdx = $derived(selectedIdx ?? lastIdx);
+	const frameIdx = $derived(resolveFrameIndex(selectedIdx, index.frames.length));
 	const current = $derived(index.frames[frameIdx]);
-
-	function corners(): [[number, number], [number, number], [number, number], [number, number]] {
-		const { lonMin, latMin, lonMax, latMax } = index.bbox;
-		// top-left, top-right, bottom-right, bottom-left
-		return [
-			[lonMin, latMax],
-			[lonMax, latMax],
-			[lonMax, latMin],
-			[lonMin, latMin]
-		];
-	}
 
 	function formatTime(iso: string): string {
 		const locale = getLocale() === 'en' ? 'en-GB' : 'de-DE';
@@ -109,7 +98,7 @@
 			instance.addSource(SRC_ID, {
 				type: 'image',
 				url: index.frames[frameIdx].url,
-				coordinates: corners()
+				coordinates: bboxCorners(index.bbox)
 			});
 			instance.addLayer({
 				id: LAYER_ID,
