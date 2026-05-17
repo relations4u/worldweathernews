@@ -142,6 +142,19 @@ write`-Permission wieder rein). Bis dahin SARIF manuell ziehen,
 
 ## Datenquellen / Worker (post-Iteration-2.1)
 
+- **EUMETSAT K1-Pfad: eigene Composites (Roh-SEVIRI + Satpy)** —
+  Iteration 2.4 nutzt bewusst Pfad A (fertige EUMETView-WMS-
+  Composites, kein Satpy). Der K1-Evolutionspfad (Data Store +
+  `eumdac` + Satpy/pyresample → eigene RGB-Channels, volle Kontrolle)
+  ist für ~Iteration 2.6 vorgesehen (fällt mit ICON-Selbst-Rendern
+  zusammen — schwerer Dependency-Stack + eigene Reprojektion + B.3-
+  Big-Storage-Frage). Account + `infra/secrets/production/eumetsat.env`
+  (sops, Werte vom Maintainer) sind dafür bereits vorbereitet — für
+  Pfad A/2.4 **nicht** gebraucht.
+- **EUMETSAT Natural-Color-Layer** — 2.4 liefert nur IR 10.8 (24/7).
+  Natural Color RGB (Tagseite, „wie aus dem All") als zweiter,
+  wählbarer Layer ist Folge — `WMS_LAYER` + ein Layer-Switcher in
+  `SatelliteMap.svelte`; Bucket-Prefix/`index.json` pro Layer.
 - **DWD MOSMIX-Forecast-Pfad (Iteration 2.2b)** — POI liefert nur
   aktuelle Beobachtungen. Stunden-/Tages-Forecasts kommen aus MOSMIX
   als KMZ/KML-Files. Eigene Folge-Iteration, weil KML-Parsing
