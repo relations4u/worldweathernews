@@ -49,14 +49,19 @@ class Settings(BaseSettings):
     eumetsat_interval_seconds: int = Field(default=900, ge=60)  # 15 min
     eumetsat_window_hours: int = Field(default=24, ge=1)
 
-    # S3-Ziel (A.13 Hetzner Object Storage). Credentials werden beim
-    # Deploy aus dem media-storage-SOPS-File als WWN_PY_S3_* injiziert
-    # (nicht im Repo). Leer lassen ⇒ der Job loggt + skippt sauber.
+    # S3-Ziel (A.13 Hetzner Object Storage). Werte werden beim Deploy
+    # in `infra/secrets/production/pyworkers.env` (SOPS) ergänzt — der
+    # pyworkers-Container env_filed diese Datei bereits. 1:1-Mapping
+    # zum media-storage-Secret (nur WWN_PY_-Prefix davor):
+    #   S3_ENDPOINT   → WWN_PY_S3_ENDPOINT
+    #   S3_ACCESS_KEY → WWN_PY_S3_ACCESS_KEY
+    #   S3_SECRET_KEY → WWN_PY_S3_SECRET_KEY
+    #   S3_REGION/S3_BUCKET haben Defaults. Leer ⇒ Job skippt sauber.
     s3_endpoint: str = ""
     s3_region: str = "fsn1"
     s3_bucket: str = "media-worldweathernews-prod"
-    s3_access_key_id: str = ""
-    s3_secret_access_key: str = ""
+    s3_access_key: str = ""
+    s3_secret_key: str = ""
     # Bucket-Prefix für die Satellitenframes (muss in der Bucket-Policy
     # public-read sein — siehe infra/object-storage/bucket-policy.json).
     sat_prefix: str = "sat/ir108"

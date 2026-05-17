@@ -400,10 +400,10 @@ Geplanter Tag: **v0.7.0**
 - Plan-Skizze-Annahme „kein Policy-Change" war **falsch**: `sat/`
   brauchte einen Bucket-Policy-Eintrag (in Commit 2 erledigt).
 
-**Maintainer-Tasks vor/bei v0.7.0-Deploy:**
+**Maintainer-Tasks vor/bei v0.7.x-Deploy:**
 
-- [ ] **Bucket-Policy auf den Live-Bucket anwenden** (nicht
-      auto-deployed; Credentials aus media-storage-SOPS):
+- [x] **Bucket-Policy auf den Live-Bucket angewendet** (15. Mai, nicht
+      auto-deployed; Credentials aus `media-storage.env`-SOPS):
 
   ```
   aws s3api put-bucket-policy --bucket media-worldweathernews-prod \
@@ -411,8 +411,11 @@ Geplanter Tag: **v0.7.0**
     --endpoint-url "$S3_ENDPOINT"
   ```
 
-- [ ] **`WWN_PY_S3_*`** beim Deploy aus dem media-storage-SOPS-File
-      in den pyworkers-Container injizieren (Ansible/Deploy-Wiring).
+- [ ] **`WWN_PY_S3_ENDPOINT` / `_ACCESS_KEY` / `_SECRET_KEY`** in
+      `infra/secrets/production/pyworkers.env` (SOPS) eintragen —
+      1:1-Prefix-Mapping der `S3_*`-Werte aus `media-storage.env`,
+      **kein** Ansible-/Compose-Code-Change (Container `env_file`d die
+      Datei bereits).
 - [ ] Lighthouse/Mobile-Smoke `/satellit` (Browser, nach Deploy).
 - [ ] `eumetsat.env`: für 2.4 **nicht** nötig — nichts zu tun.
 

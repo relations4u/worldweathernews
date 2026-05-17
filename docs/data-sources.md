@@ -207,10 +207,13 @@ siehe `.env.example`). Defaults in `apps/pyworkers/pyworkers/config.py`:
 | `WWN_PY_EUMETSAT_INTERVAL_SECONDS`           | `900`   | Pull-Intervall (EUMETView ~15 min)                                  |
 | `WWN_PY_EUMETSAT_WINDOW_HOURS`               | `24`    | Rollierendes Frame-Fenster                                          |
 
-S3-Ziel (A.13-Bucket) wird beim Deploy aus dem media-storage-SOPS-File
-als `WWN_PY_S3_*` injiziert (`s3_endpoint`, `s3_access_key_id`,
-`s3_secret_access_key`; `s3_bucket`/`s3_region`/`sat_prefix`/
-`media_base_url` haben Defaults). Fehlt die S3-Config, **skippt** der
+S3-Ziel (A.13-Bucket): die drei Pflicht-Werte werden als
+`WWN_PY_S3_ENDPOINT` / `WWN_PY_S3_ACCESS_KEY` / `WWN_PY_S3_SECRET_KEY`
+in die `infra/secrets/production/pyworkers.env` (SOPS) eingetragen —
+ein 1:1-Prefix-Mapping der `S3_*`-Namen aus dem media-storage-Secret,
+kein Ansible-/Compose-Code-Change nötig (der pyworkers-Container
+`env_file`d die Datei bereits). `s3_bucket`/`s3_region`/`sat_prefix`/
+`media_base_url` haben Defaults. Fehlt die S3-Config, **skippt** der
 Job sauber (`status="skipped"`), statt den Worker zu crashen.
 
 Der DWD-Job läuft beim Container-Start sofort einmal (`next_run_time
