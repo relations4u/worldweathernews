@@ -10,7 +10,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from pyworkers.config import load_settings
-from pyworkers.jobs import dwd, heartbeat, open_meteo
+from pyworkers.jobs import dwd, eumetsat, heartbeat, open_meteo
 from pyworkers.logging import configure_logging
 from pyworkers.metrics import start_metrics_server
 from pyworkers.observability import init_tracing, instrument_libraries
@@ -92,6 +92,21 @@ async def main_async() -> None:
             next_run_time=datetime.now(UTC),
         )
 
+    if settings.eumetsat_enabled:
+        # EUMETView publiziert ~alle 15 Min — Worker zieht im selben
+        # Takt nach. next_run_time=now: erster Frame direkt nach
+        # Container-Start, damit der Loop nach einem Deploy nicht erst
+        # leer ist. APScheduler in-memory (B.5).
+        scheduler.add_job(
+            eumetsat.run,
+            args=[settings],
+            trigger=IntervalTrigger(seconds=settings.eumetsat_interval_seconds),
+            id="eumetsat",
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(UTC),
+        )
+
     scheduler.start()
     log.info(
         "scheduler_started",
@@ -101,6 +116,8 @@ async def main_async() -> None:
         open_meteo_hourly_interval_seconds=settings.open_meteo_hourly_interval_seconds,
         dwd_enabled=settings.dwd_enabled,
         dwd_poi_interval_seconds=settings.dwd_poi_interval_seconds,
+        eumetsat_enabled=settings.eumetsat_enabled,
+        eumetsat_interval_seconds=settings.eumetsat_interval_seconds,
     )
 
     stop_event = asyncio.Event()

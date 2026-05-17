@@ -12,6 +12,7 @@ dependencies = [
     "redis>=5.0",
     "prometheus-client>=0.20",
     "apscheduler>=3.10,<4",
+    "aiobotocore>=2.13,<3",
     "click>=8.1",
     # OpenTelemetry — Pin auf einheitliche Minor-Version, weil das Ökosystem
     # zwischen Minors häufig Breaking Changes hat.
@@ -70,6 +71,8 @@ plugins = ["pydantic.mypy"]
 module = [
     "asyncpg.*",
     "apscheduler.*",
+    "aiobotocore.*",
+    "botocore.*",
 ]
 ignore_missing_imports = true
 
