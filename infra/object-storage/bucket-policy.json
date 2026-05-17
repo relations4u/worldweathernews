@@ -10,7 +10,8 @@
         "arn:aws:s3:::media-worldweathernews-prod/site/*",
         "arn:aws:s3:::media-worldweathernews-prod/blog/*",
         "arn:aws:s3:::media-worldweathernews-prod/pages/*",
-        "arn:aws:s3:::media-worldweathernews-prod/team/*"
+        "arn:aws:s3:::media-worldweathernews-prod/team/*",
+        "arn:aws:s3:::media-worldweathernews-prod/sat/*"
       ]
     }
   ]

@@ -122,6 +122,30 @@ adressiert ausschließlich über 5-stellige WMO-Synop-Kennungen
 https://opendata.dwd.de/weather/weather_reports/poi/ prüfen, dass
 `{station_id}-BEOB.csv` 200 liefert.
 
+### EUMETSAT — Meteosat-Satellitenbilder (EUMETView WMS)
+
+| Feld             | Wert                                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| Dienst           | `https://view.eumetsat.int/geoserver/wms` (EUMETView WMS 1.3.0)                                               |
+| Produkt / Layer  | Meteosat 0° High Rate SEVIRI IR 10.8 µm — Layer `msg_fes:ir108`                                               |
+| Form             | Fertig gerenderte PNG-Composites, GetMap `CRS=EPSG:3857`, Europa-BBOX, 1024×1024                              |
+| Lizenz           | EUMETSAT-Datenpolitik — Meteosat-Bildprodukte kostenfrei + lizenzfrei                                         |
+| Attribution      | „© EUMETSAT"                                                                                                  |
+| Auth             | **keine** (öffentliches WMS, Q4 live verifiziert — der `eumetsat.env`-Secret wird für Pfad A NICHT gebraucht) |
+| Eingebunden seit | Iteration 2.4 (Mai 2026)                                                                                      |
+| Polling-Frequenz | `WWN_PY_EUMETSAT_INTERVAL_SECONDS` (Default 900 = 15 min), rollierendes 24-h-Fenster                          |
+| Idempotenz       | Frame-Key = auf das Intervall gerundeter UTC-Slot → Re-Run im selben Slot überschreibt; keine Doppel-Frames   |
+
+**Pfad A (Konzept-Session 2.4, B.2=K3):** Der `pyworkers`-EUMETSAT-Worker
+holt die Composites **server-seitig**, legt sie in den A.13-Hetzner-
+Object-Storage-Bucket (Prefix `sat/ir108`) und schreibt `sat/index.json`.
+Das Frontend (`/satellit`) lädt ausschließlich über das eigene
+`media.worldweathernews.com` — **kein** Drittanbieter-Client-Pfad
+(A.19-konform, daher **kein** Datenschutz-§5-Eintrag, anders als
+OpenFreeMap). Roh-SEVIRI + Satpy (eigene Composites) ist bewusst NICHT
+Teil von 2.4 — das ist der K1-Evolutionspfad (~Iteration 2.6, siehe
+`docs/backlog.md`).
+
 ---
 
 ## Geplante Quellen
@@ -179,6 +203,15 @@ siehe `.env.example`). Defaults in `apps/pyworkers/pyworkers/config.py`:
 | `WWN_PY_OPEN_METEO_HOURLY_INTERVAL_SECONDS`  | `3600`  | Polling-Intervall für `hourly` (24-h)                               |
 | `WWN_PY_DWD_ENABLED`                         | `true`  | DWD-POI-Worker aktivieren / deaktivieren                            |
 | `WWN_PY_DWD_POI_INTERVAL_SECONDS`            | `1800`  | Polling-Intervall für DWD-POI (entspricht der DWD-Veröffentlichung) |
+| `WWN_PY_EUMETSAT_ENABLED`                    | `true`  | EUMETSAT-Satelliten-Worker aktivieren / deaktivieren                |
+| `WWN_PY_EUMETSAT_INTERVAL_SECONDS`           | `900`   | Pull-Intervall (EUMETView ~15 min)                                  |
+| `WWN_PY_EUMETSAT_WINDOW_HOURS`               | `24`    | Rollierendes Frame-Fenster                                          |
+
+S3-Ziel (A.13-Bucket) wird beim Deploy aus dem media-storage-SOPS-File
+als `WWN_PY_S3_*` injiziert (`s3_endpoint`, `s3_access_key_id`,
+`s3_secret_access_key`; `s3_bucket`/`s3_region`/`sat_prefix`/
+`media_base_url` haben Defaults). Fehlt die S3-Config, **skippt** der
+Job sauber (`status="skipped"`), statt den Worker zu crashen.
 
 Der DWD-Job läuft beim Container-Start sofort einmal (`next_run_time
 = now` in `__main__.py`), damit nach einem Deploy nicht bis zu
@@ -190,9 +223,10 @@ gelaufen, brauchen kein Initial-Catch-up).
 
 - `wwn_open_meteo_fetches_total{kind={current|hourly},status={ok|error}}`
 - `wwn_dwd_fetches_total{status={ok|error|empty}}`
+- `wwn_eumetsat_fetches_total{status={ok|error|skipped}}`
 - `wwn_job_runs_total{job,status}` und `wwn_job_duration_seconds`
   (Wrapper `measure_job`, deckt `heartbeat`, `open_meteo_current`,
-  `open_meteo_hourly`, `dwd_poi` ab).
+  `open_meteo_hourly`, `dwd_poi`, `eumetsat` ab).
 
 **Tracing:** Jeder Job startet einen eigenen Span
 (`open_meteo.run_current`, `open_meteo.run_hourly`, `dwd.run_poi`).
@@ -223,17 +257,20 @@ Quellen-Attribution wird an zwei Stellen ausgespielt:
 
 ## Code-Stellen
 
-| Anliegen              | Datei                                                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Open-Meteo-Worker     | `apps/pyworkers/pyworkers/jobs/open_meteo.py`                                                                         |
-| DWD-POI-Worker        | `apps/pyworkers/pyworkers/jobs/dwd.py`                                                                                |
-| Worker-Tests          | `apps/pyworkers/tests/test_open_meteo.py`, `apps/pyworkers/tests/test_dwd.py`                                         |
-| Worker-Scheduling     | `apps/pyworkers/pyworkers/__main__.py` (`scheduler.add_job(...)`)                                                     |
-| DB-Migrationen        | `infra/migrations/0001_open_meteo_hello_world.sql`, `infra/migrations/0002_dwd_poi_stations_and_variables.sql`        |
-| sqlc-Queries          | `apps/backend/internal/storage/queries/{locations,observations,forecasts}.sql` (inkl. `GetLatestObservationBySource`) |
-| Backend-Handler       | `apps/backend/internal/http/handler/api.go` (`ListLocations`, `GetLocationDetail`, `resolveSource`)                   |
-| Backend-Tests         | `apps/backend/internal/http/handler/{handler_test,api_internal_test}.go`                                              |
-| OpenAPI-Schema        | `packages/api-schema/openapi.yaml`                                                                                    |
-| Frontend-Route        | `apps/frontend/src/routes/wetter/`                                                                                    |
-| WeatherCard-Component | `apps/frontend/src/lib/components/WeatherCard.svelte`                                                                 |
-| Attribution-Page      | `apps/frontend/src/routes/quellen-attribution/+page.svelte`                                                           |
+| Anliegen                 | Datei                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Open-Meteo-Worker        | `apps/pyworkers/pyworkers/jobs/open_meteo.py`                                                                         |
+| DWD-POI-Worker           | `apps/pyworkers/pyworkers/jobs/dwd.py`                                                                                |
+| EUMETSAT-Worker          | `apps/pyworkers/pyworkers/jobs/eumetsat.py`                                                                           |
+| Satelliten-Route         | `apps/frontend/src/routes/satellit/` + `src/lib/components/SatelliteMap.svelte`                                       |
+| Satelliten-Config/Helper | `apps/frontend/src/lib/config/satellite.ts` (Index-URL/Typ), `src/lib/satellite.ts` (pure Helpers)                    |
+| Worker-Tests             | `apps/pyworkers/tests/test_open_meteo.py`, `test_dwd.py`, `test_eumetsat.py`                                          |
+| Worker-Scheduling        | `apps/pyworkers/pyworkers/__main__.py` (`scheduler.add_job(...)`)                                                     |
+| DB-Migrationen           | `infra/migrations/0001_open_meteo_hello_world.sql`, `infra/migrations/0002_dwd_poi_stations_and_variables.sql`        |
+| sqlc-Queries             | `apps/backend/internal/storage/queries/{locations,observations,forecasts}.sql` (inkl. `GetLatestObservationBySource`) |
+| Backend-Handler          | `apps/backend/internal/http/handler/api.go` (`ListLocations`, `GetLocationDetail`, `resolveSource`)                   |
+| Backend-Tests            | `apps/backend/internal/http/handler/{handler_test,api_internal_test}.go`                                              |
+| OpenAPI-Schema           | `packages/api-schema/openapi.yaml`                                                                                    |
+| Frontend-Route           | `apps/frontend/src/routes/wetter/`                                                                                    |
+| WeatherCard-Component    | `apps/frontend/src/lib/components/WeatherCard.svelte`                                                                 |
+| Attribution-Page         | `apps/frontend/src/routes/quellen-attribution/+page.svelte`                                                           |

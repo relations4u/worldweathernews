@@ -5,7 +5,7 @@ Pflege diese Datei am Ende jeder Iteration. Format analog zu
 
 Status-Legende: ✅ Done · 🟡 In Progress · ⏳ Geplant · ❌ Blocked · ⏭ Skipped
 
-Stand: 2026-05-16 (2.3 v0.6.0 live; 2.4 Übergabe-Prompt submission-ready, Start offen)
+Stand: 2026-05-17 (2.3 v0.6.0 live; 2.4 lokal fertig, PR/Deploy v0.7.0 ausstehend)
 
 ---
 
@@ -361,31 +361,64 @@ SSR-S1 / Lazy-Bundle).
 
 ### Iteration 2.4 — Satellitenbilder
 
-Status: ⏳ Bereit — Übergabe-Prompt submission-ready
-(`prompt-iteration-2-4.md`, 16. Mai), Q1–Q7 per Bauchgefühl fixiert.
-Start nach Maintainer-Freigabe.
+Status: 🟡 Lokal fertig auf `feat/iteration-2-4-satellite`, PR ausstehend
+Datum: 2026-05-17
 Plan-Skizze: `plan-iteration-2-4.md` · Übergabe-Prompt: `prompt-iteration-2-4.md`
-Q1–Q7-Auflösung: Q1 IR 10.8 (Natural Color Folge-Layer), Q2 Europa-
-Sektor, Q3 15-min/24-h-Fenster, Q4 Auth in Schritt 1 verifizieren,
-**Q5 eigene `/satellit`-Route (B.6 überstimmt das D1-Bauchgefühl)**,
-Q6 `sat/index.json`, Q7 `ssr=false`. Neuer flagged Punkt: S3-Client
-für pyworkers (Dependency) — in Schritt 1 vorschlagen, nicht annehmen.
-Entscheidungen (Details in `sessions/feature1/feature-decisions.md`):
+Geplanter Tag: **v0.7.0**
 
-- **B.2 = K3 Hybrid**: EUMETSAT-Imagery selbst via Data-Store-API
-  holen + als Raster-Layer auf der MapLibre-Karte (aus 2.3) bzw.
-  Bild-Ansicht servieren; Modell-Karten extern nur als Outbound-Link.
-- **B.3 = A.13-Bucket** wiederverwenden (Hetzner OS, < 1–2 GB
-  rollierend); MinIO/Storage-Box-Wahl erst bei 2.6.
-- **EUMETSAT-Lizenz** web-verifiziert: Meteosat-Bildprodukte
-  kostenfrei/lizenzfrei via Data-Store-API + kostenlose Registrierung,
-  Attribution „© EUMETSAT". Maintainer-Task: Account + Credentials
-  in SOPS.
-- Plan-Skizze-Befund: **EUMETView** liefert fertige RGB-Composites
-  (WMS, ~15 min, direkt EPSG:3857) → Pfad A ohne Satpy/pyresample;
-  Roh-SEVIRI+Satpy ist der K1-Evolutionspfad (~2.6). Offen: Q1–Q7
-  (Produkt/Region/Frequenz/Auth/Frontend) — Bauchgefühle in der
-  Skizze, Maintainer-Entscheidung + `prompt-iteration-2-4.md` stehen aus.
+**Commits auf dem Branch `feat/iteration-2-4-satellite` (5):**
+
+1. `d041461` — feat(pyworkers): EUMETSAT-Worker (EUMETView WMS
+   `msg_fes:ir108` → A.13-Bucket, rollierendes 24-h-Fenster +
+   `index.json`, `aiobotocore`, W1/`next_run_time=now`, skippt
+   sauber ohne S3-Config)
+2. `2c0553a` — feat(infra): `sat/*` public-read in
+   `bucket-policy.json` + `media-storage.md` (5. Prefix, nur
+   Worker-befüllt)
+3. `a5dfd3e` — feat(frontend): `/satellit`-Route (`ssr=false`),
+   `SatelliteMap.svelte` (lazy maplibre, image-Source aus Frames,
+   Zeit-/Deckkraft-Slider, Play/Pause), `lib/config/satellite.ts`
+4. `e590652` — feat(frontend): Nav „Satellit" +
+   EUMETSAT-Attribution-Artikel; stale „geplant"-Zeile entfernt
+5. `cae76f9` — test(2.4): pyworkers EUMETSAT (9) + Frontend
+   Satelliten-Helpers (`lib/satellite.ts` extrahiert, 8 Vitest)
+
+**Getroffene Implementations-Entscheidungen:**
+
+- **Pfad A** statt Roh-SEVIRI: EUMETView WMS liefert fertige
+  Composites; Q4 **live verifiziert** — `view.eumetsat.int/geoserver/wms`
+  ist **public, kein Auth**, `EPSG:3857` direkt → keine Reprojektion,
+  kein Satpy. → `eumetsat.env`-Secret wird für 2.4 **nicht** gebraucht
+  (bleibt für K1 ~2.6 vorbereitet).
+- **S3-Client = `aiobotocore`** (`>=2.13,<3`, löst 2.26.0) — async-
+  nativ zum pyworkers-Stack; Volume-Alternative gegen B.3 abgewogen
+  und verworfen.
+- **Q5 = eigene `/satellit`-Route** (B.6 `[DECIDED]` überstimmt das
+  weiche D1-Bauchgefühl).
+- **Kein Backend-/OpenAPI-/DB-Eingriff**; **kein Datenschutz-§5**
+  (server-seitig geholt, eigener `media.`-Origin — A.19).
+- Plan-Skizze-Annahme „kein Policy-Change" war **falsch**: `sat/`
+  brauchte einen Bucket-Policy-Eintrag (in Commit 2 erledigt).
+
+**Maintainer-Tasks vor/bei v0.7.0-Deploy:**
+
+- [ ] **Bucket-Policy auf den Live-Bucket anwenden** (nicht
+      auto-deployed; Credentials aus media-storage-SOPS):
+
+  ```
+  aws s3api put-bucket-policy --bucket media-worldweathernews-prod \
+    --policy file://infra/object-storage/bucket-policy.json \
+    --endpoint-url "$S3_ENDPOINT"
+  ```
+
+- [ ] **`WWN_PY_S3_*`** beim Deploy aus dem media-storage-SOPS-File
+      in den pyworkers-Container injizieren (Ansible/Deploy-Wiring).
+- [ ] Lighthouse/Mobile-Smoke `/satellit` (Browser, nach Deploy).
+- [ ] `eumetsat.env`: für 2.4 **nicht** nötig — nichts zu tun.
+
+**Verifikation:** pyworkers ruff/mypy-strict clean, **31 pytest**;
+Frontend `svelte-check` 0/0, lint+build grün, **17 Vitest**;
+maplibre lazy (separater Chunk, nicht im Entry).
 
 ### Iteration 2.5 — Radar
 
@@ -415,12 +448,12 @@ v0.5.0      Iteration 2.2 (DWD-POI-Adapter, PR #73)   ✅ 2026-05-12 live
                 ↓
 v0.6.0      Iteration 2.3 (Stations-Map, PR #76)      ✅ 2026-05-15 live
                 ↓
-Konzept-Session vor Track-2-Fortsetzung:
-  - B.2 Wetterkarten-Strategie
-  - B.3 Storage für große Datasets
-  - EUMETSAT-Lizenz-Status für Phase 1
+Konzept-Session (16. Mai): B.2=K3 / B.3=A.13-Bucket /
+  EUMETSAT-Lizenz geklärt — alle DECIDED
                 ↓
-v0.7.0+     2.4 / 2.5 / 2.6 nach Konzept-Session       ⏳ später
+v0.7.0      Iteration 2.4 (Satellitenbilder, EUMETSAT)  🟡 lokal fertig, PR/Deploy offen
+                ↓
+v0.8.0+     2.5 (Radar) / 2.6 (ICON, K1-Pfad)           ⏳ später
 ```
 
 Tag-Numbering-Note: ursprünglicher Prompt schlug v0.1.0–v0.3.0 für

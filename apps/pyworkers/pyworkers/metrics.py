@@ -36,6 +36,12 @@ DWD_FETCHES_TOTAL: Counter = Counter(
     ["status"],
 )
 
+EUMETSAT_FETCHES_TOTAL: Counter = Counter(
+    "wwn_eumetsat_fetches_total",
+    "Total EUMETView WMS frame fetches, labeled by status (ok|error|skipped).",
+    ["status"],
+)
+
 
 def start_metrics_server(port: int) -> None:
     """Startet den Prometheus-HTTP-Server auf dem angegebenen Port."""

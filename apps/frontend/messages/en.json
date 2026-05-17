@@ -22,6 +22,7 @@
 	"callout_note": "Note",
 	"page_last_updated": "Last updated",
 	"nav_weather": "Weather",
+	"nav_satellite": "Satellite",
 	"weather_page_title": "Weather",
 	"weather_page_lead": "Current station observations and 24-hour forecast for selected sites in Germany. Data sources: DWD and Open-Meteo.",
 	"weather_no_locations": "No weather data currently available.",
@@ -38,5 +39,14 @@
 	"weather_detail_link": "View details",
 	"weather_map_loading": "Loading map …",
 	"weather_map_label": "Map of weather stations",
+	"sat_page_title": "Satellite",
+	"sat_page_lead": "Meteosat infrared (10.8 µm) over Europe, updated about every 15 minutes. Data: © EUMETSAT.",
+	"sat_no_data": "No satellite imagery currently available.",
+	"sat_loading": "Loading satellite imagery …",
+	"sat_map_label": "Satellite map of Europe",
+	"sat_time": "Time",
+	"sat_opacity": "Opacity",
+	"sat_play": "Play",
+	"sat_pause": "Pause",
 	"weather_attribution_link": "Sources & Attribution"
 }

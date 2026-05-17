@@ -22,6 +22,7 @@
 	"callout_note": "Notiz",
 	"page_last_updated": "Letzte Aktualisierung",
 	"nav_weather": "Wetter",
+	"nav_satellite": "Satellit",
 	"weather_page_title": "Wetter",
 	"weather_page_lead": "Aktuelle Stationsbeobachtungen und 24-Stunden-Vorhersage für ausgewählte Standorte in Deutschland. Datenquellen: DWD und Open-Meteo.",
 	"weather_no_locations": "Derzeit keine Wetterdaten verfügbar.",
@@ -38,5 +39,14 @@
 	"weather_detail_link": "Details ansehen",
 	"weather_map_loading": "Karte wird geladen …",
 	"weather_map_label": "Karte der Wetterstationen",
+	"sat_page_title": "Satellit",
+	"sat_page_lead": "Meteosat-Infrarot (10,8 µm) über Europa, etwa alle 15 Minuten aktualisiert. Datenbasis: © EUMETSAT.",
+	"sat_no_data": "Derzeit keine Satellitenbilder verfügbar.",
+	"sat_loading": "Satellitenbild wird geladen …",
+	"sat_map_label": "Satelliten-Karte Europa",
+	"sat_time": "Zeitpunkt",
+	"sat_opacity": "Deckkraft",
+	"sat_play": "Abspielen",
+	"sat_pause": "Pause",
 	"weather_attribution_link": "Quellen & Attribution"
 }

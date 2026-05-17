@@ -40,6 +40,29 @@ class Settings(BaseSettings):
     dwd_enabled: bool = True
     dwd_poi_interval_seconds: int = Field(default=1800, ge=60)
 
+    # EUMETSAT-Satelliten-Worker (EUMETView WMS, IR 10.8, Europa).
+    # Pfad A: server-seitig ziehen, in den A.13-Bucket ablegen, das
+    # Frontend lädt nur über media.worldweathernews.com. Kein Auth für
+    # die WMS (Q4 verifiziert) — der eumetsat.env-Secret bleibt für den
+    # K1-Pfad (~2.6) und wird hier NICHT gebraucht.
+    eumetsat_enabled: bool = True
+    eumetsat_interval_seconds: int = Field(default=900, ge=60)  # 15 min
+    eumetsat_window_hours: int = Field(default=24, ge=1)
+
+    # S3-Ziel (A.13 Hetzner Object Storage). Credentials werden beim
+    # Deploy aus dem media-storage-SOPS-File als WWN_PY_S3_* injiziert
+    # (nicht im Repo). Leer lassen ⇒ der Job loggt + skippt sauber.
+    s3_endpoint: str = ""
+    s3_region: str = "fsn1"
+    s3_bucket: str = "media-worldweathernews-prod"
+    s3_access_key_id: str = ""
+    s3_secret_access_key: str = ""
+    # Bucket-Prefix für die Satellitenframes (muss in der Bucket-Policy
+    # public-read sein — siehe infra/object-storage/bucket-policy.json).
+    sat_prefix: str = "sat/ir108"
+    # Basis-URL, unter der die Frames öffentlich ausgeliefert werden.
+    media_base_url: str = "https://media.worldweathernews.com"
+
     # Tracing (OTLP gRPC → Tempo). Endpoint ist host:port ohne Schema.
     tracing_enabled: bool = False
     tracing_endpoint: str = "tempo:4317"

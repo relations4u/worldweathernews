@@ -507,8 +507,11 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 | Worker-Jobs                    | `apps/pyworkers/pyworkers/jobs/`                                                               |
 | Open-Meteo-Worker              | `apps/pyworkers/pyworkers/jobs/open_meteo.py`                                                  |
 | DWD-POI-Worker                 | `apps/pyworkers/pyworkers/jobs/dwd.py`                                                         |
+| EUMETSAT-Worker                | `apps/pyworkers/pyworkers/jobs/eumetsat.py` (EUMETView WMS → A.13-Bucket)                      |
 | Frontend-Routes                | `apps/frontend/src/routes/`                                                                    |
 | Wetter-Route                   | `apps/frontend/src/routes/wetter/` (CSR-only, siehe ssr=false-Note)                            |
+| Satelliten-Route               | `apps/frontend/src/routes/satellit/` (CSR-only) + `SatelliteMap.svelte`                        |
+| Satelliten-Config/Helper       | `apps/frontend/src/lib/config/satellite.ts` (Index-URL), `src/lib/satellite.ts` (Helpers)      |
 | WeatherCard-Component          | `apps/frontend/src/lib/components/WeatherCard.svelte`                                          |
 | StationsMap-Component          | `apps/frontend/src/lib/components/StationsMap.svelte` (MapLibre, lazy in onMount)              |
 | Karten-Config (Tile-URL)       | `apps/frontend/src/lib/config/map.ts` (zentraler Wechselpunkt der Tile-Quelle)                 |
@@ -542,7 +545,7 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
 
 ## Externe Datenquellen
 
-**Aktiv (Stand Iteration 2.2):**
+**Aktiv (Stand Iteration 2.4):**
 
 - **DWD POI** (opendata.dwd.de) — GeoNutzV, kein API-Key. Sechs
   Stationen (Potsdam, Berlin, Hamburg, Brocken, Zugspitze, Helgoland),
@@ -553,6 +556,12 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
   Drei Stadt-Locations (Potsdam, Berlin, Hamburg), sechs Variablen,
   current 10-min + hourly 60-min. Per `?source=open-meteo`-Param
   erreichbar; in 2.2 Backfill für pressure_msl + relative_humidity_2m.
+- **EUMETSAT EUMETView** (view.eumetsat.int) — Meteosat IR 10.8 µm
+  (Layer `msg_fes:ir108`), Europa, kostenfrei/lizenzfrei, **kein
+  Auth** (öffentliches WMS, Q4 verifiziert). Pfad A/K3: pyworkers
+  holt server-seitig → A.13-Bucket → `media.` → `/satellit`-Route
+  (kein Drittanbieter-Client-Pfad, A.19). Roh-SEVIRI+Satpy = K1-Pfad
+  ~2.6. Details in `docs/data-sources.md`.
 
 **Geplant für spätere Iterationen:**
 
@@ -560,7 +569,7 @@ nicht da, ist das ein Hinweis, dass es noch fehlt.
   (Iteration 2.2b und Klima-Folge)
 - **NOAA** (USA) — National Weather Service API
 - **Met Office** (UK), **JMA** (Japan), **Météo-France** etc. — phasenweise
-- **EUMETSAT** — Satellitenbilder
+- **EUMETSAT Roh-SEVIRI + Satpy** — eigene Composites (K1-Pfad, ~2.6)
 - **USGS** — Erdbebendaten
 - **NOAA Space Weather** — Aurora-Vorhersagen
 
