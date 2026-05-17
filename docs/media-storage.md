@@ -47,13 +47,18 @@ media-worldweathernews-prod/
 ├── site/      # Logo, Favicon, OG-Bilder, allgemeine Site-Assets
 ├── blog/      # Blog-Bilder, später per Slug strukturiert
 ├── pages/     # Page-Bilder (statische Inhaltsseiten)
-└── team/      # Team-Fotos
+├── team/      # Team-Fotos
+└── sat/       # Satelliten-Frames + index.json (Iteration 2.4,
+                #   server-seitig vom pyworkers-eumetsat-Job befüllt,
+                #   read-only public für die /satellit-Route)
 ```
 
-Public-Read ist via Bucket-Policy auf genau diese vier Präfixe begrenzt
+Public-Read ist via Bucket-Policy auf genau diese fünf Präfixe begrenzt
 (`infra/object-storage/bucket-policy.json`). Andere Pfade
 (`drafts/`, `internal/`, …) bleiben privat und sind nur mit Credentials
-zugreifbar.
+zugreifbar. Der `sat/`-Prefix wird **nicht** über CMS/Upload befüllt,
+sondern allein vom `pyworkers`-EUMETSAT-Worker (Pfad A, Konzept-Session
+2.4): rollierendes Fenster, ältere Frames werden vom Worker gelöscht.
 
 CORS-Regeln (`infra/object-storage/cors.json`) erlauben GET/HEAD/PUT
 von den drei Frontend-Origins (Apex, www, research) plus Vite-Dev-Server.
