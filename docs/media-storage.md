@@ -69,7 +69,7 @@ vorgesehen — aktuell ungenutzt.
 
 ```bash
 # Voraussetzung: Credentials aus dem SOPS-File geladen
-export $(sops --decrypt infra/secrets/production/media-storage.sops.env | xargs)
+export $(sops --decrypt infra/secrets/production/media-storage.env | xargs)
 
 # Einzeldatei
 aws s3 cp ./logo.svg \
@@ -104,7 +104,7 @@ Iteration 1.3.
 ## Credentials und Secrets
 
 S3-Credentials liegen verschlüsselt in
-`infra/secrets/production/media-storage.sops.env` (SOPS + age, siehe
+`infra/secrets/production/media-storage.env` (SOPS + age, siehe
 `docs/secrets.md`):
 
 ```

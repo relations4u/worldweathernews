@@ -121,9 +121,7 @@ async def _fetch_frame(client: httpx.AsyncClient) -> bytes:
 async def run(settings: Settings) -> None:
     """Einen IR-10.8-Frame holen, in den Bucket legen, Fenster pflegen."""
     async with measure_job("eumetsat"):
-        s3_configured = (
-            settings.s3_endpoint and settings.s3_access_key_id and settings.s3_secret_access_key
-        )
+        s3_configured = settings.s3_endpoint and settings.s3_access_key and settings.s3_secret_key
         if not s3_configured:
             log.warning("eumetsat_skipped_no_s3_config")
             EUMETSAT_FETCHES_TOTAL.labels(status="skipped").inc()
@@ -143,8 +141,8 @@ async def run(settings: Settings) -> None:
                 "s3",
                 endpoint_url=settings.s3_endpoint,
                 region_name=settings.s3_region,
-                aws_access_key_id=settings.s3_access_key_id,
-                aws_secret_access_key=settings.s3_secret_access_key,
+                aws_access_key_id=settings.s3_access_key,
+                aws_secret_access_key=settings.s3_secret_key,
             ) as s3:
                 await s3.put_object(
                     Bucket=settings.s3_bucket,
