@@ -12,7 +12,7 @@ dependencies = [
     "redis>=5.0",
     "prometheus-client>=0.20",
     "apscheduler>=3.10,<4",
-    "aiobotocore>=2.13,<3",
+    "aiobotocore>=2.13,<4",
     "click>=8.1",
     # OpenTelemetry — Pin auf einheitliche Minor-Version, weil das Ökosystem
     # zwischen Minors häufig Breaking Changes hat.
