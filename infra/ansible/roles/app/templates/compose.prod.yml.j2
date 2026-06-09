@@ -65,6 +65,12 @@ services:
     restart: unless-stopped
     env_file:
       - {{ app_dir }}/.env.pyworkers
+      # Optionaler Override-Slot: ausserhalb von SOPS, wird von
+      # `make sat-pause-prod` / `make sat-resume-prod` befüllt bzw.
+      # entfernt. `required: false` braucht docker compose ≥ v2.24.
+      # Inhalt (wenn vorhanden) hat Vorrang vor .env.pyworkers.
+      - path: {{ app_dir }}/.env.pyworkers.override
+        required: false
     ports:
       # Prometheus-Scrape von wwn-mon. UFW erlaubt 9100/tcp aus
       # 10.100.100.0/24 (siehe common-Rolle, monitoring_scrape_ports).
