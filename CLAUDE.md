@@ -150,7 +150,7 @@ wwn-prod produziert.
 
 - **Letztes signiertes Tag im Repo**: `git tag --sort=-v:refname | head -1`
 - **Live auf wwn-prod**:
-  `ssh hwr@10.100.100.21 'sudo -u deploy docker ps --format "{{.Image}}" | grep ghcr.io'`
+  `ssh deploy@10.100.100.70 'docker ps --format "{{.Image}}" | grep ghcr.io'`
 
 Beide müssen synchron sein. Stand 6. Mai 2026: `v0.0.2` live (alle drei
 Services).
@@ -724,11 +724,16 @@ hohe I/O-Last von Prometheus/Loki konkurriert nicht mit Application-Code.
 | ------------------ | -------------- | ------------------- | ------------------------ |
 | OPNsense (Gateway) | 10.100.100.1   | —                   | aktiv                    |
 | wwn-dev            | 10.100.100.113 | `bc:24:11:44:7e:dd` | aktiv (DHCP-Reservation) |
-| wwn-prod           | 10.100.100.21  | `bc:24:11:00:21:21` | Basis installiert        |
-| wwn-mon            | 10.100.100.22  | `bc:24:11:00:22:22` | Basis installiert        |
+| wwn-prod           | 10.100.100.70  | `bc:24:11:00:21:21` | aktiv                    |
+| wwn-mon            | 10.100.100.69  | `bc:24:11:00:22:22` | aktiv                    |
 
-MAC-Konvention: letzte zwei Bytes spiegeln IP-Suffix (`:21:21` für `.21`,
-`:22:22` für `.22`). Erlaubt DHCP-Reservation in OPNsense **vor** VM-Erstellung.
+MAC-Konvention war ursprünglich: letzte zwei Bytes spiegeln IP-Suffix
+(`:21:21` für `.21`, `:22:22` für `.22`). Sie hat DHCP-Reservation in
+OPNsense **vor** VM-Erstellung erlaubt. Seit dem Re-IP von wwn-prod und
+wwn-mon auf `.70`/`.69` (Maintainer hat den DHCP-Pool umkonfiguriert,
+Hardware-MACs blieben) passt die Konvention nicht mehr — die MACs in
+der Tabelle sind die tatsächlichen, IP-Konvention gilt nur noch für
+neue VMs.
 
 **VLAN-Konfiguration:** Die Zuordnung der VMs zum manager-VLAN (VLAN 04,
 10.100.100.0/24) erfolgt **port-basiert über die Switches**, nicht über
@@ -966,6 +971,11 @@ ein kurzer Eintrag.
 
 **Session 10a-Ergebnisse** (Basis-Setup beider VMs, Stand 5. Mai 2026):
 
+> Hinweis: IPs der VMs wurden später auf `.70` (wwn-prod) und `.69`
+> (wwn-mon) umgezogen — die `.21`/`.22` in den folgenden Session-
+> Ergebnis-Blöcken reflektieren den damaligen Stand. Aktuelle IPs
+> stehen in der Tabelle „IP-Schema im manager-Netz" oben.
+
 ✅ wwn-prod (10.100.100.21):
 
 - Ubuntu 24.04 LTS Server installiert
@@ -1025,8 +1035,9 @@ Vollständig in Session 11a umgesetzt — neue Ansible-Rolle
   mit drei provisionierten Dashboards (Backend, Pyworkers, Infra)
   unter Folder `worldweathernews`
 - Grafana an 0.0.0.0:3000 gebunden, UFW erlaubt :3000 nur aus
-  10.100.100.0/24 — Zugriff via `http://10.100.100.22:3000`,
-  Admin-Passwort in `infra/secrets/production/grafana.env`
+  10.100.100.0/24 — Zugriff via `http://10.100.100.69:3000`
+  (vormals `.22`, IP-Wechsel s. Hinweis oben), Admin-Passwort in
+  `infra/secrets/production/grafana.env`
 - Loki :3100 und Tempo OTLP :4317/:4318 von wwn-prod erreichbar
 
 ✅ Public Smokes (alle 200):

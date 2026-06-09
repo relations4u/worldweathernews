@@ -18,7 +18,7 @@ Browser
 Cloudflare DNS (media → home → gate.hw7.eu, DNS-only)
    │
    ▼
-Hardware-Firewall (NAT 80/443) → wwn-prod (10.100.100.21)
+Hardware-Firewall (NAT 80/443) → wwn-prod (10.100.100.70)
    │
    ▼
 Caddy (network_mode: host)

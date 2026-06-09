@@ -79,7 +79,7 @@ module "wwn_prod" {
   memory_mb    = 8192
   disk_size_gb = 64
   datastore_id = var.proxmox_datastore_id
-  ipv4_address = "10.100.100.21/24"
+  ipv4_address = "10.100.100.70/24"
   ipv4_gateway = var.ipv4_gateway
   user_data    = local.cloud_init_user_data
   tags         = ["wwn", "wwn-prod", "app"]
@@ -95,7 +95,7 @@ module "wwn_mon" {
   memory_mb    = 4096
   disk_size_gb = 64
   datastore_id = var.proxmox_datastore_id
-  ipv4_address = "10.100.100.22/24"
+  ipv4_address = "10.100.100.69/24"
   ipv4_gateway = var.ipv4_gateway
   user_data    = local.cloud_init_user_data
   tags         = ["wwn", "wwn-mon", "monitoring"]

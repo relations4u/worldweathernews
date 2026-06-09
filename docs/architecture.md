@@ -15,7 +15,7 @@ graph TB
     end
 
     subgraph proxmox["Proxmox-Host (Ryzen 7, 32 GB)"]
-        subgraph wwnprod["wwn-prod (10.100.100.21)"]
+        subgraph wwnprod["wwn-prod (10.100.100.70)"]
             Caddy[Caddy 2<br/>network_mode: host<br/>HTTPS via Let's Encrypt]
             Frontend[SvelteKit<br/>Node-Adapter<br/>:3000]
             Backend[Go API<br/>Chi + sqlc + pgx<br/>:8080]
@@ -25,7 +25,7 @@ graph TB
             NodeExp[node-exporter<br/>:9101]
             PromtailA[promtail<br/>agent]
         end
-        subgraph wwnmon["wwn-mon (10.100.100.22)"]
+        subgraph wwnmon["wwn-mon (10.100.100.69)"]
             Prometheus[Prometheus]
             Loki[Loki]
             Tempo[Tempo]
@@ -44,7 +44,7 @@ graph TB
     Workers --> Redis
     Workers -->|HTTP/GRIB| WeatherAPIs
 
-    NodeExp -.->|10.100.100.21:9101| Prometheus
+    NodeExp -.->|10.100.100.70:9101| Prometheus
     PromtailA -.->|push| Loki
     PromtailM -.->|push| Loki
     Backend -.->|OTLP| Tempo
@@ -62,8 +62,8 @@ Die Plattform läuft in der Forschungs-Phase auf eigener Hardware
 | VM       | IP             | Rolle                                                         | Größe    |
 | -------- | -------------- | ------------------------------------------------------------- | -------- |
 | wwn-dev  | 10.100.100.113 | Entwicklung (Editor, mise, Compose-Stack)                     | 8 GB RAM |
-| wwn-prod | 10.100.100.21  | App-Stack + Caddy, public via `research.worldweathernews.com` | 8 GB RAM |
-| wwn-mon  | 10.100.100.22  | Observability-Stack (Prometheus/Loki/Tempo/Grafana), LAN only | 4 GB RAM |
+| wwn-prod | 10.100.100.70  | App-Stack + Caddy, public via `research.worldweathernews.com` | 8 GB RAM |
+| wwn-mon  | 10.100.100.69  | Observability-Stack (Prometheus/Loki/Tempo/Grafana), LAN only | 4 GB RAM |
 
 Die Aufgabentrennung wwn-prod/wwn-mon ist bewusst: bei einem Crash auf
 wwn-prod bleibt Telemetrie auf wwn-mon abrufbar, plus die hohe I/O-Last

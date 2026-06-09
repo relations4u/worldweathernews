@@ -13,8 +13,8 @@ Stand: 2026-05-06.
 
 - **Backend- und Pyworkers-Metrics von wwn-mon scrapen** — Container
   binden ihre Metrics-Ports aktuell auf `127.0.0.1`, also nicht von
-  wwn-mon (10.100.100.22) erreichbar. Optionen: zweites Port-Binding
-  auf `10.100.100.21` mit ufw-Restrict zu mon, oder Push-Sidecar
+  wwn-mon (10.100.100.69) erreichbar. Optionen: zweites Port-Binding
+  auf `10.100.100.70` mit ufw-Restrict zu mon, oder Push-Sidecar
   (vmagent o. ä.) auf wwn-prod, der remote-write zu Prometheus macht.
   Code-Stelle: `infra/ansible/roles/monitoring-stack/files/prometheus/prometheus.yml`.
 - **node-exporter für wwn-mon im Stack ergänzen** — wwn-mon hat

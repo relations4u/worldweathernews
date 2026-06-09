@@ -4,7 +4,7 @@ Was tun, wenn etwas kaputt ist. Pro Szenario: Symptome → Sofort-
 maßnahmen → Diagnose-Schritte → Fix → Postmortem-Notiz.
 
 Stand: 2026-05-06. Reflektiert das Setup nach Session 11a (wwn-prod
-auf 10.100.100.21, wwn-mon auf 10.100.100.22).
+auf 10.100.100.70, wwn-mon auf 10.100.100.69).
 
 ## Schnellzugriffe
 
@@ -12,8 +12,8 @@ auf 10.100.100.21, wwn-mon auf 10.100.100.22).
 | ---------------- | ------------------------------------------------------------------------------------------ |
 | Public Frontend  | <https://research.worldweathernews.com>                                                    |
 | Public API       | <https://api.research.worldweathernews.com/api/v1/ping>                                    |
-| Grafana (LAN)    | <http://10.100.100.22:3000> (admin + Pass aus `grafana.env`)                               |
-| Prometheus (LAN) | SSH-Tunnel: `ssh -L 9090:127.0.0.1:9090 hwr@10.100.100.22`                                 |
+| Grafana (LAN)    | <http://10.100.100.69:3000> (admin + Pass aus `grafana.env`)                               |
+| Prometheus (LAN) | SSH-Tunnel: `ssh -L 9090:127.0.0.1:9090 hwr@10.100.100.69`                                 |
 | App-Logs         | Grafana → Explore → Loki → `{service="wwn-backend"}`                                       |
 | Tempo Traces     | Grafana → Explore → Tempo                                                                  |
 | Compose-Stacks   | wwn-prod: `/opt/wwn` (App), `/srv/wwn/caddy` (Caddy); wwn-mon: `/opt/wwn/monitoring-stack` |
@@ -21,20 +21,20 @@ auf 10.100.100.21, wwn-mon auf 10.100.100.22).
 ## Container-Quick-Reference
 
 ```bash
-ssh hwr@10.100.100.21 'sudo -u deploy docker ps'      # App-Stack
-ssh hwr@10.100.100.21 'sudo -u deploy docker logs wwn-backend --tail 200 -f'
-ssh hwr@10.100.100.22 'sudo -u deploy docker ps'      # Monitoring-Stack
+ssh hwr@10.100.100.70 'sudo -u deploy docker ps'      # App-Stack
+ssh hwr@10.100.100.70 'sudo -u deploy docker logs wwn-backend --tail 200 -f'
+ssh hwr@10.100.100.69 'sudo -u deploy docker ps'      # Monitoring-Stack
 ```
 
 ## Wo finde ich was im Monitoring (Dev und Prod)
 
 | Service      | Dev (Compose-Profile `monitoring`) | Prod                                              |
 | ------------ | ---------------------------------- | ------------------------------------------------- |
-| Grafana      | <http://localhost:3000>            | <http://10.100.100.22:3000> (LAN-only via UFW)    |
+| Grafana      | <http://localhost:3000>            | <http://10.100.100.69:3000> (LAN-only via UFW)    |
 | Prometheus   | <http://localhost:9090>            | SSH-Tunnel oder `curl 127.0.0.1:9090` auf wwn-mon |
-| Loki direkt  | <http://localhost:3100>            | `10.100.100.22:3100` (UI ist Grafana → Explore)   |
-| Tempo direkt | <http://localhost:3200>            | `10.100.100.22:3200` (UI ist Grafana → Explore)   |
-| OTLP gRPC    | `tempo:4317` (intern)              | `10.100.100.22:4317` (von wwn-prod aus)           |
+| Loki direkt  | <http://localhost:3100>            | `10.100.100.69:3100` (UI ist Grafana → Explore)   |
+| Tempo direkt | <http://localhost:3200>            | `10.100.100.69:3200` (UI ist Grafana → Explore)   |
+| OTLP gRPC    | `tempo:4317` (intern)              | `10.100.100.69:4317` (von wwn-prod aus)           |
 
 Drei vorprovisionierte Dashboards liegen unter `worldweathernews/`:
 **WWN Backend Overview**, **WWN Pyworkers Overview**,
@@ -53,7 +53,7 @@ oder Timeout.
 
 ```bash
 # Service-Status prüfen
-ssh hwr@10.100.100.21 'sudo -u deploy docker ps --filter name=wwn-backend'
+ssh hwr@10.100.100.70 'sudo -u deploy docker ps --filter name=wwn-backend'
 
 # Public erreichbar?
 curl -fsS https://api.research.worldweathernews.com/api/v1/ping
@@ -114,7 +114,7 @@ Das ist **kein** Backend-Problem, sondern fast immer eines von vier:
    Test: Frontend-Container inspizieren:
 
    ```bash
-   ssh hwr@10.100.100.21 'sudo -u deploy docker exec wwn-frontend \
+   ssh hwr@10.100.100.70 'sudo -u deploy docker exec wwn-frontend \
      sh -c "grep -r api.localhost /app/build/client/_app/immutable/ | head -3"'
    ```
 
@@ -135,7 +135,7 @@ Das ist **kein** Backend-Problem, sondern fast immer eines von vier:
 **Sofort**:
 
 ```sql
-ssh hwr@10.100.100.21 'sudo -u deploy docker exec wwn-postgres \
+ssh hwr@10.100.100.70 'sudo -u deploy docker exec wwn-postgres \
   psql -U wwn -c "select count(*) from pg_stat_activity;"'
 ```
 
@@ -170,7 +170,7 @@ Tick. Wenn der Provider länger weg ist, der Job aber kritisch:
 ```bash
 # Auf einen Failover-Provider wechseln (sobald implementiert), oder
 # Job temporär pausieren:
-ssh hwr@10.100.100.21 'sudo -u deploy docker exec wwn-pyworkers \
+ssh hwr@10.100.100.70 'sudo -u deploy docker exec wwn-pyworkers \
   python -m pyworkers.cli pause <job_id>'
 ```
 
@@ -206,7 +206,7 @@ können nicht mehr durch.
 
 ```bash
 # Top Source-IPs aus Caddy-Logs
-ssh hwr@10.100.100.21 'sudo -u deploy docker logs wwn-caddy --tail 1000 \
+ssh hwr@10.100.100.70 'sudo -u deploy docker logs wwn-caddy --tail 1000 \
   | jq -r ".request.remote_ip" | sort | uniq -c | sort -rn | head -20'
 ```
 
@@ -229,8 +229,8 @@ Loki schreibt nicht mehr.
 **Sofort**:
 
 ```bash
-ssh hwr@10.100.100.21 'df -h /'
-ssh hwr@10.100.100.21 'sudo du -sh /var/lib/docker/volumes/* 2>/dev/null | sort -h | tail'
+ssh hwr@10.100.100.70 'df -h /'
+ssh hwr@10.100.100.70 'sudo du -sh /var/lib/docker/volumes/* 2>/dev/null | sort -h | tail'
 ```
 
 **Diagnose** — typische Übeltäter:
@@ -244,8 +244,8 @@ ssh hwr@10.100.100.21 'sudo du -sh /var/lib/docker/volumes/* 2>/dev/null | sort 
 
 ```bash
 # Dangling Images / Build-Cache
-ssh hwr@10.100.100.21 'sudo docker image prune -a -f'
-ssh hwr@10.100.100.21 'sudo docker builder prune -f'
+ssh hwr@10.100.100.70 'sudo docker image prune -a -f'
+ssh hwr@10.100.100.70 'sudo docker builder prune -f'
 
 # Loki TSDB → Retention-Policy in infra/ansible/roles/monitoring-stack/
 # files/loki/local-config.yaml; aktuell ungetuned, Default ist 168h (7d)
@@ -266,8 +266,8 @@ einen Service.
 **Diagnose**:
 
 ```bash
-ssh hwr@10.100.100.21 'sudo -u deploy docker logs wwn-<service> --tail 200'
-ssh hwr@10.100.100.21 'sudo -u deploy docker inspect wwn-<service> \
+ssh hwr@10.100.100.70 'sudo -u deploy docker logs wwn-<service> --tail 200'
+ssh hwr@10.100.100.70 'sudo -u deploy docker inspect wwn-<service> \
   --format "{{.State.Health}} {{.State.ExitCode}} {{.State.Error}}"'
 ```
 
@@ -299,7 +299,7 @@ Häufige Ursachen:
 2. `pprof heap` aufzeichnen:
 
    ```bash
-   ssh -L 6060:127.0.0.1:6060 hwr@10.100.100.21
+   ssh -L 6060:127.0.0.1:6060 hwr@10.100.100.70
    curl -o heap.pb.gz http://localhost:6060/debug/pprof/heap
    go tool pprof -http=:8080 heap.pb.gz
    ```
@@ -331,7 +331,7 @@ Was passiert:
 Migration läuft **nicht** automatisch. Manuell:
 
 ```bash
-ssh hwr@10.100.100.21 'sudo -u deploy docker exec wwn-backend \
+ssh hwr@10.100.100.70 'sudo -u deploy docker exec wwn-backend \
   goose -dir /app/migrations down'
 ```
 
@@ -346,7 +346,7 @@ automatisiert (steht in `docs/backlog.md`). Workaround bis dahin:
 
 ```bash
 # Manueller Dump, regelmäßig vom Maintainer-Host triggern
-ssh hwr@10.100.100.21 'sudo -u deploy docker exec wwn-postgres \
+ssh hwr@10.100.100.70 'sudo -u deploy docker exec wwn-postgres \
   pg_dump -U wwn -Fc wwn' > "wwn-$(date +%F).dump"
 ```
 
@@ -354,9 +354,9 @@ ssh hwr@10.100.100.21 'sudo -u deploy docker exec wwn-postgres \
 
 ```bash
 # Container muss laufen und DB existieren (oder neu anlegen)
-scp wwn-2026-05-06.dump hwr@10.100.100.21:/tmp/
-ssh hwr@10.100.100.21 'sudo -u deploy docker cp /tmp/wwn-2026-05-06.dump wwn-postgres:/tmp/'
-ssh hwr@10.100.100.21 'sudo -u deploy docker exec wwn-postgres \
+scp wwn-2026-05-06.dump hwr@10.100.100.70:/tmp/
+ssh hwr@10.100.100.70 'sudo -u deploy docker cp /tmp/wwn-2026-05-06.dump wwn-postgres:/tmp/'
+ssh hwr@10.100.100.70 'sudo -u deploy docker exec wwn-postgres \
   pg_restore -U wwn -d wwn --clean --if-exists /tmp/wwn-2026-05-06.dump'
 ```
 
@@ -381,7 +381,7 @@ dig +short media.worldweathernews.com
 # Proxy AUS (graue Wolke).
 
 # 2) Caddy auf wwn-prod erreichbar und hat Cert?
-ssh hwr@10.100.100.21 'sudo -u deploy docker logs caddy --tail 100 | grep -i media'
+ssh hwr@10.100.100.70 'sudo -u deploy docker logs caddy --tail 100 | grep -i media'
 curl -vI https://media.worldweathernews.com/site/test.txt 2>&1 | grep -E '^(<|>)' | head
 # Cert sichtbar? Wenn TLS handshake fehlschlägt: Caddy holt LE-Cert
 # erst nach erstem HTTPS-Hit; ggf. minutenlang warten und nochmal.
@@ -389,7 +389,7 @@ curl -vI https://media.worldweathernews.com/site/test.txt 2>&1 | grep -E '^(<|>)
 # zeigt ob LE-Issuance erfolgt ist.
 
 # 3) Caddy → Hetzner-Upstream — Host-Header korrekt rewritten?
-ssh hwr@10.100.100.21 \
+ssh hwr@10.100.100.70 \
   'sudo -u deploy docker exec caddy curl -sI \
    -H "Host: media-worldweathernews-prod.fsn1.your-objectstorage.com" \
    https://media-worldweathernews-prod.fsn1.your-objectstorage.com/site/test.txt'

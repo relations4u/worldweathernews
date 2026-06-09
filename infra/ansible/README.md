@@ -31,8 +31,8 @@ ansible-galaxy collection install -r requirements.yml
 
 `inventories/production/hosts.yml` definiert zwei Hosts:
 
-- `wwn-prod` (10.100.100.21) — Application-Stack
-- `wwn-mon` (10.100.100.22) — Monitoring-Stack (zentral, Stack-Deploy ist Follow-up)
+- `wwn-prod` (10.100.100.70) — Application-Stack
+- `wwn-mon` (10.100.100.69) — Monitoring-Stack (zentral, Stack-Deploy ist Follow-up)
 
 Beide gehören zur Gruppe `wwn`. Untergruppen `app` und `mon` steuern, welche
 Rolle wo greift.

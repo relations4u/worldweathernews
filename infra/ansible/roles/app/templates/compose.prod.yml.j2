@@ -39,7 +39,7 @@ services:
       - {{ app_dir }}/.env.backend
     ports:
       # 0.0.0.0:8080 → Caddy (via 127.0.0.1) UND Prometheus auf wwn-mon
-      # (via 10.100.100.21) erreichen denselben Endpunkt. UFW erlaubt
+      # (via 10.100.100.70) erreichen denselben Endpunkt. UFW erlaubt
       # 8080/tcp NUR aus 10.100.100.0/24 (siehe common-Rolle,
       # monitoring_scrape_ports), externe Zugriffe gehen ohnehin über
       # Caddy mit TLS. Caddy reverse_proxy bleibt auf 127.0.0.1:8080.

@@ -19,7 +19,7 @@ Migrations, Monitoring, Deployment-Skripte, Secrets, Server-Konfiguration.
 ## Stack-Topologie auf wwn-prod (Phase 1, Mai 2026)
 
 ```
-[Internet] → [Hardware-Firewall] → wwn-prod (10.100.100.21)
+[Internet] → [Hardware-Firewall] → wwn-prod (10.100.100.70)
                                        │
                                        ├─ /srv/wwn/caddy   (caddy/prod/, network_mode: host)
                                        └─ /srv/wwn/app     (compose/compose.prod.yml, später)
