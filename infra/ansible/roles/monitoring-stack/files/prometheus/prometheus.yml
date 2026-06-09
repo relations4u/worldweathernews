@@ -14,7 +14,7 @@ scrape_configs:
 
   - job_name: node-exporter-wwn-prod
     static_configs:
-      - targets: ["10.100.100.21:9101"]
+      - targets: ["10.100.100.70:9101"]
         labels:
           host: wwn-prod
           service: node-exporter
@@ -30,13 +30,13 @@ scrape_configs:
   - job_name: backend
     metrics_path: /metrics
     static_configs:
-      - targets: ["10.100.100.21:8080"]
+      - targets: ["10.100.100.70:8080"]
         labels:
           host: wwn-prod
           service: backend
   - job_name: pyworkers
     static_configs:
-      - targets: ["10.100.100.21:9100"]
+      - targets: ["10.100.100.70:9100"]
         labels:
           host: wwn-prod
           service: pyworkers

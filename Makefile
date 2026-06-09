@@ -94,7 +94,7 @@ pyworkers-typecheck: ## Python-Workers Type-Check (mypy strict)
 #           Voraussetzung: das Ansible-Template muss den Override-Slot
 #           bereits ausgerollt haben (PR mit compose.prod.yml.j2-Update,
 #           dann ein regulärer `bash scripts/deploy.sh production X.Y.Z`).
-SAT_PROD_HOST ?= deploy@10.100.100.21
+SAT_PROD_HOST ?= deploy@10.100.100.70
 SAT_PROD_APP_DIR ?= /opt/wwn
 
 sat-pause: env ## EUMETSAT-Worker lokal pausieren (recreate pyworkers)
@@ -120,7 +120,7 @@ sat-pause-prod: ## EUMETSAT-Worker auf wwn-prod pausieren (Override-File + recre
 	ssh $(SAT_PROD_HOST) 'set -e; \
 		printf "WWN_PY_EUMETSAT_ENABLED=false\n" > $(SAT_PROD_APP_DIR)/.env.pyworkers.override; \
 		chmod 0640 $(SAT_PROD_APP_DIR)/.env.pyworkers.override; \
-		cd $(SAT_PROD_APP_DIR) && docker compose up -d --no-deps --force-recreate pyworkers'
+		cd $(SAT_PROD_APP_DIR) && docker compose -f compose.prod.yml up -d --no-deps --force-recreate pyworkers'
 	@echo "EUMETSAT-Worker auf wwn-prod pausiert."
 	@echo "Hinweis: Override überlebt Deploys (liegt nicht unter SOPS-Verwaltung)."
 	@echo "Verifizieren mit 'make sat-status'."
@@ -129,7 +129,7 @@ sat-resume-prod: ## EUMETSAT-Worker auf wwn-prod reaktivieren (Override löschen
 	@echo "==> Entferne $(SAT_PROD_APP_DIR)/.env.pyworkers.override und recreated pyworkers ..."
 	ssh $(SAT_PROD_HOST) 'set -e; \
 		rm -f $(SAT_PROD_APP_DIR)/.env.pyworkers.override; \
-		cd $(SAT_PROD_APP_DIR) && docker compose up -d --no-deps --force-recreate pyworkers'
+		cd $(SAT_PROD_APP_DIR) && docker compose -f compose.prod.yml up -d --no-deps --force-recreate pyworkers'
 	@echo "EUMETSAT-Worker auf wwn-prod reaktiviert."
 
 sat-status: ## EUMETSAT-Worker-Status zeigen (lokal + Prod)

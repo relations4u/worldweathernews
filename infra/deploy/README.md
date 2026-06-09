@@ -12,12 +12,12 @@ Ansible, kein Terraform — bewusst klein, bis Session 11a Ansible übernimmt.
 
 ## deploy-caddy.sh
 
-Synct `infra/caddy/prod/` nach `hwr@10.100.100.21:/srv/wwn/caddy` und startet
+Synct `infra/caddy/prod/` nach `hwr@10.100.100.70:/srv/wwn/caddy` und startet
 den Caddy-Stack via `docker compose pull && up -d`.
 
 ### Voraussetzungen
 
-- SSH-Login `hwr@10.100.100.21` ohne Passwort (Public-Key)
+- SSH-Login `hwr@10.100.100.70` ohne Passwort (Public-Key)
 - Docker Engine + Compose-Plugin auf wwn-prod
 - DNS-Records für die 4 Hostnames zeigen via `gate.hw7.eu` auf den Host
 - Hardware-Firewall leitet Ports 80 und 443 auf wwn-prod weiter
@@ -25,7 +25,7 @@ den Caddy-Stack via `docker compose pull && up -d`.
   manuell anlegen (sudo-Passwort wird abgefragt):
 
   ```bash
-  ssh -t hwr@10.100.100.21 sudo install -d -o hwr -g hwr -m 0755 /srv/wwn/caddy
+  ssh -t hwr@10.100.100.70 sudo install -d -o hwr -g hwr -m 0755 /srv/wwn/caddy
   ```
 
 ### Ausführung
@@ -59,13 +59,13 @@ Erwartet: `HTTP/2 200` (Apex, research, api.research) bzw. `HTTP/2 301`
 ### Log-Tail bei Bedarf
 
 ```bash
-ssh hwr@10.100.100.21 'cd /srv/wwn/caddy && docker compose logs -f caddy'
+ssh hwr@10.100.100.70 'cd /srv/wwn/caddy && docker compose logs -f caddy'
 ```
 
 ### Stack stoppen
 
 ```bash
-ssh hwr@10.100.100.21 'cd /srv/wwn/caddy && docker compose down'
+ssh hwr@10.100.100.70 'cd /srv/wwn/caddy && docker compose down'
 ```
 
 **NIEMALS `docker compose down -v`** — das `-v` würde Bind-Mount-Pfade nicht
@@ -116,11 +116,11 @@ müssen auf wwn-prod existieren (Stand: ja, vom Setup am 6. Mai). `hwr` braucht
 **Aufräumen nach 1-2 Tagen Beobachtungszeit:**
 
 ```bash
-ssh hwr@10.100.100.21 docker volume rm wwn_caddy_data wwn_caddy_config
+ssh hwr@10.100.100.70 docker volume rm wwn_caddy_data wwn_caddy_config
 ```
 
 Den Tar-Backup von der Maintainer-Maschine ziehen und off-host sichern:
 
 ```bash
-scp hwr@10.100.100.21:/srv/wwn/caddy/caddy-data-backup-*.tar.gz ~/backups/
+scp hwr@10.100.100.70:/srv/wwn/caddy/caddy-data-backup-*.tar.gz ~/backups/
 ```

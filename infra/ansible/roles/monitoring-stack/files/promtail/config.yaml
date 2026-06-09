@@ -2,7 +2,7 @@
 # (Prometheus, Loki, Tempo, Grafana) und pusht zur lokalen Loki-Instanz.
 #
 # Container auf wwn-prod nutzen die monitoring-agent-Rolle und pushen dort
-# direkt zu http://10.100.100.22:3100/loki/api/v1/push.
+# direkt zu http://10.100.100.69:3100/loki/api/v1/push.
 
 server:
   http_listen_port: 9080

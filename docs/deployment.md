@@ -1,7 +1,7 @@
 # Deployment
 
-Anleitung für Production-Deployments auf wwn-prod (10.100.100.21) und
-wwn-mon (10.100.100.22). Stand: 2026-05-06, nach Abschluss von
+Anleitung für Production-Deployments auf wwn-prod (10.100.100.70) und
+wwn-mon (10.100.100.69). Stand: 2026-05-06, nach Abschluss von
 Session 11a.
 
 > **Forschungs-Phase, nicht echte Production.** Keine SLA, kein

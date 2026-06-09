@@ -2,7 +2,7 @@
 # Deploy the stand-alone Caddy stack to wwn-prod.
 #
 # Source:  infra/caddy/prod/
-# Target:  hwr@10.100.100.21:/srv/wwn/caddy
+# Target:  hwr@10.100.100.70:/srv/wwn/caddy
 # Action:  rsync, then `docker compose pull && up -d` over SSH.
 #
 # Idempotent. Safe to run repeatedly. Uses `rsync --delete`, so the remote
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 REMOTE_USER="hwr"
-REMOTE_HOST="10.100.100.21"
+REMOTE_HOST="10.100.100.70"
 REMOTE_PORT="22"
 REMOTE_PATH="/srv/wwn/caddy"
 REMOTE_TARGET="${REMOTE_USER}@${REMOTE_HOST}"
