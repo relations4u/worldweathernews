@@ -1,4 +1,4 @@
-.PHONY: help bootstrap env dev dev-full dev-monitoring dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen gen-check migrate clean release backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck
+.PHONY: help bootstrap env dev dev-full dev-monitoring dev-down dev-reset dev-logs dev-psql dev-redis test lint fmt build gen gen-check migrate clean release backend-dev backend-test backend-lint frontend-dev frontend-test frontend-lint frontend-check pyworkers-dev pyworkers-test pyworkers-lint pyworkers-typecheck sat-pause sat-resume sat-status sat-pause-prod sat-resume-prod
 
 .DEFAULT_GOAL := help
 
@@ -82,6 +82,69 @@ pyworkers-lint: ## Python-Workers Lint (ruff check + format --check)
 
 pyworkers-typecheck: ## Python-Workers Type-Check (mypy strict)
 	$(MAKE) -C apps/pyworkers typecheck
+
+# --- EUMETSAT-Worker pausieren / fortsetzen --------------------------------
+# Setzt WWN_PY_EUMETSAT_ENABLED auf der jeweiligen Seite und recreated nur
+# den pyworkers-Container. Heartbeat/DWD/Open-Meteo laufen weiter.
+#
+# Lokal:    .env wird editiert (compose.dev.yml interpoliert daraus).
+# Prod:     SSH zu wwn-prod, schreibt /opt/wwn/.env.pyworkers.override
+#           (kein SOPS — der SOPS-File .env.pyworkers bleibt unangetastet,
+#           der Override liegt daneben und überschreibt nur das eine Flag).
+#           Voraussetzung: das Ansible-Template muss den Override-Slot
+#           bereits ausgerollt haben (PR mit compose.prod.yml.j2-Update,
+#           dann ein regulärer `bash scripts/deploy.sh production X.Y.Z`).
+SAT_PROD_HOST ?= deploy@10.100.100.21
+SAT_PROD_APP_DIR ?= /opt/wwn
+
+sat-pause: env ## EUMETSAT-Worker lokal pausieren (recreate pyworkers)
+	@if grep -q '^WWN_PY_EUMETSAT_ENABLED=' .env; then \
+		sed -i 's/^WWN_PY_EUMETSAT_ENABLED=.*/WWN_PY_EUMETSAT_ENABLED=false/' .env; \
+	else \
+		echo 'WWN_PY_EUMETSAT_ENABLED=false' >> .env; \
+	fi
+	docker compose up -d --no-deps --force-recreate pyworkers
+	@echo "EUMETSAT-Worker lokal pausiert. Reaktivieren mit 'make sat-resume'."
+
+sat-resume: env ## EUMETSAT-Worker lokal reaktivieren (recreate pyworkers)
+	@if grep -q '^WWN_PY_EUMETSAT_ENABLED=' .env; then \
+		sed -i 's/^WWN_PY_EUMETSAT_ENABLED=.*/WWN_PY_EUMETSAT_ENABLED=true/' .env; \
+	else \
+		echo 'WWN_PY_EUMETSAT_ENABLED=true' >> .env; \
+	fi
+	docker compose up -d --no-deps --force-recreate pyworkers
+	@echo "EUMETSAT-Worker lokal reaktiviert."
+
+sat-pause-prod: ## EUMETSAT-Worker auf wwn-prod pausieren (Override-File + recreate)
+	@echo "==> Lege $(SAT_PROD_APP_DIR)/.env.pyworkers.override an und recreated pyworkers ..."
+	ssh $(SAT_PROD_HOST) 'set -e; \
+		printf "WWN_PY_EUMETSAT_ENABLED=false\n" > $(SAT_PROD_APP_DIR)/.env.pyworkers.override; \
+		chmod 0640 $(SAT_PROD_APP_DIR)/.env.pyworkers.override; \
+		cd $(SAT_PROD_APP_DIR) && docker compose up -d --no-deps --force-recreate pyworkers'
+	@echo "EUMETSAT-Worker auf wwn-prod pausiert."
+	@echo "Hinweis: Override überlebt Deploys (liegt nicht unter SOPS-Verwaltung)."
+	@echo "Verifizieren mit 'make sat-status'."
+
+sat-resume-prod: ## EUMETSAT-Worker auf wwn-prod reaktivieren (Override löschen + recreate)
+	@echo "==> Entferne $(SAT_PROD_APP_DIR)/.env.pyworkers.override und recreated pyworkers ..."
+	ssh $(SAT_PROD_HOST) 'set -e; \
+		rm -f $(SAT_PROD_APP_DIR)/.env.pyworkers.override; \
+		cd $(SAT_PROD_APP_DIR) && docker compose up -d --no-deps --force-recreate pyworkers'
+	@echo "EUMETSAT-Worker auf wwn-prod reaktiviert."
+
+sat-status: ## EUMETSAT-Worker-Status zeigen (lokal + Prod)
+	@echo "Lokal (.env):"
+	@if [ -f .env ] && grep -q '^WWN_PY_EUMETSAT_ENABLED=' .env; then \
+		grep '^WWN_PY_EUMETSAT_ENABLED=' .env | sed 's/^/  /'; \
+	else \
+		echo "  WWN_PY_EUMETSAT_ENABLED=(unset, default true)"; \
+	fi
+	@echo "Prod ($(SAT_PROD_HOST)):"
+	@ssh -o ConnectTimeout=5 $(SAT_PROD_HOST) 'if [ -f $(SAT_PROD_APP_DIR)/.env.pyworkers.override ]; then \
+			echo "  Override aktiv:"; sed "s/^/    /" $(SAT_PROD_APP_DIR)/.env.pyworkers.override; \
+		else \
+			echo "  Kein Override — Default aus .env.pyworkers (true)"; \
+		fi' 2>/dev/null || echo "  (SSH nicht erreichbar — bitte SAT_PROD_HOST prüfen)"
 
 lint: ## Alle Linter (via pre-commit)
 	pre-commit run --all-files
