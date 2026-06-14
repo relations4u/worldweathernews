@@ -67,6 +67,19 @@
     group: root
     mode: "0644"
 
+- name: Drop chrony makestep override
+  # Ubuntu-Default ist `makestep 1 3` — chrony stept nur in den ersten 3
+  # Messungen. Bei VM-Restarts mit grosser RTC-Drift haengt die Uhr danach
+  # auf Slewing-Geschwindigkeit fest. `-1` als zweiter Wert zwingt chrony,
+  # immer zu stepen wenn Offset > 1 s. Begruendung in der Datei.
+  ansible.builtin.copy:
+    src: chrony-makestep.conf
+    dest: /etc/chrony/conf.d/wwn-makestep.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart chrony
+
 - name: Enable and start chrony
   ansible.builtin.systemd:
     name: chrony
