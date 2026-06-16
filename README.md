@@ -1,4 +1,4 @@
-# worldweathernews.com
+# worldweathernews.com ist ein Lern und Forschungsprojekt !
 
 ![CI Backend](https://github.com/relations4u/worldweathernews/actions/workflows/ci-backend.yml/badge.svg)
 ![CI Frontend](https://github.com/relations4u/worldweathernews/actions/workflows/ci-frontend.yml/badge.svg)
