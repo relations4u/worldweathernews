@@ -302,3 +302,36 @@ step12.md-Erfolgs-Kriterien: alle ✅. Damit ist die Initial-
 Setup-Phase formal abgeschlossen — der nächste Schritt ist
 Feature-Arbeit (Open-Meteo, Locations-Suche, Auth, Maps), nicht
 mehr Infrastruktur.
+
+## Session 13 — Reverse-Proxy-Ingress auf `gate` (Strategie R1)
+
+Status: 🟡 In Progress
+Datum: 2026-06-21
+Commit: <SHA>
+
+Notizen: Der öffentliche Internet-Ingress zieht von wwn-prod auf den neuen
+Host `gate` (10.100.100.151) um — verwaltet im separaten `sysadmin`-Repo
+(Ansible, Caddy-Rolle; Entscheidung dort als ADR-0002, Strategie R1).
+
+WWN-seitige Änderung (vorbereitet, dieser Commit): `infra/caddy/prod/Caddyfile`
+
+- `compose.yml` vom öffentlichen TLS-Terminator zum **internen HTTP-Router**:
+  `auto_https off`, `default_bind 10.100.100.70`, alle Sites auf `http://` (:80),
+  HSTS + `email` entfernt (macht jetzt gate). Routing/Upstreams unverändert
+  (127.0.0.1:{3000,8080,8090}, S3-`media`-Rewrite, CMS-OAuth, OPTIONS-Pass-through).
+  `network_mode: host` bleibt — nötig für die Loopback-Upstreams.
+
+Begründung R1: wwn-Caddy ist eng an den App-Stack gekoppelt; gate dupliziert
+die Routing-Logik NICHT, sondern reicht die 6 WWN-Namen mit erhaltenem
+Host-Header durch. gate ist alleinige Cert-Instanz (löst das ACME-Renewal-
+Problem, sobald gate die öffentlichen 80/443 hat). Kein App-Rebind nötig.
+
+⚠️ Cutover (offen): WWN-Caddy-Deploy + OPNsense-Forward 80/443 wwn-prod→gate
+im **selben Wartungsfenster** (sonst Downtime; kurzer ACME-Blip auf gate ok).
+Ablauf im sysadmin-Repo: `docs/operations/reverse-proxy-caddy.md`.
+
+Folge-Doku (noch nachzuziehen, eigener Commit): `docs/architecture.md`
+(Zeile ~65 „App-Stack + Caddy, public via research…" und ~110 „Reverse-Proxy
+für Apex/www/research/api.research") und `docs/deployment.md` beschreiben
+wwn-prod noch als öffentlichen Ingress — nach dem Cutover auf „gate = Ingress,
+wwn-Caddy = interner Router" aktualisieren.

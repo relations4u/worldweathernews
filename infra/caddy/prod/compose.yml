@@ -1,15 +1,16 @@
-# Stand-alone Caddy-Stack für wwn-prod.
+# Stand-alone Caddy-Stack für wwn-prod — INTERNER HTTP-Router (Strategie R1).
 #
-# Bewusst getrennt vom App-Compose-Stack (`infra/compose/compose.prod.yml`):
-# unverfälschte Client-IPs durch network_mode: host, eigener Lifecycle, Caddy
-# bleibt unangetastet wenn der App-Stack neu deployed wird.
+# Öffentlicher Ingress + TLS sind nach `gate` umgezogen (sysadmin-Repo, ADR-0002).
+# Dieser Caddy terminiert KEIN öffentliches TLS mehr: `auto_https off`, lauscht nur
+# intern auf 10.100.100.70:80 (`default_bind` in der Caddyfile). gate reicht die
+# WWN-Namen mit erhaltenem Host-Header hierher durch.
 #
-# Persistente Daten (TLS-Zertifikate unter ./data, Admin-API-Cache unter
-# ./config) liegen als Bind-Mount unter /srv/wwn/caddy/data und
-# /srv/wwn/caddy/config. Erstmig­ration vom Docker-Named-Volume per
-# `infra/deploy/migrate-caddy-bindmount.sh` (idempotent, einmalig). Backup
-# vom Live-Stand: `tar czf - -C /srv/wwn/caddy/data .` — kein Umweg mehr
-# durch /var/lib/docker/.
+# `network_mode: host` bleibt nötig: nur so erreicht Caddy die App-Container auf
+# 127.0.0.1:{3000,8080,8090} (Loopback-Bind unter /opt/wwn).
+#
+# Persistenz: ./data (Admin-API-Cache; öffentliche LE-Zertifikate liegen jetzt auf
+# gate) und ./config als Bind-Mount unter /srv/wwn/caddy/. Backup vom Live-Stand:
+# `tar czf - -C /srv/wwn/caddy/data .`.
 
 services:
   caddy:
