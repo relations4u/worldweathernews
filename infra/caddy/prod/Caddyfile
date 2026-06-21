@@ -1,39 +1,36 @@
-# Production-Caddyfile für worldweathernews.com.
+# Production-Caddyfile für worldweathernews.com — INTERNER HTTP-Router.
 #
-# Caddy läuft mit network_mode: host auf wwn-prod und proxied auf
-# 127.0.0.1:{3000,8080} (Frontend / Backend), die der App-Stack unter
-# /opt/wwn lokal an Loopback bindet.
+# Strategie R1 (siehe sysadmin-Repo, ADR-0002): der Internet-Ingress ist jetzt
+# `gate` (10.100.100.151). gate terminiert öffentliches TLS + HSTS und reicht alle
+# worldweathernews.com-Namen mit erhaltenem Host-Header an diesen Caddy durch.
+#
+# Dieser Caddy macht daher KEIN ACME mehr (auto_https off) und lauscht nur intern
+# auf 10.100.100.70:80 (default_bind). Die App-Routing-Logik bleibt unverändert —
+# Caddy läuft weiter mit network_mode: host und erreicht die App auf 127.0.0.1.
+#
+# HSTS setzt jetzt gate (der TLS-Terminator) — hier nicht mehr nötig.
 {
-	email ops@worldweathernews.com
+	auto_https off
+	default_bind 10.100.100.70
 	log {
 		output stdout
 		format json
 	}
 }
 
-# 1 Jahr HSTS, KEIN includeSubDomains — manche zukünftige Subdomain (z. B.
-# Monitoring) bekommt ggf. lange kein TLS, dann würde sie sonst gesperrt.
-(hsts) {
-	header Strict-Transport-Security "max-age=31536000"
-}
-
-worldweathernews.com {
-	import hsts
+http://worldweathernews.com {
 	reverse_proxy 127.0.0.1:3000
 }
 
-www.worldweathernews.com {
-	import hsts
+http://www.worldweathernews.com {
 	redir https://worldweathernews.com{uri} permanent
 }
 
-research.worldweathernews.com {
-	import hsts
+http://research.worldweathernews.com {
 	reverse_proxy 127.0.0.1:3000
 }
 
-api.research.worldweathernews.com {
-	import hsts
+http://api.research.worldweathernews.com {
 	encode zstd gzip
 
 	# OPTIONS-Preflights gehen DURCH zum Backend — chi-cors auf Backend-Seite
@@ -47,8 +44,7 @@ api.research.worldweathernews.com {
 # Self-hosted GitHub-OAuth-Proxy für Sveltia CMS — ersetzt den vormaligen
 # Cloudflare-Worker. Container bindet auf 127.0.0.1:8090 und prüft erlaubte
 # Origins selbst (WWN_CMS_AUTH_ALLOWED_DOMAINS in der env-Datei).
-cms-auth.worldweathernews.com {
-	import hsts
+http://cms-auth.worldweathernews.com {
 	reverse_proxy 127.0.0.1:8090
 }
 
@@ -57,8 +53,7 @@ cms-auth.worldweathernews.com {
 # (kein Bucket dieses Namens). Wir rewriten Host auf den virtual-hosted
 # Bucket-Endpoint. Schreibzugriffe laufen NICHT über diesen Proxy — Sveltia
 # nutzt später pre-signed URLs direkt gegen den Bucket-Endpoint.
-media.worldweathernews.com {
-	import hsts
+http://media.worldweathernews.com {
 	encode zstd gzip
 
 	@readonly method GET HEAD
