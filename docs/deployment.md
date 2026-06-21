@@ -1,8 +1,15 @@
 # Deployment
 
 Anleitung für Production-Deployments auf wwn-prod (10.100.100.70) und
-wwn-mon (10.100.100.69). Stand: 2026-05-06, nach Abschluss von
-Session 11a.
+wwn-mon (10.100.100.69). Stand: 2026-06-21, nach Session 13.
+
+> **Öffentlicher Ingress = gate.** Seit Session 13 (Strategie R1) terminiert
+> der eigenständige Host **gate** (10.100.100.151, `sysadmin`-Repo) das
+> öffentliche TLS + HSTS und reicht alle `worldweathernews.com`-Namen an den
+> _internen_ wwn-Caddy durch. Der wwn-Caddy ist kein TLS-Terminator mehr,
+> sondern interner HTTP-Router (`auto_https off`, nur `:80` intern). gate
+> wird **nicht** aus diesem Repo deployed — Runbook im `sysadmin`-Repo unter
+> `docs/operations/reverse-proxy-caddy.md`.
 
 > **Forschungs-Phase, nicht echte Production.** Keine SLA, kein
 > automatisches Failover, kein dedizierter DDoS-Schutz. Nutzer werden
@@ -10,11 +17,13 @@ Session 11a.
 
 ## Architektur kurz
 
+- **gate** — öffentlicher Ingress (Caddy, public TLS + HSTS), eigener Host
+  10.100.100.151, verwaltet im `sysadmin`-Repo. NAT 80/443 zeigt auf gate.
 - **wwn-prod** — App-Stack (Postgres, Redis, Backend, Frontend,
-  Pyworkers) plus eigenständiger Caddy-Stack unter `/srv/wwn/caddy`
+  Pyworkers) plus eigenständiger, **interner** Caddy-Router-Stack unter
+  `/srv/wwn/caddy` (HTTP `:80`, kein public TLS). gate reicht hierher durch.
 - **wwn-mon** — Observability (Prometheus, Loki, Tempo, Grafana)
-- Beide sind Proxmox-VMs, hinter einer Hardware-Firewall, NAT 80/443
-  zeigt auf wwn-prod
+- Alle drei sind Proxmox-VMs hinter einer Hardware-Firewall.
 
 Detail: [`docs/architecture.md`](architecture.md).
 
@@ -118,10 +127,12 @@ Was der Wrapper macht:
 monitoring werden nicht angefasst. Wer das Bootstrap-Profil komplett
 laufen lassen will, nimmt `playbooks/site.yml`.
 
-## Caddy ist NICHT Teil des App-Stacks
+## wwn-Caddy ist NICHT Teil des App-Stacks (interner Router)
 
-Caddy lebt unter `/srv/wwn/caddy/` mit eigenem Compose-Stack und
-eigenem Deploy-Pfad:
+Der wwn-Caddy lebt unter `/srv/wwn/caddy/` mit eigenem Compose-Stack und
+eigenem Deploy-Pfad. Seit Session 13 (Strategie R1) ist er **interner
+HTTP-Router**, kein öffentlicher TLS-Terminator mehr — das macht gate
+(siehe `sysadmin`-Repo). Er lauscht nur intern auf `10.100.100.70:80`.
 
 ```bash
 bash infra/deploy/deploy-caddy.sh
@@ -131,18 +142,24 @@ Das Skript rsynct `infra/caddy/prod/` nach wwn-prod, pullt das Image
 und macht `docker compose up -d && docker compose restart caddy`. Der
 explizite `restart` ist nötig — Single-File-Bind-Mounts hängen am
 Inode beim Container-Start, und rsync's atomic-rename produziert
-einen neuen Inode, den der Container ohne Restart nicht sieht. Der
-Cert-Volume (`./data` als Verzeichnis-Bind) bleibt davon unberührt.
+einen neuen Inode, den der Container ohne Restart nicht sieht.
 
-**Wichtig: Caddy-Cert-Volume schützen.** Vier Let's-Encrypt-
-Zertifikate liegen unter `/srv/wwn/caddy/data/`. Verlust = ACME
-Re-Issuance, und Let's Encrypt rate-limit'et 50 Issuances/Apex/Woche.
+**Cutover-Hinweis (einmalig):** Der wwn-Caddy-Deploy muss zusammen mit
+dem OPNsense-Forward 80/443 (wwn-prod → gate) im **selben
+Wartungsfenster** laufen. Ein kurzer ACME-Blip auf gate ist ok
+(Forschungs-Instanz ohne SLA). wwn-Caddy danach **nicht** abschalten —
+er ist jetzt der interne Router. Detail-Runbook im `sysadmin`-Repo
+(`docs/operations/reverse-proxy-caddy.md`).
+
+**Öffentliche Zertifikate liegen auf gate.** Die Let's-Encrypt-
+Zertifikate werden seit Session 13 auf gate gehalten, nicht mehr unter
+`/srv/wwn/caddy/data/` auf wwn-prod. Cert-Schutz und ACME-Rate-Limits
+(50 Issuances/Apex/Woche) sind damit ein gate-Thema (`sysadmin`-Repo).
+Das `./data`-Verzeichnis auf wwn-prod ist nur noch Admin-API-Cache.
 
 Don'ts:
 
-- ❌ `docker compose down -v` für `wwn-caddy`
-- ❌ Snapshot-Rollback auf einen Zeitpunkt VOR Cert-Issuance ohne
-  Volume-Restore
+- ❌ wwn-Caddy nach dem Cutover abschalten — er ist der interne Router
 - ❌ Caddyfile direkt auf wwn-prod editieren — `--delete` im rsync
   überschreibt das beim nächsten Deploy
 
@@ -193,7 +210,11 @@ Settings → Branches → `main` → Branch protection rules.
 ## Smoke-Tests nach Deploy
 
 ```bash
-# Frontend rendert
+# Interner wwn-Caddy-Router antwortet direkt (ohne gate, Host-Header gesetzt)
+curl -fsSI --resolve worldweathernews.com:80:10.100.100.70 \
+  http://worldweathernews.com/ | head -1
+
+# Frontend rendert (öffentlich, über gate)
 curl -fsSI https://research.worldweathernews.com | head -1
 
 # API antwortet mit Trace-ID
@@ -206,7 +227,8 @@ curl -sI -X OPTIONS \
   https://api.research.worldweathernews.com/api/v1/ping \
   | grep -i access-control
 
-# Cert-Dates haben sich nicht verschoben (gegen ACME-Surprise)
+# Cert-Dates haben sich nicht verschoben (gegen ACME-Surprise) — das
+# öffentliche Zertifikat liegt seit Session 13 auf gate, nicht wwn-prod
 echo | openssl s_client -connect worldweathernews.com:443 \
   -servername worldweathernews.com 2>/dev/null \
   | openssl x509 -noout -dates

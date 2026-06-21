@@ -336,8 +336,11 @@ sind bewusst nicht im Code automatisiert, weil sie OAuth-Secrets erfordern:
    `sops infra/secrets/production/cms-auth.env`, `WWN_CMS_AUTH_CLIENT_ID`
    und `WWN_CMS_AUTH_CLIENT_SECRET` mit den GitHub-Werten ersetzen.
 4. **Deployen**: Release-Tag pushen → `bash scripts/deploy.sh production X.Y.Z`.
-   Anschließend Caddy auf wwn-prod neu laden (`bash infra/deploy/deploy-caddy.sh`),
-   damit das Let's-Encrypt-Cert für den neuen Host ausgestellt wird.
+   Anschließend den internen wwn-Caddy-Router neu laden
+   (`bash infra/deploy/deploy-caddy.sh`), damit die `cms-auth`-Route greift.
+   Das öffentliche Let's-Encrypt-Cert für `cms-auth.worldweathernews.com`
+   stellt seit Session 13 **gate** aus (Strategie R1, `sysadmin`-Repo) — der
+   neue Host muss dort als Ingress-Site bekannt sein.
 5. **Login testen** auf <https://worldweathernews.com/admin/>.
 
 Cutover wurde am 11. Mai 2026 abgeschlossen: Cloudflare-Worker
