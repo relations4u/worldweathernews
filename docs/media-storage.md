@@ -18,15 +18,19 @@ Browser
 Cloudflare DNS (media → home → gate.hw7.eu, DNS-only)
    │
    ▼
-Hardware-Firewall (NAT 80/443) → wwn-prod (10.100.100.70)
-   │
+Hardware-Firewall (NAT 80/443) → gate (10.100.100.151)
+   │  public TLS + HSTS, Host-Header erhalten
    ▼
-Caddy (network_mode: host)
+wwn-Caddy interner Router (wwn-prod 10.100.100.70:80, network_mode: host)
    │  Host-Rewrite auf media-worldweathernews-prod.fsn1.your-objectstorage.com
    │  Nur GET/HEAD durchgereicht
    ▼
 Hetzner Object Storage  (media-worldweathernews-prod, Falkenstein)
 ```
+
+Seit Session 13 (Strategie R1) terminiert **gate** das öffentliche TLS und
+reicht `media.worldweathernews.com` an den internen wwn-Caddy durch, der den
+S3-Host-Rewrite macht. Vor Session 13 lief das TLS direkt auf wwn-prod.
 
 Schreibzugriffe (Sveltia-Bild-Upload, Iteration 1.3) laufen **nicht**
 durch den Proxy, sondern direkt vom Browser per pre-signed URL gegen den

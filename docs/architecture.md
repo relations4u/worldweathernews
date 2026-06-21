@@ -1,9 +1,17 @@
 # Architektur
 
-Stand: 2026-05-06. Dieses Dokument beschreibt das Gesamtsystem
-worldweathernews.com so, wie es nach Session 11a tatsächlich läuft —
+Stand: 2026-06-21. Dieses Dokument beschreibt das Gesamtsystem
+worldweathernews.com so, wie es nach Session 13 tatsächlich läuft —
 nicht den theoretischen Endzustand. Wenn sich Architektur ändert, wird
 diese Datei mitgeführt.
+
+Seit Session 13 (Strategie R1, siehe `sysadmin`-Repo, ADR-0002) ist der
+öffentliche Internet-Ingress der eigenständige Host **gate**
+(10.100.100.151). gate terminiert öffentliches TLS + HSTS und reicht alle
+`worldweathernews.com`-Namen mit erhaltenem Host-Header an den _internen_
+wwn-Caddy auf wwn-prod durch. Der wwn-Caddy ist damit kein TLS-Terminator
+mehr, sondern interner HTTP-Router (`auto_https off`, `default_bind
+10.100.100.70:80`); die WWN-Routing-Logik bleibt unverändert in diesem Repo.
 
 ## System-Überblick
 
@@ -15,8 +23,11 @@ graph TB
     end
 
     subgraph proxmox["Proxmox-Host (Ryzen 7, 32 GB)"]
+        subgraph gatevm["gate (10.100.100.151)"]
+            Gate[Caddy 2 — Ingress<br/>public TLS + HSTS<br/>Let's Encrypt]
+        end
         subgraph wwnprod["wwn-prod (10.100.100.70)"]
-            Caddy[Caddy 2<br/>network_mode: host<br/>HTTPS via Let's Encrypt]
+            Caddy[Caddy 2 — interner Router<br/>network_mode: host<br/>auto_https off, :80]
             Frontend[SvelteKit<br/>Node-Adapter<br/>:3000]
             Backend[Go API<br/>Chi + sqlc + pgx<br/>:8080]
             Workers[Python Workers<br/>asyncio + structlog<br/>:9100 metrics]
@@ -34,10 +45,11 @@ graph TB
         end
     end
 
-    User -->|HTTPS| Caddy
+    User -->|HTTPS| Gate
+    Gate -->|HTTP, Host erhalten<br/>10.100.100.70:80| Caddy
     Caddy -->|127.0.0.1:3000| Frontend
     Caddy -->|127.0.0.1:8080| Backend
-    Frontend -.->|fetch via api.research| Caddy
+    Frontend -.->|fetch via api.research| Gate
     Backend --> Postgres
     Backend --> Redis
     Workers --> Postgres
@@ -57,13 +69,18 @@ graph TB
 ## Hosts
 
 Die Plattform läuft in der Forschungs-Phase auf eigener Hardware
-(Proxmox VE auf Ryzen 7, 32 GB RAM, Hardware-Firewall davor). Drei VMs:
+(Proxmox VE auf Ryzen 7, 32 GB RAM, Hardware-Firewall davor). VMs:
 
-| VM       | IP             | Rolle                                                         | Größe    |
-| -------- | -------------- | ------------------------------------------------------------- | -------- |
-| wwn-dev  | 10.100.100.113 | Entwicklung (Editor, mise, Compose-Stack)                     | 8 GB RAM |
-| wwn-prod | 10.100.100.70  | App-Stack + Caddy, public via `research.worldweathernews.com` | 8 GB RAM |
-| wwn-mon  | 10.100.100.69  | Observability-Stack (Prometheus/Loki/Tempo/Grafana), LAN only | 4 GB RAM |
+| VM       | IP             | Rolle                                                            | Größe    |
+| -------- | -------------- | ---------------------------------------------------------------- | -------- |
+| wwn-dev  | 10.100.100.113 | Entwicklung (Editor, mise, Compose-Stack)                        | 8 GB RAM |
+| gate     | 10.100.100.151 | Öffentlicher Ingress (Caddy, public TLS + HSTS), `sysadmin`-Repo | s. dort  |
+| wwn-prod | 10.100.100.70  | App-Stack + interner Caddy-Router (HTTP :80, kein public TLS)    | 8 GB RAM |
+| wwn-mon  | 10.100.100.69  | Observability-Stack (Prometheus/Loki/Tempo/Grafana), LAN only    | 4 GB RAM |
+
+`gate` wird im separaten `sysadmin`-Repo verwaltet (Ansible + Caddy-Rolle,
+Entscheidung dort als ADR-0002, Strategie R1). Dieses Repo besitzt nur den
+_internen_ wwn-Caddy — die WWN-Routing-Logik wird auf gate nicht dupliziert.
 
 Die Aufgabentrennung wwn-prod/wwn-mon ist bewusst: bei einem Crash auf
 wwn-prod bleibt Telemetrie auf wwn-mon abrufbar, plus die hohe I/O-Last
@@ -105,13 +122,26 @@ Metrics: `:9100/metrics`. Scheduler ist APScheduler 3.x AsyncIOScheduler.
 - API-Client unter `apps/frontend/src/lib/api/client.ts`,
   `PUBLIC_API_BASE_URL` ist build-time pinned (siehe Caveat unten)
 
-### Caddy (2-alpine, eigener Compose-Stack)
+### gate (öffentlicher Ingress, `sysadmin`-Repo)
 
-- Reverse-Proxy für Apex/www/research/api.research
-- Auto-TLS via Let's Encrypt (HTTP-01)
-- HSTS `max-age=31536000` ohne `includeSubDomains` (bewusst —
-  zukünftige interne Subdomains evtl. lange ohne TLS)
-- Läuft mit `network_mode: host` für unverfälschte Client-IPs in Logs
+- Einziger öffentlicher Internet-Ingress seit Session 13 (Strategie R1)
+- Terminiert öffentliches TLS via Let's Encrypt und setzt HSTS
+- Reicht alle `worldweathernews.com`-Namen mit erhaltenem Host-Header an
+  den internen wwn-Caddy (`10.100.100.70:80`) durch
+- Alleinige Cert-Instanz — die Let's-Encrypt-Zertifikate liegen auf gate,
+  nicht mehr auf wwn-prod
+- Verwaltung, Deploy und Cutover-Runbook im `sysadmin`-Repo
+  (`docs/operations/reverse-proxy-caddy.md`)
+
+### wwn-Caddy (2-alpine, eigener Compose-Stack — interner Router)
+
+- Interner HTTP-Router für Apex/www/research/api.research/cms-auth/media —
+  **kein** öffentliches TLS mehr (`auto_https off`)
+- Lauscht nur intern auf `10.100.100.70:80` (`default_bind`); HSTS setzt
+  jetzt gate
+- Routing/Upstreams unverändert: `127.0.0.1:{3000,8080,8090}`,
+  S3-`media`-Host-Rewrite, CMS-OAuth, OPTIONS-Pass-through (chi-cors)
+- Läuft weiter mit `network_mode: host` — nötig für die Loopback-Upstreams
 - **Nicht** Teil des App-Compose-Stacks — getrennter Lifecycle, eigener
   Deploy-Pfad via `infra/deploy/deploy-caddy.sh`
 
@@ -120,11 +150,11 @@ Metrics: `:9100/metrics`. Scheduler ist APScheduler 3.x AsyncIOScheduler.
 ### Read-Pfad (User schaut Wetter)
 
 ```
-Browser → Caddy → Frontend (SSR)
+Browser → gate → wwn-Caddy → Frontend (SSR)
                        ↓
                     Hydration
                        ↓
-Browser → Caddy → Backend → Redis (cache hit)  oder
+Browser → gate → wwn-Caddy → Backend → Redis (cache hit)  oder
                        ↓
                   Postgres (cache miss → set Redis → return)
                        ↓
@@ -134,7 +164,7 @@ Browser → Caddy → Backend → Redis (cache hit)  oder
 ### Write-Pfad (User postet Beobachtung)
 
 ```
-Browser → Caddy → Frontend → Backend (Auth) → Postgres
+Browser → gate → wwn-Caddy → Frontend → Backend (Auth) → Postgres
 ```
 
 ### Ingest-Pfad (Wetterdaten holen)
@@ -217,7 +247,7 @@ Grafana ist auf 0.0.0.0:3000 gebunden und nur aus dem Manager-LAN
 
 ## Sicherheits-Annahmen
 
-- Hardware-Firewall vor dem Proxmox-Host (NAT 80/443/22 nur auf wwn-prod)
+- Hardware-Firewall vor dem Proxmox-Host (NAT 80/443 auf gate, SSH/22 wie bisher)
 - UFW auf jedem Host: Default-deny inbound, nur whitelisted Ports
 - SSH key-only, fail2ban, Hardening via `common`-Rolle
 - Container laufen non-root (eigene UIDs pro Service)
