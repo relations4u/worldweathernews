@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/oapi-codegen/runtime v1.4.0
 	github.com/prometheus/client_golang v1.23.2
-	github.com/redis/go-redis/v9 v9.19.0
+	github.com/redis/go-redis/v9 v9.20.0
 	github.com/riandyrn/otelchi v0.12.3
 	github.com/spf13/viper v1.21.0
 	go.opentelemetry.io/otel v1.43.0
