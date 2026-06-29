@@ -17,7 +17,7 @@ dependencies = [
     # OpenTelemetry — Pin auf einheitliche Minor-Version, weil das Ökosystem
     # zwischen Minors häufig Breaking Changes hat.
     "opentelemetry-api>=1.29,<1.42",
-    "opentelemetry-sdk>=1.29,<1.42",
+    "opentelemetry-sdk>=1.29,<1.44",
     "opentelemetry-exporter-otlp-proto-grpc>=1.29,<1.42",
     "opentelemetry-instrumentation-asyncpg~=0.50b0",
     "opentelemetry-instrumentation-redis~=0.50b0",
